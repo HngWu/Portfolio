@@ -7,8 +7,8 @@
 - [x] Initialize Zustand stores (ViewMode, Navigation state).
 
 ## Phase 2: The Bento Engine (Functionality)
-- [ ] Build `BentoGrid` layout system.
-- [ ] Implement base `BentoTile` component wrapper.
+- [x] Build `BentoGrid` layout system.
+- [x] Implement base `BentoTile` component wrapper.
 - [ ] Build tile variants (`ProjectTile`, `ExperienceTile`, `StatTile`, etc.).
 - [ ] Implement "Quick-Pitch" vs "Deep Dive" content toggle logic in tiles.
 - [ ] Fetch and render dynamic tiles from Supabase.
