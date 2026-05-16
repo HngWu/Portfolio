@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 import { BackLink } from "./BackLink"
 import { PageHero } from "./PageHero"

@@ -1,3 +1,5 @@
+"use client"
+
 import { useLayoutEffect, DependencyList } from "react"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"

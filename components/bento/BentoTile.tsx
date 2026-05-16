@@ -3,7 +3,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { GlassCard } from "@/components/ui/GlassCard"
-import { useRouter } from "next/navigation"
+import { usePageTransition } from "@/hooks/usePageTransition"
 import { useTilt } from "./useTilt"
 
 interface BentoTileProps {
@@ -23,7 +23,7 @@ export function BentoTile({
   className,
   children,
 }: BentoTileProps) {
-  const router = useRouter()
+  const { navigateWithTransition } = usePageTransition()
   const { ref, onMouseMove, onMouseLeave } = useTilt()
 
   // Map sizes to column and row spans based on DESIGN.md
@@ -48,7 +48,7 @@ export function BentoTile({
       if (href.startsWith("http") || href.startsWith("mailto:")) {
         window.open(href, "_blank", "noopener,noreferrer")
       } else {
-        router.push(href)
+        navigateWithTransition(href)
       }
     }
   }
