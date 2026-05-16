@@ -5,6 +5,7 @@ import { CommandPalette } from "@/components/cli/CommandPalette";
 import { PageCurtain } from "@/components/layout/PageCurtain";
 import { GenerativeBackground } from "@/components/canvas/GenerativeBackground";
 import { InfiniteGrid } from "@/components/ui/infinite-grid";
+import { ThemeApplier } from "@/components/providers/ThemeApplier";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,6 +38,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased bg-[#050505]`}
       >
+        <ThemeApplier />
         <GenerativeBackground />
         <InfiniteGrid />
         <PageCurtain />

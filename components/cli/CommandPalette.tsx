@@ -1,36 +1,61 @@
 "use client"
 
 import * as React from "react"
-import { Search } from "lucide-react"
+import { Search, Palette, Monitor } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { usePageTransition } from "@/hooks/usePageTransition"
+import { useThemeStore } from "@/store/useThemeStore"
+import { useViewModeStore } from "@/store/useViewModeStore"
+import { SEARCHABLE_CONTENT } from "@/lib/search"
 
-const COMMANDS = [
-  { id: "home", label: "Home", path: "/", category: "Navigation" },
-  { id: "projects", label: "Projects", path: "/projects", category: "Navigation" },
-  { id: "experience", label: "Experience", path: "/experience", category: "Navigation" },
-  { id: "awards", label: "Awards & Honours", path: "/awards", category: "Navigation" },
-  { id: "skills", label: "Skills & Technologies", path: "/skills", category: "Navigation" },
-  { id: "education", label: "Education", path: "/education", category: "Navigation" },
-]
+type CommandAction = {
+  id: string
+  label: string
+  category: string
+  icon?: React.ElementType
+  path?: string
+  action?: () => void
+}
 
 export function CommandPalette() {
   const [isOpen, setIsOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [selectedIndex, setSelectedIndex] = React.useState(0)
+  
   const { navigateWithTransition } = usePageTransition()
+  const toggleTheme = useThemeStore((state) => state.togglePrimaryColor)
+  const { mode, setMode } = useViewModeStore()
+
+  const commands: CommandAction[] = React.useMemo(() => [
+    { id: "home", label: "Home", path: "/", category: "Navigation" },
+    { id: "projects", label: "Projects", path: "/projects", category: "Navigation" },
+    { id: "experience", label: "Experience", path: "/experience", category: "Navigation" },
+    { id: "theme", label: "Toggle Accent Color", action: toggleTheme, category: "Theme", icon: Palette },
+    { id: "mode", label: `Switch to ${mode === "quick" ? "Deep Dive" : "Quick-Pitch"}`, action: () => setMode(mode === "quick" ? "deep" : "quick"), category: "Theme", icon: Monitor },
+    ...SEARCHABLE_CONTENT.filter(item => !["home", "projects", "experience"].includes(item.id)).map(item => ({
+      id: item.id,
+      label: item.title,
+      category: item.category,
+      path: item.path
+    }))
+  ], [toggleTheme, mode, setMode])
 
   const filteredCommands = React.useMemo(() => {
-    return COMMANDS.filter(cmd => 
+    if (!search) return commands
+    return commands.filter(cmd => 
       cmd.label.toLowerCase().includes(search.toLowerCase()) ||
       cmd.category.toLowerCase().includes(search.toLowerCase())
     )
-  }, [search])
+  }, [search, commands])
 
-  const handleNavigate = React.useCallback((path: string) => {
+  const handleAction = React.useCallback((cmd: CommandAction) => {
     setIsOpen(false)
     setSearch("")
-    navigateWithTransition(path)
+    if (cmd.action) {
+      cmd.action()
+    } else if (cmd.path) {
+      navigateWithTransition(cmd.path)
+    }
   }, [navigateWithTransition])
 
   React.useEffect(() => {
@@ -48,7 +73,6 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", down)
   }, [])
 
-  // Handle keyboard navigation when open
   React.useEffect(() => {
     if (!isOpen) return
 
@@ -62,16 +86,15 @@ export function CommandPalette() {
       } else if (e.key === "Enter") {
         e.preventDefault()
         if (filteredCommands[selectedIndex]) {
-          handleNavigate(filteredCommands[selectedIndex].path)
+          handleAction(filteredCommands[selectedIndex])
         }
       }
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [isOpen, filteredCommands, selectedIndex, handleNavigate])
+  }, [isOpen, filteredCommands, selectedIndex, handleAction])
 
-  // Reset selected index when search changes
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
     setSelectedIndex(0)
@@ -87,7 +110,7 @@ export function CommandPalette() {
           <input
             autoFocus
             className="w-full bg-transparent border-none focus:outline-none text-white p-4 placeholder:text-white/30"
-            placeholder="Type a command or search..."
+            placeholder="Search or type a command..."
             value={search}
             onChange={handleSearchChange}
           />
@@ -97,26 +120,40 @@ export function CommandPalette() {
         <div className="p-2 overflow-y-auto max-h-[60vh]">
           {filteredCommands.length > 0 ? (
             <div className="flex flex-col gap-1">
-              <div className="px-3 py-2 text-xs font-semibold text-white/30 uppercase tracking-widest">Commands</div>
-              {filteredCommands.map((cmd, index) => (
-                <button
-                  key={cmd.id}
-                  onClick={() => handleNavigate(cmd.path)}
-                  className={cn(
-                    "w-full text-left px-3 py-3 text-sm rounded-lg transition-colors flex items-center justify-between",
-                    index === selectedIndex 
-                      ? "bg-white/10 text-white" 
-                      : "text-white/70 hover:bg-white/5 hover:text-white"
-                  )}
-                >
-                  <span>{cmd.label}</span>
-                  <span className="text-[10px] font-mono text-white/20">{cmd.category}</span>
-                </button>
+              {Array.from(new Set(filteredCommands.map(c => c.category))).map(category => (
+                <React.Fragment key={category}>
+                  <div className="px-3 py-2 text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] mt-2">{category}</div>
+                  {filteredCommands.filter(c => c.category === category).map((cmd) => {
+                    const globalIndex = filteredCommands.indexOf(cmd)
+                    return (
+                      <button
+                        key={cmd.id}
+                        onClick={() => handleAction(cmd)}
+                        className={cn(
+                          "w-full text-left px-3 py-3 text-sm rounded-lg transition-colors flex items-center justify-between group",
+                          globalIndex === selectedIndex 
+                            ? "bg-white/10 text-white" 
+                            : "text-white/70 hover:bg-white/5 hover:text-white"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          {cmd.icon && (
+                            <span className="w-4 h-4 text-white/30 flex items-center justify-center">
+                              {React.createElement(cmd.icon, { size: 16 })}
+                            </span>
+                          )}
+                          <span>{cmd.label}</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-white/10 opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+                      </button>
+                    )
+                  })}
+                </React.Fragment>
               ))}
             </div>
           ) : (
-            <div className="px-3 py-8 text-center text-sm text-white/30">
-              No commands found for &quot;{search}&quot;
+            <div className="px-3 py-12 text-center">
+              <p className="text-sm text-white/30">No results found for &quot;{search}&quot;</p>
             </div>
           )}
         </div>
