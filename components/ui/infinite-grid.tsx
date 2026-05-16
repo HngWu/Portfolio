@@ -43,14 +43,14 @@ export const InfiniteGrid = ({ className }: { className?: string }) => {
         className
       )}
     >
-      {/* Base Grid Layer (Subtle) */}
-      <div className="absolute inset-0 z-0 opacity-[0.05]">
+      {/* Base Grid Layer (Increased visibility) */}
+      <div className="absolute inset-0 z-0 opacity-[0.12]">
         <GridPattern id="base-grid" offsetX={gridOffsetX} offsetY={gridOffsetY} />
       </div>
 
-      {/* Interactive Reveal Layer */}
+      {/* Interactive Reveal Layer (Increased visibility) */}
       <motion.div 
-        className="absolute inset-0 z-0 opacity-20"
+        className="absolute inset-0 z-0 opacity-50"
         style={{ maskImage, WebkitMaskImage: maskImage }}
       >
         <GridPattern id="interactive-grid" offsetX={gridOffsetX} offsetY={gridOffsetY} />
@@ -82,7 +82,7 @@ const GridPattern = ({ id, offsetX, offsetY }: { id: string, offsetX: MotionValu
             fill="none"
             stroke="currentColor"
             strokeWidth="1"
-            className="text-white/20" 
+            className="text-white/40" 
           />
         </motion.pattern>
       </defs>
