@@ -1,9 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
 import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { usePageTransition } from "@/hooks/usePageTransition"
 
 const COMMANDS = [
   { id: "home", label: "Home", path: "/", category: "Navigation" },
@@ -18,7 +18,7 @@ export function CommandPalette() {
   const [isOpen, setIsOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [selectedIndex, setSelectedIndex] = React.useState(0)
-  const router = useRouter()
+  const { navigateWithTransition } = usePageTransition()
 
   const filteredCommands = React.useMemo(() => {
     return COMMANDS.filter(cmd => 
@@ -30,8 +30,8 @@ export function CommandPalette() {
   const handleNavigate = React.useCallback((path: string) => {
     setIsOpen(false)
     setSearch("")
-    router.push(path)
-  }, [router])
+    navigateWithTransition(path)
+  }, [navigateWithTransition])
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -122,4 +122,4 @@ export function CommandPalette() {
       </div>
     </div>
   )
-  }
+}

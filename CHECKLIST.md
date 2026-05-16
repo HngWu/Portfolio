@@ -30,7 +30,7 @@
 - [x] Build React Three Fiber (R3F) Morphing Glass hero background.
 - [x] Build WebGL Generative background art layer.
 - [x] Enhance CLI/Terminal overlay with page-aware commands.
-- [ ] Implement "sudo ignite" Easter Egg sequence and hidden tile.
+- [x] Implement "sudo ignite" Easter Egg sequence and hidden tile.
 
 ## Final Review
 - [ ] Cross-browser / responsive testing (Mobile adaptations).
