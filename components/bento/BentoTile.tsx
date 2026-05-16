@@ -4,6 +4,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { useRouter } from "next/navigation"
+import { useTilt } from "./useTilt"
 
 interface BentoTileProps {
   id: string
@@ -23,6 +24,7 @@ export function BentoTile({
   children,
 }: BentoTileProps) {
   const router = useRouter()
+  const { ref, onMouseMove, onMouseLeave } = useTilt()
 
   // Map sizes to column and row spans based on DESIGN.md
   const sizeClasses: Record<string, string> = {
@@ -60,6 +62,9 @@ export function BentoTile({
 
   return (
     <GlassCard
+      ref={ref}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
       glowColor={glowColor}
       onClick={handleClick}
       onKeyDown={handleKeyDown}

@@ -20,7 +20,7 @@
 - [x] Implement basic Command Palette (⌘K) for navigation.
 
 ## Phase 4: Lume-Glass & Motion (Design)
-- [ ] Implement full "Lume-Glass" CSS utility system (blur, borders, glows).
+- [x] Implement full "Lume-Glass" CSS utility system (blur, borders, glows).
 - [ ] Add GSAP `ScrollTrigger` for staggered reveals on detail pages.
 - [ ] Add GSAP entry animations for Bento Grid tiles.
 - [ ] Implement 3D Tilt perspective transform on tile hover.
