@@ -1,7 +1,7 @@
 # Lume-Glass Portfolio — Master Checklist
 
 ## Phase 1: Foundation (Functionality)
-- [ ] Initialize Next.js 16 (App Router), Tailwind, and ShadCN.
+- [x] Initialize Next.js 16 (App Router), Tailwind, and ShadCN.
 - [ ] Setup Supabase client and schema (Tiles, Projects, Experience).
 - [ ] Apply initial global CSS variables (from DESIGN.md).
 - [ ] Initialize Zustand stores (ViewMode, Navigation state).
