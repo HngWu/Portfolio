@@ -17,7 +17,7 @@
 - [x] Build the shared Detail Page shell (`DetailShell`, `PageHero`, `BackLink`).
 - [x] Implement `/projects` listing and `/projects/[slug]` detail views.
 - [x] Implement `/experience`, `/awards`, `/skills`, `/education` routes.
-- [ ] Implement basic Command Palette (⌘K) for navigation.
+- [x] Implement basic Command Palette (⌘K) for navigation.
 
 ## Phase 4: Lume-Glass & Motion (Design)
 - [ ] Implement full "Lume-Glass" CSS utility system (blur, borders, glows).
