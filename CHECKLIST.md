@@ -2,9 +2,9 @@
 
 ## Phase 1: Foundation (Functionality)
 - [x] Initialize Next.js 16 (App Router), Tailwind, and ShadCN.
-- [ ] Setup Supabase client and schema (Tiles, Projects, Experience).
+- [x] Setup Supabase client and schema (Tiles, Projects, Experience).
 - [ ] Apply initial global CSS variables (from DESIGN.md).
-- [ ] Initialize Zustand stores (ViewMode, Navigation state).
+- [x] Initialize Zustand stores (ViewMode, Navigation state).
 
 ## Phase 2: The Bento Engine (Functionality)
 - [ ] Build `BentoGrid` layout system.
