@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display } from "next/font/google";
 import { CommandPalette } from "@/components/cli/CommandPalette";
 import { PageCurtain } from "@/components/layout/PageCurtain";
+import { GenerativeBackground } from "@/components/canvas/GenerativeBackground";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,8 +34,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased bg-[#050505]`}
       >
+        <GenerativeBackground />
         <PageCurtain />
         <CommandPalette />
         {children}

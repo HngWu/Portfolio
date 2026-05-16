@@ -27,7 +27,7 @@
 - [x] Implement Curtain Page Transition effect (shared-element logic).
 
 ## Phase 5: High-End Visuals (Design)
-- [ ] Build React Three Fiber (R3F) Morphing Glass hero background.
+- [x] Build React Three Fiber (R3F) Morphing Glass hero background.
 - [ ] Build WebGL Generative background art layer.
 - [ ] Enhance CLI/Terminal overlay with page-aware commands.
 - [ ] Implement "sudo ignite" Easter Egg sequence and hidden tile.
