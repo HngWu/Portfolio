@@ -18,7 +18,7 @@ export function ExperienceTile({ id, size, role, company, date, bullets }: Exper
   const isDeepDive = mode === "deep"
 
   return (
-    <BentoTile id={id} size={size} href={`/experience`} glowColor="mint" className="border-l-2 border-l-[#4AFFB4]/50">
+    <BentoTile id={id} size={size} href={`/experience`} glowColor="mint" className="border-l-2 border-l-[var(--lume-primary)]/50">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-lg font-medium text-white/90">{role}</h3>

@@ -51,15 +51,25 @@ export function BentoTile({
     }
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isClickable && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault()
+      handleClick()
+    }
+  }
+
   return (
     <GlassCard
       glowColor={glowColor}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
       data-id={id}
       className={cn(
         spanClass,
         "relative overflow-hidden group p-4 md:p-6 flex flex-col",
-        isClickable && "cursor-pointer",
+        isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
         className
       )}
     >
