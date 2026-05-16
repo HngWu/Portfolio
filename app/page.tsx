@@ -2,6 +2,7 @@ import { BentoGrid } from "@/components/bento/BentoGrid"
 import { ProjectTile } from "@/components/bento/tiles/ProjectTile"
 import { ExperienceTile } from "@/components/bento/tiles/ExperienceTile"
 import { StatTile } from "@/components/bento/tiles/StatTile"
+import { EasterEggTile } from "@/components/bento/tiles/EasterEggTile"
 import { ViewModeToggle } from "@/components/nav/ViewModeToggle"
 import { MorphingGlass } from "@/components/canvas/MorphingGlass"
 
@@ -50,6 +51,9 @@ export default async function Home() {
           <StatTile id="gpa" size="1x1" value="3.91" label="GPA" />
           <StatTile id="exp" size="1x1" value="1yr" label="Experience" />
           <StatTile id="proj" size="1x1" value="12+" label="Projects" />
+
+          {/* Easter Egg Tile - only visible when ignited */}
+          <EasterEggTile />
         </BentoGrid>
       </div>
     </main>

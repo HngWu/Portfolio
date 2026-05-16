@@ -29,7 +29,7 @@
 ## Phase 5: High-End Visuals (Design)
 - [x] Build React Three Fiber (R3F) Morphing Glass hero background.
 - [x] Build WebGL Generative background art layer.
-- [ ] Enhance CLI/Terminal overlay with page-aware commands.
+- [x] Enhance CLI/Terminal overlay with page-aware commands.
 - [ ] Implement "sudo ignite" Easter Egg sequence and hidden tile.
 
 ## Final Review

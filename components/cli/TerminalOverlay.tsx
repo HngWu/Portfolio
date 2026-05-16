@@ -159,7 +159,6 @@ export function TerminalOverlay() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             drag
-            dragHandleClassName="terminal-header"
             dragMomentum={false}
             className={cn(
               "fixed bottom-24 right-8 z-[1000] w-[500px] h-[350px] min-w-[300px] min-h-[200px]",
