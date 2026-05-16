@@ -23,7 +23,7 @@
 - [x] Implement full "Lume-Glass" CSS utility system (blur, borders, glows).
 - [ ] Add GSAP `ScrollTrigger` for staggered reveals on detail pages.
 - [ ] Add GSAP entry animations for Bento Grid tiles.
-- [ ] Implement 3D Tilt perspective transform on tile hover.
+- [x] Implement 3D Tilt perspective transform on tile hover.
 - [ ] Implement Curtain Page Transition effect (shared-element logic).
 
 ## Phase 5: High-End Visuals (Design)
