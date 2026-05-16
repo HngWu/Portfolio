@@ -12,11 +12,11 @@ export interface Database {
       tiles: {
         Row: {
           id: string
-          type: 'project' | 'experience' | 'award' | 'skill' | 'contact' | 'stat' | 'hero' | 'easter_egg' | 'cert' | 'education'
+          type: 'project' | 'experience' | 'award' | 'skill' | 'contact' | 'stat' | 'hero' | 'easter_egg' | 'cert' | 'education' | '3d' | 'terminal'
           size: string
           col_start: number | null
           row_start: number | null
-          order: number
+          order_val: number
           is_hidden: boolean
           is_active: boolean
           content: Json
@@ -25,11 +25,11 @@ export interface Database {
         }
         Insert: {
           id?: string
-          type: 'project' | 'experience' | 'award' | 'skill' | 'contact' | 'stat' | 'hero' | 'easter_egg' | 'cert' | 'education'
+          type: 'project' | 'experience' | 'award' | 'skill' | 'contact' | 'stat' | 'hero' | 'easter_egg' | 'cert' | 'education' | '3d' | 'terminal'
           size: string
           col_start?: number | null
           row_start?: number | null
-          order?: number
+          order_val?: number
           is_hidden?: boolean
           is_active?: boolean
           content?: Json
@@ -38,11 +38,11 @@ export interface Database {
         }
         Update: {
           id?: string
-          type?: 'project' | 'experience' | 'award' | 'skill' | 'contact' | 'stat' | 'hero' | 'easter_egg' | 'cert' | 'education'
+          type?: 'project' | 'experience' | 'award' | 'skill' | 'contact' | 'stat' | 'hero' | 'easter_egg' | 'cert' | 'education' | '3d' | 'terminal'
           size?: string
           col_start?: number | null
           row_start?: number | null
-          order?: number
+          order_val?: number
           is_hidden?: boolean
           is_active?: boolean
           content?: Json
@@ -61,7 +61,7 @@ export interface Database {
           live_url: string | null
           featured: boolean
           deep_dive: Json | null
-          order: number
+          order_val: number
         }
         Insert: {
           id?: string
@@ -73,7 +73,7 @@ export interface Database {
           live_url?: string | null
           featured?: boolean
           deep_dive?: Json | null
-          order?: number
+          order_val?: number
         }
         Update: {
           id?: string
@@ -85,7 +85,7 @@ export interface Database {
           live_url?: string | null
           featured?: boolean
           deep_dive?: Json | null
-          order?: number
+          order_val?: number
         }
       }
       site_config: {

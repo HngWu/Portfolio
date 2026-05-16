@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display } from "next/font/google";
 import { CommandPalette } from "@/components/cli/CommandPalette";
-import { TerminalOverlay } from "@/components/cli/TerminalOverlay";
 import { PageCurtain } from "@/components/layout/PageCurtain";
 import { GenerativeBackground } from "@/components/canvas/GenerativeBackground";
+import { InfiniteGrid } from "@/components/ui/infinite-grid";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,9 +38,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased bg-[#050505]`}
       >
         <GenerativeBackground />
+        <InfiniteGrid />
         <PageCurtain />
         <CommandPalette />
-        <TerminalOverlay />
         {children}
       </body>
     </html>

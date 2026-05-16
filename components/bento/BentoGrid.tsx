@@ -69,7 +69,7 @@ export function BentoGrid({
       <div
         ref={gridRef}
         className={cn(
-          "grid grid-cols-2 md:grid-cols-6 xl:grid-cols-12 auto-rows-[minmax(120px,auto)] gap-2 md:gap-3 xl:gap-4 max-w-[1440px] mx-auto w-full",
+          "grid grid-cols-2 md:grid-cols-6 xl:grid-cols-12 auto-rows-[minmax(60px,auto)] grid-flow-dense gap-2 md:gap-3 xl:gap-4 max-w-[1440px] mx-auto w-full px-2",
           className
         )}
       >
