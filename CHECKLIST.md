@@ -16,7 +16,7 @@
 ## Phase 3: Detail Pages & Routing (Functionality)
 - [x] Build the shared Detail Page shell (`DetailShell`, `PageHero`, `BackLink`).
 - [x] Implement `/projects` listing and `/projects/[slug]` detail views.
-- [ ] Implement `/experience`, `/awards`, `/skills`, `/education` routes.
+- [x] Implement `/experience`, `/awards`, `/skills`, `/education` routes.
 - [ ] Implement basic Command Palette (⌘K) for navigation.
 
 ## Phase 4: Lume-Glass & Motion (Design)
