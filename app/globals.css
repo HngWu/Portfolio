@@ -63,6 +63,11 @@
     --lume-tertiary: #FF4A8F;
     --lume-warm: #FFB44A;
     
+    --lume-glow-sm: 0 0 12px rgba(74, 255, 180, 0.15);
+    --lume-glow-md: 0 0 32px rgba(74, 255, 180, 0.20);
+    --lume-glow-lg: 0 0 64px rgba(74, 255, 180, 0.12);
+    --lume-glow-xl: 0 0 120px rgba(74, 255, 180, 0.08);
+    
     --text-primary: rgba(255, 255, 255, 0.92);
     --text-secondary: rgba(255, 255, 255, 0.55);
     --text-muted: rgba(255, 255, 255, 0.28);
