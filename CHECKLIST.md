@@ -24,7 +24,7 @@
 - [x] Add GSAP `ScrollTrigger` for staggered reveals on detail pages.
 - [ ] Add GSAP entry animations for Bento Grid tiles.
 - [x] Implement 3D Tilt perspective transform on tile hover.
-- [ ] Implement Curtain Page Transition effect (shared-element logic).
+- [x] Implement Curtain Page Transition effect (shared-element logic).
 
 ## Phase 5: High-End Visuals (Design)
 - [ ] Build React Three Fiber (R3F) Morphing Glass hero background.
