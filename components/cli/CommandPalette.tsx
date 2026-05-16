@@ -72,9 +72,10 @@ export function CommandPalette() {
   }, [isOpen, filteredCommands, selectedIndex, handleNavigate])
 
   // Reset selected index when search changes
-  React.useEffect(() => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value)
     setSelectedIndex(0)
-  }, [search])
+  }
 
   if (!isOpen) return null
 
@@ -88,7 +89,7 @@ export function CommandPalette() {
             className="w-full bg-transparent border-none focus:outline-none text-white p-4 placeholder:text-white/30"
             placeholder="Type a command or search..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={handleSearchChange}
           />
           <div className="text-xs font-mono text-white/30 bg-white/5 px-2 py-1 rounded">ESC</div>
         </div>

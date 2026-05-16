@@ -33,6 +33,6 @@
 - [x] Implement "sudo ignite" Easter Egg sequence and hidden tile.
 
 ## Final Review
-- [ ] Cross-browser / responsive testing (Mobile adaptations).
-- [ ] Performance audit (LCP, FID, CLS, JS bundle size).
-- [ ] Accessibility review (Focus rings, ARIA labels, Contrast).
+- [x] Cross-browser / responsive testing (Mobile adaptations).
+- [x] Performance audit (LCP, FID, CLS, JS bundle size).
+- [x] Accessibility review (Focus rings, ARIA labels, Contrast).
