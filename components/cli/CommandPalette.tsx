@@ -27,6 +27,12 @@ export function CommandPalette() {
     )
   }, [search])
 
+  const handleNavigate = React.useCallback((path: string) => {
+    setIsOpen(false)
+    setSearch("")
+    router.push(path)
+  }, [router])
+
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -63,7 +69,7 @@ export function CommandPalette() {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [isOpen, filteredCommands, selectedIndex])
+  }, [isOpen, filteredCommands, selectedIndex, handleNavigate])
 
   // Reset selected index when search changes
   React.useEffect(() => {
@@ -71,12 +77,6 @@ export function CommandPalette() {
   }, [search])
 
   if (!isOpen) return null
-
-  const handleNavigate = (path: string) => {
-    setIsOpen(false)
-    setSearch("")
-    router.push(path)
-  }
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-[15vh]">
@@ -92,7 +92,7 @@ export function CommandPalette() {
           />
           <div className="text-xs font-mono text-white/30 bg-white/5 px-2 py-1 rounded">ESC</div>
         </div>
-        
+
         <div className="p-2 overflow-y-auto max-h-[60vh]">
           {filteredCommands.length > 0 ? (
             <div className="flex flex-col gap-1">
@@ -115,11 +115,11 @@ export function CommandPalette() {
             </div>
           ) : (
             <div className="px-3 py-8 text-center text-sm text-white/30">
-              No commands found for "{search}"
+              No commands found for &quot;{search}&quot;
             </div>
           )}
         </div>
       </div>
     </div>
   )
-}
+  }
