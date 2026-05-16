@@ -14,8 +14,8 @@
 - [ ] Fetch and render dynamic tiles from Supabase.
 
 ## Phase 3: Detail Pages & Routing (Functionality)
-- [ ] Build the shared Detail Page shell (`DetailShell`, `PageHero`, `BackLink`).
-- [ ] Implement `/projects` listing and `/projects/[slug]` detail views.
+- [x] Build the shared Detail Page shell (`DetailShell`, `PageHero`, `BackLink`).
+- [x] Implement `/projects` listing and `/projects/[slug]` detail views.
 - [ ] Implement `/experience`, `/awards`, `/skills`, `/education` routes.
 - [ ] Implement basic Command Palette (⌘K) for navigation.
 
