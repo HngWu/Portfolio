@@ -131,9 +131,9 @@ t_easter AS (
 )
 -- PROJECTS DATA
 INSERT INTO public.projects (tile_id, name, description, tech_stack, github_url, featured, deep_dive)
-SELECT id, 'TriviaDuel', 'Real-time multiplayer trivia platform.', ARRAY['Next.js', 'Supabase', 'WebSockets'], 'https://github.com', true, '{"notes": "Architected for sub-100ms latency."}'::jsonb FROM t_proj1
+SELECT id, 'TriviaDuel', 'Real-time multiplayer trivia platform.', ARRAY['Next.js', 'Supabase', 'WebSockets'], 'https://github.com', true, '{"notes": "Architected for sub-100ms latency."}' FROM t_proj1
 UNION ALL
-SELECT id, 'SecureAsset', 'Blockchain asset tracking system.', ARRAY['Solidity', 'React', 'Ethers.js'], 'https://github.com', true, '{"notes": "Decentralized auditing for supply chains."}'::jsonb FROM t_proj2;
+SELECT id, 'SecureAsset', 'Blockchain asset tracking system.', ARRAY['Solidity', 'React', 'Ethers.js'], 'https://github.com', true, '{"notes": "Decentralized auditing for supply chains."}' FROM t_proj2;
 
 -- ==========================================
 -- 4. RLS (Optional, for security)

@@ -11,7 +11,7 @@
 - [x] Implement base `BentoTile` component wrapper.
 - [x] Build tile variants (`ProjectTile`, `ExperienceTile`, `StatTile`, etc.).
 - [x] Implement "Quick-Pitch" vs "Deep Dive" content toggle logic in tiles.
-- [ ] Fetch and render dynamic tiles from Supabase.
+- [x] Fetch and render dynamic tiles from Supabase.
 
 ## Phase 3: Detail Pages & Routing (Functionality)
 - [x] Build the shared Detail Page shell (`DetailShell`, `PageHero`, `BackLink`).
@@ -31,6 +31,13 @@
 - [x] Build WebGL Generative background art layer.
 - [x] Enhance CLI/Terminal overlay with page-aware commands.
 - [x] Implement "sudo ignite" Easter Egg sequence and hidden tile.
+
+## Phase 6: Admin Panel (Functionality)
+- [x] Implement Supabase Auth middleware protection for `/admin`.
+- [x] Build Admin Layout with sidebar navigation.
+- [x] Implement Tiles Manager with CRUD and JSON editing.
+- [x] Implement Projects Manager for portfolio content.
+- [x] Implement Site Config Manager for theme and global settings.
 
 ## Final Review
 - [x] Cross-browser / responsive testing (Mobile adaptations).
