@@ -9,8 +9,8 @@
 ## Phase 2: The Bento Engine (Functionality)
 - [x] Build `BentoGrid` layout system.
 - [x] Implement base `BentoTile` component wrapper.
-- [ ] Build tile variants (`ProjectTile`, `ExperienceTile`, `StatTile`, etc.).
-- [ ] Implement "Quick-Pitch" vs "Deep Dive" content toggle logic in tiles.
+- [x] Build tile variants (`ProjectTile`, `ExperienceTile`, `StatTile`, etc.).
+- [x] Implement "Quick-Pitch" vs "Deep Dive" content toggle logic in tiles.
 - [ ] Fetch and render dynamic tiles from Supabase.
 
 ## Phase 3: Detail Pages & Routing (Functionality)
