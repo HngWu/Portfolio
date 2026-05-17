@@ -4,10 +4,11 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutGrid, Briefcase, Settings, Globe, LogOut } from "lucide-react"
+import { LayoutGrid, Briefcase, Settings, Globe, LogOut, LayoutDashboard } from "lucide-react"
 import { logout } from "@/app/actions/auth"
 
 const NAV_ITEMS = [
+  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Tiles", href: "/admin/tiles", icon: LayoutGrid },
   { label: "Projects", href: "/admin/projects", icon: Briefcase },
   { label: "Config", href: "/admin/config", icon: Settings },

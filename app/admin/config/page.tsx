@@ -1,21 +1,18 @@
 "use client"
 
 import * as React from "react"
-import { getConfig, updateConfig } from "@/app/actions/config"
+import { getConfig, updateConfig, type ConfigItem as ConfigItemType } from "@/app/actions/config"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { Save } from "lucide-react"
-import { Database } from "@/types/supabase"
-
-type ConfigItemRow = Database['public']['Tables']['site_config']['Row']
 
 export default function ConfigPage() {
-  const [config, setConfig] = React.useState<ConfigItemRow[]>([])
+  const [config, setConfig] = React.useState<ConfigItemType[]>([])
 
   React.useEffect(() => {
     let isMounted = true
     async function load() {
       const data = await getConfig()
-      if (isMounted) setConfig(data || [])
+      if (isMounted) setConfig(data)
     }
     load()
     return () => { isMounted = false }
@@ -45,7 +42,7 @@ export default function ConfigPage() {
   )
 }
 
-function ConfigItem({ item, onSave }: { item: ConfigItemRow; onSave: (key: string, value: string) => void }) {
+function ConfigItem({ item, onSave }: { item: ConfigItemType; onSave: (key: string, value: string) => void }) {
   const [value, setValue] = React.useState(JSON.stringify(item.value, null, 2))
 
   return (

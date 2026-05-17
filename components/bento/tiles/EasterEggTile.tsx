@@ -4,10 +4,12 @@ import * as React from "react"
 import { BentoTile } from "../BentoTile"
 import { useIgniteStore } from "@/store/useIgniteStore"
 
-export function EasterEggTile() {
+export function EasterEggTile({ isDragging, sortableProps }: { isDragging?: boolean, sortableProps?: Record<string, unknown> }) {
+
   const { isIgnited } = useIgniteStore()
+  const isAdmin = !!sortableProps || !!isDragging;
   
-  if (!isIgnited) return null
+  if (!isIgnited && !isAdmin) return null
 
   return (
     <BentoTile
@@ -15,6 +17,8 @@ export function EasterEggTile() {
       size="3x2"
       glowColor="pink"
       className="relative overflow-hidden bg-black/60 group animate-in fade-in zoom-in duration-700 border-none"
+      isDragging={isDragging}
+      sortableProps={sortableProps}
     >
       {/* Glitch Borders (RGB Split) */}
       <div className="absolute inset-0 border border-lume-tertiary/50 opacity-0 group-hover:opacity-100 group-hover:animate-glitch-1 pointer-events-none" />

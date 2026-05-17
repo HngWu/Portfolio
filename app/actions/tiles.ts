@@ -19,6 +19,28 @@ export async function updateTile(id: string, updates: Partial<Database['public']
   revalidatePath("/admin/tiles")
 }
 
+export async function updateTiles(tiles: Database['public']['Tables']['tiles']['Row'][]) {
+  try {
+    const supabase = await createClient()
+    
+    // Explicitly target the 'id' column for conflict resolution
+    const { error } = await supabase
+      .from("tiles")
+      .upsert(tiles, { onConflict: 'id' })
+    
+    if (error) {
+      console.error("Supabase upsert error:", error)
+      throw new Error(`Database error: ${error.message}`)
+    }
+    
+    revalidatePath("/")
+    revalidatePath("/admin/tiles")
+  } catch (e) {
+    console.error("Server Action updateTiles failed:", e)
+    throw e
+  }
+}
+
 export async function deleteTile(id: string) {
   const supabase = await createClient()
   const { error } = await supabase.from("tiles").delete().eq("id", id)

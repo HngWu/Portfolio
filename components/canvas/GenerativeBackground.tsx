@@ -8,7 +8,7 @@ function Scene() {
   const count = 1500
   
   // Use a deterministic pseudo-random generator to satisfy React's purity rules
-  // Simple LCG (Linear Congruential Generator)
+  // Simple LCG (Linear Generator)
   const [pos, s] = useMemo(() => {
     const pos = new Float32Array(count * 3)
     const s = new Float32Array(count)
@@ -29,8 +29,8 @@ function Scene() {
 
   const pointsRef = useRef<THREE.Points>(null)
 
-  useFrame((state) => {
-    const time = state.clock.getElapsedTime()
+  useFrame(() => {
+    const time = performance.now() / 1000
     if (pointsRef.current) {
       pointsRef.current.rotation.y = time * 0.05
       pointsRef.current.rotation.x = Math.sin(time * 0.1) * 0.1

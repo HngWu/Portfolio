@@ -7,8 +7,8 @@ import * as THREE from "three"
 function GlassObject() {
   const meshRef = useRef<THREE.Mesh>(null)
   
-  useFrame((state) => {
-    const time = state.clock.getElapsedTime()
+  useFrame(() => {
+    const time = performance.now() / 1000
     if (meshRef.current) {
       meshRef.current.rotation.x = time * 0.2
       meshRef.current.rotation.y = time * 0.3

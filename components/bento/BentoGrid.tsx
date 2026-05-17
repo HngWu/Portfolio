@@ -66,14 +66,15 @@ export function BentoGrid({
         className="fixed inset-0 bg-white pointer-events-none z-[100] opacity-0"
       />
       
-      <div
-        ref={gridRef}
-        className={cn(
-          "grid grid-cols-2 md:grid-cols-6 xl:grid-cols-12 auto-rows-[minmax(60px,auto)] grid-flow-dense gap-2 md:gap-3 xl:gap-4 max-w-[1440px] mx-auto w-full px-2",
-          className
-        )}
-      >
-        {children}
+      <div className="w-full relative" ref={gridRef}>
+        <div
+          className={cn(
+            "grid grid-cols-2 md:grid-cols-6 xl:grid-cols-12 auto-rows-[minmax(60px,auto)] grid-flow-dense gap-2 md:gap-3 xl:gap-4 max-w-[1440px] mx-auto w-full px-2",
+            className
+          )}
+        >
+          {children}
+        </div>
       </div>
     </div>
   )

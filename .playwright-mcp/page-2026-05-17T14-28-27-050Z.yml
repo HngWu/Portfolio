@@ -1,0 +1,47 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - button "synapse" [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: synapse
+      - button "Disable Background" [ref=e10]:
+        - img [ref=e11]
+    - button "Admin Settings" [ref=e15]:
+      - img [ref=e16]
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - heading "TriviaDuel" [level=1] [ref=e20]
+        - paragraph [ref=e21]: Test your knowledge against friends
+      - button "Join a game" [ref=e23] [cursor=pointer]
+      - generic [ref=e24]:
+        - heading "Select a topic" [level=2] [ref=e25]
+        - generic [ref=e26]:
+          - button "🏸 Badminton" [ref=e27] [cursor=pointer]:
+            - generic [ref=e28]: 🏸
+            - generic: Badminton
+          - button "🌎 Geography" [ref=e29] [cursor=pointer]:
+            - generic [ref=e30]: 🌎
+            - generic: Geography
+          - button "🏛️ History" [ref=e31] [cursor=pointer]:
+            - generic [ref=e32]: 🏛️
+            - generic: History
+          - button "🎮 Mobile Legends" [ref=e33] [cursor=pointer]:
+            - generic [ref=e34]: 🎮
+            - generic: Mobile Legends
+          - button "🔬 Science" [ref=e35] [cursor=pointer]:
+            - generic [ref=e36]: 🔬
+            - generic: Science
+          - button "⚽ Sports" [ref=e37] [cursor=pointer]:
+            - generic [ref=e38]: ⚽
+            - generic: Sports
+          - button "💎 Wild Rift" [ref=e39] [cursor=pointer]:
+            - generic [ref=e40]: 💎
+            - generic: Wild Rift
+          - button "✨ Custom" [ref=e41] [cursor=pointer]:
+            - generic [ref=e42]: ✨
+            - generic: Custom
+      - generic [ref=e43]:
+        - paragraph: TriviaDuel • v4.2-GLASS
+  - button "Open Next.js Dev Tools" [ref=e49] [cursor=pointer]:
+    - img [ref=e50]
+  - alert [ref=e53]

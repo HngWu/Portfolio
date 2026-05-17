@@ -1,49 +1,55 @@
 "use client"
 
-import { Canvas, useFrame } from "@react-three/fiber"
-import { useRef } from "react"
-import * as THREE from "three"
+import * as React from "react"
+import { useState } from "react"
 import { BentoTile } from "../BentoTile"
+import { cn } from "@/lib/utils"
+import dynamic from "next/dynamic"
 
-function GlassObject() {
-  const meshRef = useRef<THREE.Mesh>(null)
-  
-  useFrame((state) => {
-    const time = state.clock.getElapsedTime()
-    if (meshRef.current) {
-      meshRef.current.rotation.x = time * 0.2
-      meshRef.current.rotation.y = time * 0.3
-    }
-  })
-
-  return (
-    <mesh ref={meshRef}>
-      <torusKnotGeometry args={[1, 0.3, 128, 32]} />
-      <meshPhysicalMaterial
-        transmission={0.95}
-        thickness={1.5}
-        roughness={0.05}
-        ior={1.5}
-        color="#0a0a0a"
-        envMapIntensity={2}
-      />
-    </mesh>
+// Non-SSR dynamic import to prevent WebGL initialization errors
+const PolyhedronCanvas = dynamic(() => import("./PolyhedronCanvas"), { 
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-black/20">
+      <div className="size-12 border-2 border-lume-primary/20 border-t-lume-primary rounded-full animate-spin" />
+    </div>
   )
-}
+})
 
-export function Hero3DTile({ id, size }: { id: string; size: string }) {
+export function Hero3DTile({ id, size, isDragging, sortableProps }: { id: string, size: string, isDragging?: boolean, sortableProps?: Record<string, unknown> }) {
+
+  const [isHovered, setIsHovered] = useState(false)
+  const isDisabled = !!sortableProps || !!isDragging;
+
   return (
-    <BentoTile id={id} size={size} className="p-0 overflow-hidden">
-      <div className="absolute inset-0 z-0">
-        <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} color="#4AFFB4" intensity={1} />
-          <pointLight position={[-10, -10, -10]} color="#4A8FFF" intensity={1} />
-          <GlassObject />
-        </Canvas>
+    <BentoTile 
+      id={id} 
+      size={size} 
+      className="p-0 bg-transparent overflow-visible" 
+      isDragging={isDragging} 
+      sortableProps={sortableProps}
+    >
+      <div 
+        className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-visible"
+        onMouseEnter={() => !isDisabled && setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {isDisabled ? (
+          <div className="w-full h-full bg-lume-primary/5 flex items-center justify-center border-2 border-dashed border-lume-primary/20 rounded-2xl">
+             <div className="size-20 rounded-full border-2 border-lume-primary/10 animate-pulse" />
+          </div>
+        ) : (
+          <div className="w-full h-full relative pointer-events-auto overflow-visible">
+            <PolyhedronCanvas isHovered={isHovered} />
+          </div>
+        )}
       </div>
-      <div className="relative z-10 p-6 pointer-events-none">
-        <div className="text-[0.6875rem] font-mono tracking-widest text-lume-primary uppercase">3D Visualization</div>
+
+      <div className="absolute top-6 left-6 z-10 pointer-events-none select-none">
+        <div className="text-[0.6875rem] font-mono tracking-[0.3em] text-lume-primary uppercase opacity-60 flex items-center gap-2">
+          <div className={cn("size-1.5 rounded-full bg-lume-primary", isHovered && "animate-ping")} />
+          Deconstructed Core
+        </div>
       </div>
     </BentoTile>
   )

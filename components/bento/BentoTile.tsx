@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { cn } from "@/lib/utils"
+import { cn, getSizeClasses } from "@/lib/utils"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { usePageTransition } from "@/hooks/usePageTransition"
 import { useTilt } from "./useTilt"
@@ -10,11 +10,16 @@ import { motion } from "framer-motion"
 
 interface BentoTileProps {
   id: string
-  size: string // e.g., '4x2', '2x2'
+  size: string // Base size like '4x2'
   href?: string
   glowColor?: "mint" | "blue" | "pink" | "amber" | "none"
   className?: string
-  children: React.ReactNode
+  children: React.ReactNode // Usually the Quick Pitch content
+  deepContent?: React.ReactNode // Content for the back of the card
+  isDragging?: boolean
+  sortableProps?: Record<string, unknown>
+  canDeepDive?: boolean
+  canMorph?: boolean
 }
 
 export function BentoTile({
@@ -24,35 +29,24 @@ export function BentoTile({
   glowColor = "none",
   className,
   children,
+  deepContent,
+  isDragging,
+  sortableProps,
+  canDeepDive = true,
+  canMorph = true,
 }: BentoTileProps) {
   const { navigateWithTransition } = usePageTransition()
   const { ref, onMouseMove, onMouseLeave } = useTilt()
   const mode = useViewModeStore((state) => state.mode)
-  const isDeepDive = mode === "deep"
+  const isDeepDive = mode === "deep" && canDeepDive
+  const isMorphing = mode === "deep" && canMorph
 
-  // Map sizes to column and row spans based on DESIGN.md
-  // We'll adjust row-spans dynamically for "hugging"
-  const getSizeClasses = (sizeKey: string, deep: boolean) => {
-    const base: Record<string, string> = {
-      "1x1": "col-span-1 row-span-1",
-      "2x1": "col-span-2 row-span-1 md:col-span-3 xl:col-span-2",
-      "2x2": `col-span-2 ${deep ? 'row-span-3' : 'row-span-2'} md:col-span-3 xl:col-span-2`,
-      "3x2": `col-span-2 ${deep ? 'row-span-4' : 'row-span-2'} md:col-span-3 xl:col-span-3`,
-      "4x2": `col-span-2 ${deep ? 'row-span-4' : 'row-span-2'} md:col-span-6 xl:col-span-4`,
-      "4x3": `col-span-2 ${deep ? 'row-span-5' : 'row-span-3'} md:col-span-6 xl:col-span-4`,
-      "6x2": `col-span-2 ${deep ? 'row-span-3' : 'row-span-2'} md:col-span-6 xl:col-span-6`,
-      "6x4": `col-span-2 ${deep ? 'row-span-6' : 'row-span-4'} md:col-span-6 xl:col-span-6`,
-      "3x3": `col-span-2 ${deep ? 'row-span-4' : 'row-span-3'} md:col-span-3 xl:col-span-3`,
-      "2x4": `col-span-2 ${deep ? 'row-span-6' : 'row-span-4'} md:col-span-3 xl:col-span-2`,
-    }
-    return base[sizeKey] || "col-span-2 row-span-2"
-  }
-
-  const spanClass = getSizeClasses(size, isDeepDive)
-  const isClickable = !!href
+  // Sizing stays reactive to layout changes
+  const spanClass = getSizeClasses(size, isMorphing)
+  const isClickable = !!href && !sortableProps && !isDragging
 
   const handleClick = () => {
-    if (href) {
+    if (isClickable && href) {
       if (href.startsWith("http") || href.startsWith("mailto:")) {
         window.open(href, "_blank", "noopener,noreferrer")
       } else {
@@ -61,43 +55,72 @@ export function BentoTile({
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (isClickable && (e.key === "Enter" || e.key === " ")) {
-      e.preventDefault()
-      handleClick()
-    }
-  }
-
   return (
     <motion.div
       layout
-      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-      className={cn(spanClass, "h-full")}
+      whileHover={!sortableProps ? { scale: 1.01, translateY: -4 } : undefined}
+      transition={{ 
+        layout: { duration: 0.6, ease: [0.4, 0, 0.2, 1] },
+        scale: { duration: 0.4, ease: "easeOut" },
+        translateY: { duration: 0.4, ease: "easeOut" }
+      }}
+      className={cn(
+        spanClass, 
+        "h-full perspective-[1500px] touch-none", // Enable 3D space and prevent touch scrolling
+        isDragging && "opacity-30"
+      )}
+      {...sortableProps}
     >
-      <GlassCard
-        ref={ref}
-        onMouseMove={onMouseMove}
-        onMouseLeave={onMouseLeave}
-        glowColor={glowColor}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-        role={isClickable ? "button" : undefined}
-        tabIndex={isClickable ? 0 : undefined}
-        data-id={id}
-        className={cn(
-          "relative overflow-hidden group p-4 md:p-6 flex flex-col h-full",
-          isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
-          className
-        )}
+      <motion.div
+        animate={{ rotateY: isDeepDive ? 180 : 0 }}
+        transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+        className="relative w-full h-full preserve-3d"
       >
-        {children}
-        {isClickable && !href.startsWith("http") && (
-          <div className="absolute bottom-4 left-4 opacity-0 transform translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 flex items-center gap-2 text-xs font-mono text-white/50">
-            <span>View Details</span>
-            <span>→</span>
-          </div>
-        )}
-      </GlassCard>
+        {/* Front Face (Quick Pitch) */}
+        <div className="absolute inset-0 backface-hidden z-10">
+          <GlassCard
+            ref={ref}
+            onMouseMove={onMouseMove}
+            onMouseLeave={onMouseLeave}
+            glowColor={glowColor}
+            onClick={handleClick}
+            interactive={!isDragging}
+            data-id={id}
+            className={cn(
+              "p-4 md:p-6 flex flex-col h-full",
+              isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
+              className
+            )}
+          >
+            {children}
+            {isClickable && !href?.startsWith("http") && (
+              <div className="absolute bottom-4 left-4 opacity-0 transform translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 flex items-center gap-2 text-xs font-mono text-white/50">
+                <span>View Details</span>
+                <span>→</span>
+              </div>
+            )}
+          </GlassCard>
+        </div>
+
+        {/* Back Face (Deep Dive) */}
+        <div className="absolute inset-0 backface-hidden rotate-y-180 z-0">
+          <GlassCard
+            glowColor={glowColor}
+            interactive={false}
+            className={cn(
+              "p-4 md:p-6 flex flex-col h-full bg-lume-secondary/5 border-lume-secondary/20",
+              className
+            )}
+          >
+            {deepContent || (
+              <div className="flex flex-col h-full justify-center items-center text-center opacity-40 italic">
+                <span className="text-xs font-mono uppercase tracking-widest">Enhanced Insight</span>
+                <p className="text-[10px] mt-2">Deep dive content coming soon.</p>
+              </div>
+            )}
+          </GlassCard>
+        </div>
+      </motion.div>
     </motion.div>
   )
 }

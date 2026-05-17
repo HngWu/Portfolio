@@ -9,7 +9,31 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-ui);
   --font-mono: var(--font-mono);
+
+  --color-lume-primary: var(--lume-primary);
+  --color-lume-secondary: var(--lume-secondary);
+  --color-lume-tertiary: var(--lume-tertiary);
+  --color-lume-warm: var(--lume-warm);
+
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --animate-liquid-1: liquid-1 20s infinite alternate;
+  --animate-liquid-2: liquid-2 25s infinite alternate-reverse;
+
+  @keyframes liquid-1 {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30%, 10%) scale(1.2); }
+    66% { transform: translate(-10%, 40%) scale(0.8); }
+    100% { transform: translate(10%, -20%) scale(1.1); }
+  }
+
+  @keyframes liquid-2 {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-20%, -20%) scale(1.1); }
+    66% { transform: translate(20%, -40%) scale(1.3); }
+    100% { transform: translate(-10%, 20%) scale(0.9); }
+  }
+
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
@@ -109,6 +133,20 @@
 }
 
 @layer utilities {
+  .perspective-1500 {
+    perspective: 1500px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+
   .glass-card-base {
     @apply bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl transition-all duration-300;
     box-shadow: 
@@ -180,4 +218,33 @@
 
 .group-hover\:animate-glitch-2 {
   animation: glitch-2 0.2s infinite reverse;
+}
+
+/* Custom Rune Cursor Styles */
+body.rune-cursor * {
+  cursor: none !important;
+}
+
+#custom-cursor {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.3s ease, transform 0.2s ease;
+  opacity: 0;
+}
+
+#custom-cursor.active svg {
+  filter: drop-shadow(0 0 12px #C9A227cc) drop-shadow(0 0 20px #7B3FE488);
+  transform: scale(1.25) rotate(20deg);
+}
+
+#custom-cursor svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 6px #C9A227cc) drop-shadow(0 0 14px #7B3FE488);
+  transition: all 0.2s ease;
+  transform-origin: 22px 34px;
 }
