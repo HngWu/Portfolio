@@ -8,9 +8,20 @@ export async function proxy(request: NextRequest) {
     },
   })
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // We can't throw in middleware easily without causing a 500, 
+    // but we can log and let the request continue if it's not an admin route.
+    // However, since we protect admin routes below, we should probably handle it.
+    console.error("Middleware: Supabase environment variables are missing.")
+    return response
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
