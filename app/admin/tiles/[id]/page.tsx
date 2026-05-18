@@ -27,6 +27,7 @@ const PRESET_SIZES: Record<string, string> = {
   "4x2": "Primary Row",
   "4x3": "Deep Card",
   "4x4": "Large Square",
+  "4x5": "Portrait Hero",
   "4x6": "Extra Deep Card",
   "6x1": "Half Width Slim",
   "6x2": "Half Width Row",
@@ -202,6 +203,7 @@ export default function TileEditPage() {
                     <option value="4x2">4x2 (Primary Row)</option>
                     <option value="4x3">4x3 (Deep Card)</option>
                     <option value="4x4">4x4 (Large Square)</option>
+                    <option value="4x5">4x5 (Portrait Hero)</option>
                     <option value="4x6">4x6 (Extra Deep Card)</option>
                   </optgroup>
                   <optgroup label="Large & Cinematic" className="bg-[#0a0a0a]">

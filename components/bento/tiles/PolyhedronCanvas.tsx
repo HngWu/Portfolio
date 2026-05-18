@@ -5,29 +5,48 @@ import { Suspense, useRef, useMemo, useState, useEffect } from "react"
 import { Float } from "@react-three/drei"
 import * as THREE from "three"
 
-// Helper to get triangle vertices for an icosahedron face
-function getIcosahedronFaces() {
-  const geo = new THREE.IcosahedronGeometry(1.5, 0)
+// Helper to get faces from a low-poly sphere (quads + triangles at poles)
+function getShellFaces(radius = 1.5, widthSeg = 12, heightSeg = 8) {
+  const geo = new THREE.SphereGeometry(radius, widthSeg, heightSeg)
   const pos = geo.getAttribute('position')
   const faces = []
-  
-  for (let i = 0; i < pos.count; i += 3) {
-    const v1 = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i))
-    const v2 = new THREE.Vector3(pos.getX(i+1), pos.getY(i+1), pos.getZ(i+1))
-    const v3 = new THREE.Vector3(pos.getX(i+2), pos.getY(i+2), pos.getZ(i+2))
-    
-    const center = new THREE.Vector3().add(v1).add(v2).add(v3).divideScalar(3)
-    const normal = center.clone().normalize()
-    
-    faces.push({ v1, v2, v3, center, normal })
+
+  // SphereGeometry vertices are organized in a grid [heightSeg + 1][widthSeg + 1]
+  for (let y = 0; y < heightSeg; y++) {
+    for (let x = 0; x < widthSeg; x++) {
+      const v1_idx = y * (widthSeg + 1) + x
+      const v2_idx = y * (widthSeg + 1) + (x + 1)
+      const v3_idx = (y + 1) * (widthSeg + 1) + (x + 1)
+      const v4_idx = (y + 1) * (widthSeg + 1) + x
+
+      const v1 = new THREE.Vector3().fromBufferAttribute(pos, v1_idx)
+      const v2 = new THREE.Vector3().fromBufferAttribute(pos, v2_idx)
+      const v3 = new THREE.Vector3().fromBufferAttribute(pos, v3_idx)
+      const v4 = new THREE.Vector3().fromBufferAttribute(pos, v4_idx)
+
+      // Top pole triangles
+      if (y === 0) {
+        const center = new THREE.Vector3().add(v1).add(v3).add(v4).divideScalar(3)
+        faces.push({ type: 'tri', vertices: [v1, v3, v4], center, normal: center.clone().normalize() })
+      } 
+      // Bottom pole triangles
+      else if (y === heightSeg - 1) {
+        const center = new THREE.Vector3().add(v1).add(v2).add(v4).divideScalar(3)
+        faces.push({ type: 'tri', vertices: [v1, v2, v4], center, normal: center.clone().normalize() })
+      } 
+      // Middle quads
+      else {
+        const center = new THREE.Vector3().add(v1).add(v2).add(v3).add(v4).divideScalar(4)
+        faces.push({ type: 'quad', vertices: [v1, v2, v3, v4], center, normal: center.clone().normalize() })
+      }
+    }
   }
   return faces
 }
 
 interface FaceData {
-  v1: THREE.Vector3
-  v2: THREE.Vector3
-  v3: THREE.Vector3
+  type: 'tri' | 'quad'
+  vertices: THREE.Vector3[]
   center: THREE.Vector3
   normal: THREE.Vector3
 }
@@ -44,7 +63,7 @@ function PolyhedronScene({ isHovered }: { isHovered: boolean }) {
   const groupRef = useRef<THREE.Group>(null)
   const [assemblyProgress, setAssemblyProgress] = useState(0)
   const [scrollProgress, setScrollProgress] = useState(0)
-  const faces = useMemo(() => getIcosahedronFaces() as FaceData[], [])
+  const faces = useMemo(() => getShellFaces() as FaceData[], [])
 
   const sharedMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
     transmission: 0.8,
@@ -96,7 +115,6 @@ function Fragment({ data, isHovered, assemblyProgress, scrollProgress, sharedMat
   const meshRef = useRef<THREE.Mesh>(null)
   
   const flyInOffset = useMemo(() => {
-    // Deterministic pseudo-random for React 19 purity rules
     let localSeed = data.center.x * 1000 + data.center.y * 100 + data.center.z * 10
     const offsets = []
     for (let i = 0; i < 3; i++) {
@@ -108,11 +126,38 @@ function Fragment({ data, isHovered, assemblyProgress, scrollProgress, sharedMat
 
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry()
-    const vertices = new Float32Array([
-      data.v1.x - data.center.x, data.v1.y - data.center.y, data.v1.z - data.center.z,
-      data.v2.x - data.center.x, data.v2.y - data.center.y, data.v2.z - data.center.z,
-      data.v3.x - data.center.x, data.v3.y - data.center.y, data.v3.z - data.center.z,
-    ])
+    // Pyramid apex (pointed outward)
+    const height = 0.4
+    const apex = data.normal.clone().multiplyScalar(height)
+    
+    // Relative vertices (centered at 0,0,0)
+    const rv = data.vertices.map(v => new THREE.Vector3().subVectors(v, data.center))
+    
+    let vertices: Float32Array
+    if (data.type === 'quad') {
+      // 5 faces for square pyramid: base (2 tris) + 4 sides
+      vertices = new Float32Array([
+        // Base
+        rv[0].x, rv[0].y, rv[0].z, rv[1].x, rv[1].y, rv[1].z, rv[2].x, rv[2].y, rv[2].z,
+        rv[0].x, rv[0].y, rv[0].z, rv[2].x, rv[2].y, rv[2].z, rv[3].x, rv[3].y, rv[3].z,
+        // Sides
+        rv[0].x, rv[0].y, rv[0].z, rv[1].x, rv[1].y, rv[1].z, apex.x, apex.y, apex.z,
+        rv[1].x, rv[1].y, rv[1].z, rv[2].x, rv[2].y, rv[2].z, apex.x, apex.y, apex.z,
+        rv[2].x, rv[2].y, rv[2].z, rv[3].x, rv[3].y, rv[3].z, apex.x, apex.y, apex.z,
+        rv[3].x, rv[3].y, rv[3].z, rv[0].x, rv[0].y, rv[0].z, apex.x, apex.y, apex.z,
+      ])
+    } else {
+      // 4 faces for triangle pyramid: base (1 tri) + 3 sides
+      vertices = new Float32Array([
+        // Base
+        rv[0].x, rv[0].y, rv[0].z, rv[1].x, rv[1].y, rv[1].z, rv[2].x, rv[2].y, rv[2].z,
+        // Sides
+        rv[0].x, rv[0].y, rv[0].z, rv[1].x, rv[1].y, rv[1].z, apex.x, apex.y, apex.z,
+        rv[1].x, rv[1].y, rv[1].z, rv[2].x, rv[2].y, rv[2].z, apex.x, apex.y, apex.z,
+        rv[2].x, rv[2].y, rv[2].z, rv[0].x, rv[0].y, rv[0].z, apex.x, apex.y, apex.z,
+      ])
+    }
+    
     geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
     geo.computeVertexNormals()
     return geo

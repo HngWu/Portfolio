@@ -109,6 +109,7 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
       { cmd: "whoami", desc: "Display developer bio" },
       { cmd: "open <url>", desc: "Navigate to a URL or page" },
       { cmd: "back", desc: "Return to home page" },
+      { cmd: "login", desc: "Access administration portal" },
       { cmd: "sudo ignite", desc: "Initialize neural bridge" }
     ]
 
@@ -206,6 +207,9 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
         setHistory([...newHistory, { type: "output", content: "Returning to base..." }])
         navigateWithTransition("/")
       }
+    } else if (trimmedCmd === "login") {
+      setHistory([...newHistory, { type: "output", content: "Accessing administrative portal..." }])
+      navigateWithTransition("/admin")
     } else if (trimmedCmd !== "") {
       setHistory([...newHistory, { type: "output", content: `'${trimmedCmd}' is not recognized as an internal or external command.` }])
     } else {

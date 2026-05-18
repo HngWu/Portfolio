@@ -24,6 +24,7 @@ export function getSizeClasses(sizeKey: string, isDeepDive: boolean = false) {
     "4x2": isDeepDive ? "col-span-2 row-span-4 md:col-span-6 xl:col-span-4" : "col-span-2 row-span-2 md:col-span-6 xl:col-span-4",
     "4x3": isDeepDive ? "col-span-2 row-span-5 md:col-span-6 xl:col-span-4" : "col-span-2 row-span-3 md:col-span-6 xl:col-span-4",
     "4x4": isDeepDive ? "col-span-2 row-span-6 md:col-span-6 xl:col-span-4" : "col-span-2 row-span-4 md:col-span-6 xl:col-span-4",
+    "4x5": isDeepDive ? "col-span-2 row-span-7 md:col-span-6 xl:col-span-4" : "col-span-2 row-span-5 md:col-span-6 xl:col-span-4",
     "4x6": isDeepDive ? "col-span-2 row-span-8 md:col-span-6 xl:col-span-4" : "col-span-2 row-span-6 md:col-span-6 xl:col-span-4",
 
     // Large & Wide

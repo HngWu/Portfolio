@@ -75,8 +75,8 @@ VALUES ('education', '2x2', 6, '{"institution": "Nanyang Polytechnic", "degree":
 INSERT INTO public.tiles (type, size, order_val)
 VALUES ('terminal', '4x2', 7);
 
--- STATS
 INSERT INTO public.tiles (type, size, order_val, content)
+-- STATS
 VALUES 
   ('stat', '1x1', 8, '{"value": "3.91", "label": "GPA"}'),
   ('stat', '1x1', 9, '{"value": "1yr", "label": "Experience"}'),

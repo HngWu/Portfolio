@@ -94,7 +94,7 @@ export function BentoTile({
           >
             {children}
             {isClickable && !href?.startsWith("http") && (
-              <div className="absolute bottom-4 left-4 opacity-0 transform translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 flex items-center gap-2 text-xs font-mono text-white/50">
+              <div className="absolute bottom-0 right-4 z-20 opacity-0 transform translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 flex items-center gap-2 text-xs font-mono text-white/50 pointer-events-none">
                 <span>View Details</span>
                 <span>→</span>
               </div>
