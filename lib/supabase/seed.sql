@@ -15,35 +15,19 @@ SET
     'company', 'DBS Bank',
     'date', 'Apr 2025 - Mar 2026',
     'highlights', jsonb_build_array(
-      'Full-Stack Migration & DevOps',
-      'Performance Optimization',
-      'A/B Testing & Data Analytics',
-      'Database Management',
-      'Experimental UI Development'
+      'Led full-stack system migrations and automated pipeline deployments',
+      'Optimized data processing to speed up heavy application modules',
+      'Headed front-end overhauls and A/B testing to increase click-through rates',
+      'Managed database version control for seamless multi-environment deployments'
     )
   ),
   deep_dive = jsonb_build_object(
-    'sections', jsonb_build_array(
-      jsonb_build_object(
-        'title', 'Full-Stack Migration & DevOps',
-        'content', 'Spearheaded the database and backend migration of the Martech Request Portal, transitioning from MongoDB to MariaDB. Developed Java Spring Boot APIs to replace direct database calls and automated deployment using Jenkins pipelines on OpenShift.'
-      ),
-      jsonb_build_object(
-        'title', 'Performance Optimization',
-        'content', 'Optimized application performance using data structures, significantly enhancing the responsiveness of high-data spreadsheet modules.'
-      ),
-      jsonb_build_object(
-        'title', 'A/B Testing & Data Analytics',
-        'content', 'Led a full-page revamp experiment for the TSP platform. Developed responsive UI using HTML/CSS/JS and integrated Adobe Target and Adobe Analytics to track user engagement and drive data-driven design decisions.'
-      ),
-      jsonb_build_object(
-        'title', 'Database Management',
-        'content', 'Managed schema changes and version control using Liquibase scripts for MariaDB, ensuring consistent and reproducible database deployments across environments.'
-      ),
-      jsonb_build_object(
-        'title', 'Experimental UI Development',
-        'content', 'Executed multiple front-end experiments, to improve user onboarding and click-through rates.'
-      )
+    'highlights', jsonb_build_array(
+      'Migrated Martech Request Portal from MongoDB to MariaDB using Java Spring Boot APIs',
+      'Automated CI/CD deployment pipelines using Jenkins on OpenShift',
+      'Optimized high-data spreadsheet module performance using efficient data structures',
+      'Executed front-end A/B testing and tracking via Adobe Target and Adobe Analytics',
+      'Managed MariaDB schema changes and version control utilizing Liquibase scripts'
     )
   )
 WHERE type = 'experience';

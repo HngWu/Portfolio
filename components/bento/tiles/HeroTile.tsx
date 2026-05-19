@@ -71,6 +71,7 @@ export function HeroTile({ id, size, role, mark, description, typo, isDragging, 
       className="bg-white/[0.02] border border-white/5 p-8 flex flex-col justify-center"
       isDragging={isDragging}
       sortableProps={sortableProps}
+      canMorph={false}
     >
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2 bg-lume-primary/10 rounded-lg">

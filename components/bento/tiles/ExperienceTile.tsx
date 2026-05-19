@@ -8,8 +8,7 @@ import {
   Zap, 
   BarChart3, 
   Database as DbIcon, 
-  Layout,
-  ExternalLink
+  Layout
 } from "lucide-react"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { Json } from "@/types/supabase"
@@ -44,32 +43,29 @@ export function ExperienceTile({ id, size, role, company, date, highlights = [],
 
   // Deep Dive content structure
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  const sections = (deepDive as any)?.sections as Array<{title: string, content: string}> || []
+  const deepHighlights = (deepDive as any)?.highlights as string[] || []
 
-  const deepContent = sections.length > 0 ? (
+  const deepContent = deepHighlights.length > 0 ? (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex justify-between items-start mb-6 shrink-0">
         <div>
-          <h3 className={cn(typo.heading, "text-white/90")}>Professional Impact</h3>
-          <p className={cn(typo.meta, "text-lume-primary mt-1 uppercase tracking-widest")}>{company}</p>
+          <h3 className={cn(typo.heading, "text-white/90")}>Key Responsibilities</h3>
+          <p className={cn(typo.meta, "text-lume-primary mt-2 uppercase tracking-widest")}>{company}</p>
         </div>
         <div className="p-3 bg-lume-primary/10 rounded-full border border-lume-primary/20">
           <Briefcase className={cn(typo.icon, "text-lume-primary")} />
         </div>
       </div>
 
-      <div className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar pb-4">
-        {sections.map((section, i) => (
-          <div key={i} className="group/section">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-1.5 bg-white/5 rounded-lg border border-white/5 group-hover/section:border-lume-primary/30 transition-colors">
-                {getHighlightIcon(section.title, "size-3.5 text-lume-primary/60")}
-              </div>
-              <h4 className={cn(typo.meta, "text-white/80 font-bold uppercase tracking-wider")}>{section.title}</h4>
+      <div className="flex-1 space-y-4 pr-2 pb-4">
+        {deepHighlights.map((highlight, i) => (
+          <div key={i} className="flex items-start gap-3 group/item">
+            <div className="shrink-0 p-1 mt-0.5 bg-white/5 rounded-md border border-white/5 group-hover/item:border-lume-primary/30 transition-colors">
+              {getHighlightIcon(highlight, "size-3 text-lume-primary/40 group-hover/item:text-lume-primary/60")}
             </div>
-            <p className={cn(typo.body, "text-white/50 leading-relaxed pl-9")}>
-              {section.content}
-            </p>
+            <span className={cn(typo.body, "text-white/60 group-hover/item:text-white/80 transition-colors leading-snug")}>
+              {highlight}
+            </span>
           </div>
         ))}
       </div>
@@ -94,21 +90,17 @@ export function ExperienceTile({ id, size, role, company, date, highlights = [],
         <Briefcase className={cn(typo.icon, "text-lume-primary/40 mt-1")} />
       </div>
 
-      <div className="flex-1 flex flex-col justify-center space-y-3">
+      <div className="flex-1 flex flex-col justify-center space-y-4">
         {highlights.slice(0, 5).map((highlight, i) => (
-          <div key={i} className="flex items-center gap-3 group/item">
-            <div className="shrink-0 p-1 bg-white/5 rounded-md border border-white/5 group-hover/item:border-lume-primary/30 transition-colors">
+          <div key={i} className="flex items-start gap-3 group/item">
+            <div className="shrink-0 p-1 mt-0.5 bg-white/5 rounded-md border border-white/5 group-hover/item:border-lume-primary/30 transition-colors">
               {getHighlightIcon(highlight, "size-3 text-lume-primary/40 group-hover/item:text-lume-primary/60")}
             </div>
-            <span className={cn(typo.body, "text-white/60 group-hover/item:text-white/80 transition-colors line-clamp-1")}>
+            <span className={cn(typo.body, "text-white/60 group-hover/item:text-white/80 transition-colors leading-snug")}>
               {highlight}
             </span>
           </div>
         ))}
-      </div>
-
-      <div className="mt-6 pt-6 flex items-center justify-between border-t border-white/5 pb-0">
-        <span className={cn(typo.meta, "text-white/20 uppercase tracking-widest leading-none")}>DBS Bank</span>
       </div>
     </BentoTile>
   )

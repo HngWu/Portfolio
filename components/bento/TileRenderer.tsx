@@ -21,7 +21,6 @@ import {
   Github, 
   Linkedin, 
   ExternalLink,
-  BookOpen,
   TrendingUp,
   Award
 } from "lucide-react"
@@ -99,20 +98,20 @@ export function TileRenderer({ tile, isDragging, sortableProps }: TileRendererPr
           sortableProps={sortableProps}
           deepContent={
             <div className="flex flex-col h-full overflow-hidden">
-              <div className="flex justify-between items-start mb-8 shrink-0">
+              <div className="flex justify-between items-start mb-4 shrink-0">
                 <div>
                   <h3 className={cn(typo.heading, "text-white/90")}>Academic Profile</h3>
-                  <p className={cn(typo.body, "text-white/60 mt-2")}>{content.institution as string}</p>
+                  <p className={cn(typo.body, "text-white/60 mt-1")}>{content.institution as string}</p>
                 </div>
                 <div className="p-3 bg-blue-500/10 rounded-full border border-blue-500/20">
                   <GraduationCap className={cn(typo.icon, "text-[#4A8FFF]")} />
                 </div>
               </div>
 
-              <div className="flex-1 space-y-8">
-                <div className="space-y-2">
+              <div className="flex-1 space-y-6">
+                <div className="space-y-1">
                   <span className={cn(typo.meta, "text-white/30 uppercase tracking-widest")}>Degree</span>
-                  <p className={cn(typo.heading, "text-white/80 leading-tight")}>{content.degree as string}</p>
+                  <p className={cn(typo.body, "text-white/80 font-medium leading-tight text-base md:text-lg")}>{content.degree as string}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -138,10 +137,10 @@ export function TileRenderer({ tile, isDragging, sortableProps }: TileRendererPr
                       <span className={cn(typo.meta, "block text-white/30 mb-2")}>Study Period</span>
                       <span className={cn(typo.body, "text-white/80 font-medium leading-tight")}>{content.date as string}</span>
                     </div>
-                    {deep?.honours && (
+                    {typeof deep?.honours === 'string' && (
                       <div className="flex items-center gap-2 mt-3">
                         <Award className="size-3 text-lume-primary/60" />
-                        <span className="text-[9px] text-lume-primary font-bold uppercase tracking-tighter">{deep.honours as string}</span>
+                        <span className="text-[9px] text-lume-primary font-bold uppercase tracking-tighter">{deep.honours}</span>
                       </div>
                     )}
                   </div>

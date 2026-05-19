@@ -36,15 +36,17 @@ export default async function Home() {
   const allTiles = (tiles || []) as Tile[]
 
   return (
-    <main className="min-h-screen pt-24 pb-16 px-4 md:px-8 relative z-10">
+    <main className="min-h-screen flex flex-col justify-center items-center py-20 px-4 md:px-8 relative z-10">
       <ViewModeToggle />
-      <BentoGrid>
-        {allTiles.filter(t => !t.is_hidden && t.type !== 'config').map((tile) => (
-          <TileRenderer key={tile.id} tile={tile} />
-        ))}
-        {/* The EasterEggTile is rendered separately or handled in BentoGrid */}
-        {allTiles.find(t => t.type === "easter_egg") && <EasterEggTile />}
-      </BentoGrid>
+      <div className="w-full max-w-[1400px]">
+        <BentoGrid>
+          {allTiles.filter(t => !t.is_hidden && t.type !== 'config').map((tile) => (
+            <TileRenderer key={tile.id} tile={tile} />
+          ))}
+          {/* The EasterEggTile is rendered separately or handled in BentoGrid */}
+          {allTiles.find(t => t.type === "easter_egg") && <EasterEggTile />}
+        </BentoGrid>
+      </div>
     </main>
   )
 }
