@@ -20,6 +20,8 @@ interface BentoTileProps {
   sortableProps?: Record<string, unknown>
   canDeepDive?: boolean
   canMorph?: boolean
+  canExpand?: boolean
+  layout?: boolean | "position" | "size"
 }
 
 export function BentoTile({
@@ -34,6 +36,8 @@ export function BentoTile({
   sortableProps,
   canDeepDive = true,
   canMorph = true,
+  canExpand = true,
+  layout = true,
 }: BentoTileProps) {
   const { navigateWithTransition } = usePageTransition()
   const { ref, onMouseMove, onMouseLeave } = useTilt()
@@ -44,7 +48,7 @@ export function BentoTile({
   const backRef = React.useRef<HTMLDivElement>(null)
 
   React.useLayoutEffect(() => {
-    if (isDeepDive && canMorph && backRef.current) {
+    if (isDeepDive && canExpand && canMorph && backRef.current) {
       // Base row height (60px) and gaps (8/12/16px) matching BentoGrid.tsx
       const rowHeight = 60
       const vw = window.innerWidth
@@ -64,9 +68,9 @@ export function BentoTile({
     } else {
       setDynamicRows(null)
     }
-  }, [isDeepDive, canMorph, deepContent, size])
+  }, [isDeepDive, canExpand, canMorph, deepContent, size])
 
-  const spanClass = getSizeClasses(size, isDeepDive && !dynamicRows)
+  const spanClass = getSizeClasses(size, canExpand && isDeepDive && !dynamicRows)
   const isClickable = !!href && !sortableProps && !isDragging
 
   const handleClick = () => {
@@ -81,7 +85,7 @@ export function BentoTile({
 
   return (
     <motion.div
-      layout
+      layout={layout}
       whileHover={!sortableProps ? { scale: 1.01, translateY: -4 } : undefined}
       transition={{ 
         layout: { duration: 0.6, ease: [0.4, 0, 0.2, 1] },
@@ -139,7 +143,7 @@ export function BentoTile({
               className
             )}
           >
-            <div ref={backRef} className="w-full h-fit">
+            <div ref={backRef} className={cn("w-full", canMorph ? "h-fit" : "h-full flex flex-col flex-1")}>
               {deepContent || (
                 <div className="flex flex-col h-full justify-center items-center text-center opacity-40 italic">
                   <span className="text-xs font-mono uppercase tracking-widest">Enhanced Insight</span>

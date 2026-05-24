@@ -72,18 +72,76 @@ interface FaceData {
   normal: THREE.Vector3
 }
 
-// Global move state
+interface RuneData {
+  pos: THREE.Vector3
+  rot: THREE.Euler
+  rune: string
+}
+
+// Global move state — module-level, shared across all frames
 const moveAxes = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)]
-let currentMove = {
+const currentMove = {
   axis: new THREE.Vector3(0, 1, 0),
   slice: 0, // -1, 0, or 1 for 3x3
   angle: 0,
   version: 0
 }
 
-function PolyhedronScene({ isDeepDive }: { isDeepDive: boolean }) {
+// Helper function to build a mathematically perfect 3D rectangular torus (solid flat-sided ring)
+function makeRectangularTorus(radius: number, tube: number, radialScale: number, zScale: number) {
+  const geo = new THREE.TorusGeometry(radius, tube, 4, 64)
+  const posAttr = geo.getAttribute('position') as THREE.BufferAttribute
+  const normalAttr = geo.getAttribute('normal') as THREE.BufferAttribute
+  
+  const cosA = Math.cos(Math.PI / 4)
+  const sinA = Math.sin(Math.PI / 4)
+  
+  for (let i = 0; i < posAttr.count; i++) {
+    const x = posAttr.getX(i)
+    const y = posAttr.getY(i)
+    const z = posAttr.getZ(i)
+    
+    const theta = Math.atan2(y, x)
+    const cosT = Math.cos(theta)
+    const sinT = Math.sin(theta)
+    
+    const d_radial = x * cosT + y * sinT - radius
+    const d_z = z
+    
+    const d_radial_new = d_radial * cosA - d_z * sinA
+    const d_z_new = d_radial * sinA + d_z * cosA
+    
+    const d_radial_scaled = d_radial_new * radialScale
+    const d_z_scaled = d_z_new * zScale
+    
+    posAttr.setXYZ(i, (radius + d_radial_scaled) * cosT, (radius + d_radial_scaled) * sinT, d_z_scaled)
+    
+    const nx = normalAttr.getX(i)
+    const ny = normalAttr.getY(i)
+    const nz = normalAttr.getZ(i)
+    
+    const n_radial = nx * cosT + ny * sinT
+    const n_z = nz
+    
+    const n_radial_new = n_radial * cosA - n_z * sinA
+    const n_z_new = n_radial * sinA + n_z * cosA
+    
+    normalAttr.setXYZ(i, n_radial_new * cosT, n_radial_new * sinT, n_z_new)
+  }
+  
+  posAttr.needsUpdate = true
+  normalAttr.needsUpdate = true
+  
+  return geo
+}
+
+function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeepDive: boolean }) {
   const groupRef = useRef<THREE.Group>(null)
   const coreRef = useRef<THREE.Mesh>(null)
+  const ring1Ref = useRef<THREE.Group>(null)
+  const ring2Ref = useRef<THREE.Group>(null)
+  const coreLightRef = useRef<THREE.PointLight>(null)
+
   const [assemblyProgress, setAssemblyProgress] = useState(0)
   const faces = useMemo(() => getUniformHexCoreFaces() as FaceData[], [])
 
@@ -95,42 +153,265 @@ function PolyhedronScene({ isDeepDive }: { isDeepDive: boolean }) {
 
   const currentScale = useRef(1.0)
 
+  // Mathematically perfect 3D rectangular cuboid rings
+  const { ring1Geo, ring2Geo } = useMemo(() => {
+    return {
+      ring1Geo: makeRectangularTorus(1.3, 0.16, 0.45, 1.3),
+      ring2Geo: makeRectangularTorus(1.8, 0.20, 0.45, 1.3)
+    }
+  }, [])
+
+  // Concentric Rings: Custom GLSL Runic Shader Materials
+  // useRef (not useMemo) so mutations inside useFrame don't violate react-hooks/immutability
+  const _mat1Ref = useRef<THREE.ShaderMaterial | null>(null)
+  if (!_mat1Ref.current) {
+    _mat1Ref.current = new THREE.ShaderMaterial({
+      vertexShader: `
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        varying vec3 vWorldPosition;
+        void main() {
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          vViewPosition = -mvPosition.xyz;
+          vNormal = normalize(normalMatrix * normal);
+          vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform vec3 uGlowColor;
+        uniform float uTime;
+        uniform float uFresnelPower;
+        uniform float uGlowIntensity;
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        varying vec3 vWorldPosition;
+        void main() {
+          vec3 normal = normalize(vNormal);
+          vec3 viewDir = normalize(vViewPosition);
+          float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), uFresnelPower);
+          float scanline = sin(vWorldPosition.y * 20.0 - uTime * 4.0) * 0.5 + 0.5;
+          scanline = pow(scanline, 3.0) * 0.3;
+          float pulse = 0.85 + 0.15 * sin(uTime * 3.0);
+          vec3 glow = uGlowColor * fresnel * uGlowIntensity * pulse;
+          vec3 finalColor = uColor + glow + uGlowColor * scanline;
+          float alpha = 0.85 + 0.15 * fresnel;
+          gl_FragColor = vec4(finalColor, alpha);
+        }
+      `,
+      uniforms: {
+        uColor: { value: new THREE.Color("#ffffff") },
+        uGlowColor: { value: new THREE.Color("#4AFFB4") }, // Neon Mint
+        uTime: { value: 0 },
+        uFresnelPower: { value: 2.0 },
+        uGlowIntensity: { value: 0.6 }
+      },
+      transparent: true,
+      depthWrite: true,
+    })
+  }
+  const runicShaderMaterial1 = _mat1Ref.current!
+
+  const _mat2Ref = useRef<THREE.ShaderMaterial | null>(null)
+  if (!_mat2Ref.current) {
+    _mat2Ref.current = new THREE.ShaderMaterial({
+      vertexShader: `
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        varying vec3 vWorldPosition;
+        void main() {
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          vViewPosition = -mvPosition.xyz;
+          vNormal = normalize(normalMatrix * normal);
+          vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform vec3 uGlowColor;
+        uniform float uTime;
+        uniform float uFresnelPower;
+        uniform float uGlowIntensity;
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        varying vec3 vWorldPosition;
+        void main() {
+          vec3 normal = normalize(vNormal);
+          vec3 viewDir = normalize(vViewPosition);
+          float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), uFresnelPower);
+          float scanline = sin(vWorldPosition.y * 15.0 + uTime * 3.5) * 0.5 + 0.5;
+          scanline = pow(scanline, 3.0) * 0.3;
+          float pulse = 0.85 + 0.15 * sin(uTime * 2.5);
+          vec3 glow = uGlowColor * fresnel * uGlowIntensity * pulse;
+          vec3 finalColor = uColor + glow + uGlowColor * scanline;
+          float alpha = 0.85 + 0.15 * fresnel;
+          gl_FragColor = vec4(finalColor, alpha);
+        }
+      `,
+      uniforms: {
+        uColor: { value: new THREE.Color("#ffffff") },
+        uGlowColor: { value: new THREE.Color("#4A8FFF") }, // Neon Blue
+        uTime: { value: 0 },
+        uFresnelPower: { value: 2.0 },
+        uGlowIntensity: { value: 0.6 }
+      },
+      transparent: true,
+      depthWrite: true,
+    })
+  }
+  const runicShaderMaterial2 = _mat2Ref.current!
+
+  // Position and orient runes around outer face of Ring 1
+  const ring1Runes = useMemo<RuneData[]>(() => {
+    const N = 12
+    const radiusRune = 1.3 + (0.16 * Math.cos(Math.PI / 4) * 0.45) + 0.015
+    const runesData: RuneData[] = []
+    for (let i = 0; i < N; i++) {
+      const theta = (2 * Math.PI * i) / N
+      const pos = new THREE.Vector3(radiusRune * Math.cos(theta), radiusRune * Math.sin(theta), 0)
+      const matrix = new THREE.Matrix4().makeBasis(
+        new THREE.Vector3(-Math.sin(theta), Math.cos(theta), 0),
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(Math.cos(theta), Math.sin(theta), 0)
+      )
+      const rot = new THREE.Euler().setFromRotationMatrix(matrix)
+      const runeIndex = (i * 7 + 3) % RUNES.length
+      runesData.push({ pos, rot, rune: RUNES[runeIndex] })
+    }
+    return runesData
+  }, [])
+
+  // Position and orient runes around outer face of Ring 2
+  const ring2Runes = useMemo<RuneData[]>(() => {
+    const N = 16
+    const radiusRune = 1.8 + (0.20 * Math.cos(Math.PI / 4) * 0.45) + 0.015
+    const runesData: RuneData[] = []
+    for (let i = 0; i < N; i++) {
+      const theta = (2 * Math.PI * i) / N
+      const pos = new THREE.Vector3(radiusRune * Math.cos(theta), radiusRune * Math.sin(theta), 0)
+      const matrix = new THREE.Matrix4().makeBasis(
+        new THREE.Vector3(-Math.sin(theta), Math.cos(theta), 0),
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(Math.cos(theta), Math.sin(theta), 0)
+      )
+      const rot = new THREE.Euler().setFromRotationMatrix(matrix)
+      const runeIndex = (i * 11 + 5) % RUNES.length
+      runesData.push({ pos, rot, rune: RUNES[runeIndex] })
+    }
+    return runesData
+  }, [])
+
+  // Ring Inertia Damping Velocities
+  const ring1SpeedX = useRef(0.6)
+  const ring1SpeedY = useRef(0.4)
+  const ring2SpeedY = useRef(-0.5)
+  const ring2SpeedZ = useRef(0.7)
+
   useFrame((state, delta) => {
     const t = state.clock.getElapsedTime()
     if (assemblyProgress < 1) setAssemblyProgress(prev => Math.min(1, prev + 0.01))
     
+    // Global scanline uniforms
+    runicShaderMaterial1.uniforms.uTime.value = t
+    runicShaderMaterial2.uniforms.uTime.value = t
+
+    // Handle Ignite Magma Overload Shaders override
+    const igniteActive = typeof window !== 'undefined' ? !!(window as unknown as Record<string, unknown>).__technomancy_ignite : false
+    if (igniteActive) {
+      runicShaderMaterial1.uniforms.uGlowColor.value.set("#FF4A00")
+      runicShaderMaterial1.uniforms.uColor.value.set("#220A00")
+      runicShaderMaterial2.uniforms.uGlowColor.value.set("#FF8800")
+      runicShaderMaterial2.uniforms.uColor.value.set("#220A00")
+      runicShaderMaterial1.uniforms.uGlowIntensity.value = 1.6 + Math.sin(t * 18.0) * 0.4
+      runicShaderMaterial2.uniforms.uGlowIntensity.value = 1.6 + Math.cos(t * 18.0) * 0.4
+    } else {
+      // Keep consistent Quick Pitch (Magic) colors in all modes: Neon Emerald & Warm Gold
+      runicShaderMaterial1.uniforms.uGlowColor.value.set("#4AFFB4")
+      runicShaderMaterial2.uniforms.uGlowColor.value.set("#FFB44A")
+      runicShaderMaterial1.uniforms.uColor.value.set("#ffffff")
+      runicShaderMaterial2.uniforms.uColor.value.set("#ffffff")
+      runicShaderMaterial1.uniforms.uGlowIntensity.value = 0.6
+      runicShaderMaterial2.uniforms.uGlowIntensity.value = 0.6
+    }
+
     // Smooth global rotation
     if (groupRef.current) {
       groupRef.current.rotation.y += 0.002
       groupRef.current.rotation.z += 0.001
 
       // Scale animation for deep dive
-      const targetScale = isDeepDive ? 1.4 : 1.0;
-      currentScale.current += (targetScale - currentScale.current) * delta * 5;
-      groupRef.current.scale.setScalar(currentScale.current);
+      const targetScale = isDeepDive ? 1.4 : 1.0
+      currentScale.current += (targetScale - currentScale.current) * delta * 5
+      groupRef.current.scale.setScalar(currentScale.current)
     }
 
-    // High-activity Rubik sequencer
+    // Gyroscopic Speed Damping with Inertia Coasting
+    const speedMultiplier = isHovered ? 2.5 : 1.0
+    const target1X = 0.6 * speedMultiplier
+    const target1Y = 0.4 * speedMultiplier
+    const target2Y = -0.5 * speedMultiplier
+    const target2Z = 0.7 * speedMultiplier
+
+    ring1SpeedX.current = THREE.MathUtils.lerp(ring1SpeedX.current, target1X, delta * 3.0)
+    ring1SpeedY.current = THREE.MathUtils.lerp(ring1SpeedY.current, target1Y, delta * 3.0)
+    ring2SpeedY.current = THREE.MathUtils.lerp(ring2SpeedY.current, target2Y, delta * 3.0)
+    ring2SpeedZ.current = THREE.MathUtils.lerp(ring2SpeedZ.current, target2Z, delta * 3.0)
+
+    if (ring1Ref.current) {
+      ring1Ref.current.rotation.x += delta * ring1SpeedX.current
+      ring1Ref.current.rotation.y += delta * ring1SpeedY.current
+      
+      const targetRotZ = state.pointer.x * 0.4
+      ring1Ref.current.rotation.z = THREE.MathUtils.lerp(ring1Ref.current.rotation.z, targetRotZ, delta * 2.0)
+    }
+    if (ring2Ref.current) {
+      ring2Ref.current.rotation.y += delta * ring2SpeedY.current
+      ring2Ref.current.rotation.z += delta * ring2SpeedZ.current
+
+      const targetRotX = state.pointer.y * 0.4
+      ring2Ref.current.rotation.x = THREE.MathUtils.lerp(ring2Ref.current.rotation.x, targetRotX, delta * 2.0)
+    }
+
+    // High-activity Rubik sequencer (maintain beautiful background rotation batches)
     const interval = 6.0 
-    const moveSubInterval = 0.6 // Faster moves
+    const moveSubInterval = 0.6
     const moveTime = t % interval
     
-    // Perform 4 moves in a rapid burst
     const moveInBurst = Math.floor(moveTime / moveSubInterval)
     const moveBatchId = Math.floor(t / interval) * 10 + moveInBurst
     
     if (moveTime < 2.4 && moveBatchId > currentMove.version) { 
-      currentMove = {
-        axis: moveAxes[Math.floor(Math.random() * 3)],
-        slice: Math.floor(Math.random() * 3) - 1, // Randomly pick one of the 3 slices
-        angle: Math.random() > 0.5 ? Math.PI / 2 : -Math.PI / 2,
-        version: moveBatchId
+      currentMove.axis = moveAxes[Math.floor(Math.random() * 3)]
+      currentMove.slice = Math.floor(Math.random() * 3) - 1
+      currentMove.angle = Math.random() > 0.5 ? Math.PI / 2 : -Math.PI / 2
+      currentMove.version = moveBatchId
+    }
+
+    // Core pulsing & lightning flickers
+    if (coreRef.current) {
+      const pulse = 1 + Math.sin(t * 4) * 0.05
+      let emissiveIntensity = 25
+      
+      const lightningActive = typeof window !== 'undefined' ? !!(window as unknown as Record<string, unknown>).__technomancy_lightning : false
+      if (lightningActive) {
+        emissiveIntensity = Math.random() > 0.35 ? 130 : 8
+      }
+      
+      coreRef.current.scale.setScalar(0.5 * pulse)
+      const coreColor = "#4AFFB4"
+      if (coreRef.current.material && !Array.isArray(coreRef.current.material)) {
+        const mat = coreRef.current.material as THREE.MeshStandardMaterial
+        mat.color.set(coreColor)
+        mat.emissive.set(coreColor)
+        mat.emissiveIntensity = emissiveIntensity
       }
     }
 
-    if (coreRef.current) {
-      const pulse = 1 + Math.sin(t * 4) * 0.05
-      coreRef.current.scale.setScalar(0.5 * pulse)
+    if (coreLightRef.current) {
+      const coreColor = "#4AFFB4"
+      coreLightRef.current.color.set(coreColor)
     }
   })
 
@@ -141,17 +422,56 @@ function PolyhedronScene({ isDeepDive }: { isDeepDive: boolean }) {
           <sphereGeometry args={[1, 32, 32]} />
           <meshStandardMaterial color="#4AFFB4" emissive="#4AFFB4" emissiveIntensity={25} toneMapped={false} />
         </mesh>
-        <pointLight intensity={50} color="#4AFFB4" distance={10} />
+        <pointLight ref={coreLightRef} intensity={50} color="#4AFFB4" distance={10} />
         
+        {/* Ring 1: Robust 3D Cuboid Ring (Custom Shader Material) with Dark Engraved Runes */}
+        <group ref={ring1Ref} rotation={[Math.PI / 4, Math.PI / 4, 0]}>
+          <mesh geometry={ring1Geo} material={runicShaderMaterial1} />
+          {ring1Runes.map((rd, i) => (
+            <Text
+              key={i}
+              position={rd.pos}
+              rotation={rd.rot}
+              fontSize={0.15}
+              font="/fonts/NotoSansRunic-Regular.ttf"
+              anchorX="center"
+              anchorY="middle"
+            >
+              <meshBasicMaterial color="#000000" toneMapped={false} depthWrite={true} />
+              {rd.rune}
+            </Text>
+          ))}
+        </group>
+
+        {/* Ring 2: Robust 3D Cuboid Ring (Custom Shader Material) with Dark Engraved Runes */}
+        <group ref={ring2Ref} rotation={[-Math.PI / 4, 0, Math.PI / 4]}>
+          <mesh geometry={ring2Geo} material={runicShaderMaterial2} />
+          {ring2Runes.map((rd, i) => (
+            <Text
+              key={i}
+              position={rd.pos}
+              rotation={rd.rot}
+              fontSize={0.18}
+              font="/fonts/NotoSansRunic-Regular.ttf"
+              anchorX="center"
+              anchorY="middle"
+            >
+              <meshBasicMaterial color="#000000" toneMapped={false} depthWrite={true} />
+              {rd.rune}
+            </Text>
+          ))}
+        </group>
+
         {faces.map((face) => (
-          <Fragment key={face.id} data={face} assemblyProgress={assemblyProgress} sharedMaterial={sharedMaterial} isDeepDive={isDeepDive} />
+          <PyramidFragment key={face.id} data={face} assemblyProgress={assemblyProgress} sharedMaterial={sharedMaterial} isDeepDive={isDeepDive} />
         ))}
       </Float>
     </group>
   )
 }
 
-function Fragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data: FaceData, assemblyProgress: number, sharedMaterial: THREE.MeshStandardMaterial, isDeepDive: boolean }) {
+// Renamed from Fragment (conflicts with React.Fragment) to PyramidFragment
+function PyramidFragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data: FaceData, assemblyProgress: number, sharedMaterial: THREE.MeshStandardMaterial, isDeepDive: boolean }) {
   const meshGroupRef = useRef<THREE.Group>(null)
   const lineMatRef = useRef<THREE.LineBasicMaterial>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -167,12 +487,13 @@ function Fragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data
 
   // Deep dive color transitions
   const runeColorDefault = useMemo(() => new THREE.Color("#ffcc00"), [])
-  const runeColorDeep = useMemo(() => new THREE.Color("#4A8FFF"), []) // Blue
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const runeColorDeep = useMemo(() => new THREE.Color("#4A8FFF"), []) // Blue — reserved for future deep dive mode
   const currentRuneColor = useRef(new THREE.Color("#ffcc00"))
 
   const flyInOffset = useMemo(() => {
     let localSeed = data.center.x * 1000 + data.center.y * 100 + data.center.z * 10
-    const offsets = []
+    const offsets: number[] = []
     for (let i = 0; i < 3; i++) {
       localSeed = (localSeed * 1664525 + 1013904223) % 4294967296
       offsets.push((localSeed / 4294967296 - 0.5) * 20)
@@ -182,10 +503,9 @@ function Fragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data
 
   const { geometry, edgeGeo, runeData } = useMemo(() => {
     const geo = new THREE.BufferGeometry()
-    const height = 0.35 // Shorter pyramids
+    const height = 0.35
     const apex = data.normal.clone().multiplyScalar(height)
     
-    // Scale up slightly (1.2) to bridge gaps and hide core completely
     const rv = data.vertices.map(v => new THREE.Vector3().subVectors(v, data.center).multiplyScalar(1.2))
     
     const vertices = new Float32Array([
@@ -201,7 +521,6 @@ function Fragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data
     
     geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
     
-    // Add placeholder UVs to prevent shader fallbacks (Red/Green artifacts)
     const uvs = new Float32Array(vertices.length / 3 * 2).fill(0)
     geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
     
@@ -214,7 +533,6 @@ function Fragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data
       const edge2 = new THREE.Vector3().subVectors(sideVertices[2], sideVertices[0])
       const faceNormal = new THREE.Vector3().crossVectors(edge1, edge2).normalize()
 
-      // Use a stable index based on face ID and side index to satisfy React purity rules
       const hash = data.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + sideIdx
       const runeIndex = hash % RUNES.length
 
@@ -222,41 +540,52 @@ function Fragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data
     })
 
     return { geometry: geo, edgeGeo: new THREE.EdgesGeometry(geo), runeData }
-    }, [data])
+  }, [data])
 
-    useFrame((state, delta) => {
-    // Update target expansion based on mode (Reduced from 0.7 to 0.45)
-    stateRef.current.targetExpansion = isDeepDive ? 0.45 : 0.25;
+  useFrame((state, delta) => {
+    // High-performance scroll percentage solver
+    const docH = typeof document !== 'undefined' ? document.documentElement.scrollHeight : 1000
+    const winH = typeof window !== 'undefined' ? window.innerHeight : 800
+    const maxScroll = docH - winH
+    const scrollPercent = maxScroll > 0 && typeof window !== 'undefined' ? window.scrollY / maxScroll : 0
 
-    // Smoothly interpolate expansion
-    stateRef.current.currentExpansion += (stateRef.current.targetExpansion - stateRef.current.currentExpansion) * delta * 5;
+    // Ignite Spell verification
+    const igniteActive = typeof window !== 'undefined' ? !!(window as unknown as Record<string, unknown>).__technomancy_ignite : false
 
-    // Runes change to blue, but let's keep the pyramid edges golden as requested before
-    // If the user meant EVERYTHING golden, I would remove this, but "runes color should still change to blue"
-    currentRuneColor.current.lerp(isDeepDive ? runeColorDeep : runeColorDefault, delta * 5);
+    // Base expansion
+    let targetExp = isDeepDive ? 0.45 : 0.25
+
+    // Add scroll-driven vertex explosion (expands up to 3.5 extra radius!)
+    targetExp += scrollPercent * 3.5
+
+    // Add CLI ignite overload explosion (stronger pulsing explosion)
+    if (igniteActive) {
+      targetExp += 2.8 + Math.sin(state.clock.getElapsedTime() * 12.0) * 0.4
+    }
+
+    stateRef.current.targetExpansion = targetExp
+    stateRef.current.currentExpansion += (stateRef.current.targetExpansion - stateRef.current.currentExpansion) * delta * 5.0
+
+    currentRuneColor.current.lerp(runeColorDefault, delta * 5.0)
 
     if (lineMatRef.current) {
-      // Keeping edge color golden as per "don't change the pyramid edge color to blue"
-      lineMatRef.current.color.copy(runeColorDefault);
+      lineMatRef.current.color.copy(currentRuneColor.current)
     }
 
     textRefs.current.forEach(t => {
       if (t) {
-        // Runes get the animated color
-        t.color = currentRuneColor.current.getStyle();
+        t.color = currentRuneColor.current.getStyle()
       }
-    });
+    })
 
-    // Synchronized multi-slice logic
     if (currentMove.version > stateRef.current.lastVersion) {
       stateRef.current.lastVersion = currentMove.version
 
       const { axis, slice, angle } = currentMove
       const currentLogicalPos = data.center.clone().applyMatrix4(stateRef.current.targetMatrix)
 
-      // Determine if piece belongs to the slice (-1, 0, 1)
       const coord = currentLogicalPos.dot(axis)
-      const sliceThreshold = 0.5 // Separates the 3 layers clearly
+      const sliceThreshold = 0.5
 
       let inSlice = false
       if (slice === 1) inSlice = coord > sliceThreshold
@@ -273,14 +602,20 @@ function Fragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data
       const matrix = stateRef.current.currentMatrix
       const target = stateRef.current.targetMatrix
 
-      const currQuat = new THREE.Quaternion(), targetQuat = new THREE.Quaternion()
-      const dummyP = new THREE.Vector3(), dummyS = new THREE.Vector3()
+      // Use separate decompose vectors to avoid overwrite bugs
+      const currQuat = new THREE.Quaternion()
+      const targetQuat = new THREE.Quaternion()
+      const currPos = new THREE.Vector3()
+      const currScale = new THREE.Vector3()
+      const dummyP = new THREE.Vector3()
+      const dummyS = new THREE.Vector3()
 
-      matrix.decompose(dummyP, currQuat, dummyS)
+      matrix.decompose(currPos, currQuat, currScale)
       target.decompose(dummyP, targetQuat, dummyS)
 
-      currQuat.slerp(targetQuat, 0.15) // Snappier rotation
-      matrix.compose(dummyP, currQuat, dummyS)
+      currQuat.slerp(targetQuat, 0.15)
+      // Recompose using the current matrix's own position and scale (not the target's)
+      matrix.compose(currPos, currQuat, currScale)
 
       const expansionFactor = stateRef.current.currentExpansion
       const rotatedNormal = data.normal.clone().applyQuaternion(currQuat)
@@ -291,9 +626,9 @@ function Fragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data
       meshGroupRef.current.position.copy(currentPos)
       meshGroupRef.current.quaternion.copy(currQuat)
     }
-    })
+  })
 
-    return (
+  return (
     <group ref={meshGroupRef}>
       <mesh geometry={geometry} material={sharedMaterial} />
       <lineSegments geometry={edgeGeo}>
@@ -315,6 +650,9 @@ function Fragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data
           position={rd.pos}
           fontSize={0.28}
           color="#ffcc00"
+          // @ts-ignore
+          toneMapped={false}
+          font="/fonts/NotoSansRunic-Regular.ttf"
           anchorX="center"
           anchorY="middle"
           rotation={new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), rd.normal))}
@@ -323,10 +661,11 @@ function Fragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data
         </Text>
       ))}
     </group>
-    )
-    }
+  )
+}
 
-    export default function PolyhedronCanvas({ isDeepDive = false }: { isHovered?: boolean, isDeepDive?: boolean }) {  const [ready, setReady] = useState(false)
+export default function PolyhedronCanvas({ isHovered = false, isDeepDive = false }: { isHovered?: boolean, isDeepDive?: boolean }) {
+  const [ready, setReady] = useState(false)
   useEffect(() => {
     const timer = setTimeout(() => setReady(true), 50)
     return () => clearTimeout(timer)
@@ -341,10 +680,11 @@ function Fragment({ data, assemblyProgress, sharedMaterial, isDeepDive }: { data
       gl={{ alpha: true }}
       style={{ pointerEvents: 'none' }}
     >
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} intensity={1} />
+      <ambientLight intensity={0.8} />
+      <pointLight position={[10, 10, 10]} intensity={3.5} />
+      <directionalLight position={[-10, 8, -5]} intensity={2} color="#ffffff" />
       <Suspense fallback={null}>
-        <PolyhedronScene isDeepDive={isDeepDive} />
+        <PolyhedronScene isHovered={isHovered} isDeepDive={isDeepDive} />
       </Suspense>
     </Canvas>
   )

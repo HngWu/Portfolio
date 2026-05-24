@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'NotoSansRunic-Regular';
+  src: url('/fonts/NotoSansRunic-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
@@ -221,9 +229,11 @@
 }
 
 /* Custom Rune Cursor Styles */
-body.rune-cursor * {
+body.rune-cursor *,
+body.custom-cursor-active * {
   cursor: none !important;
 }
+
 
 #custom-cursor {
   position: fixed;

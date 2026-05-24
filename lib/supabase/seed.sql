@@ -115,3 +115,55 @@ VALUES (
   ),
   100
 );
+
+-- 9. 更新 Stats Tiles (GPA, Experience, Projects) 的 Deep Dive 数据
+UPDATE public.tiles 
+SET deep_dive = jsonb_build_object(
+  'value', '3.91 / 4.00',
+  'label', 'Academic Stats',
+  'detail', 'Diploma with Merit (Top 10% of cohort). Special focus in Full Stack Development.'
+)
+WHERE type = 'stat' AND content->>'label' = 'GPA';
+
+UPDATE public.tiles 
+SET deep_dive = jsonb_build_object(
+  'value', '1 Year',
+  'label', 'Dev Tenure',
+  'detail', 'Professional experience including full-stack engineering at DBS Bank.'
+)
+WHERE type = 'stat' AND content->>'label' = 'Experience';
+
+UPDATE public.tiles 
+SET deep_dive = jsonb_build_object(
+  'value', '12+ Apps',
+  'label', 'Dev Portfolio',
+  'detail', 'Production web apps, multi-agent frameworks, and low-level CLI utilities.'
+)
+WHERE type = 'stat' AND content->>'label' = 'Projects';
+
+-- 10. 更新 Contact Tile 的 Content 和 Deep Dive PGP Block
+UPDATE public.tiles 
+SET 
+  content = jsonb_build_object(
+    'email', 'hello@hngwu.com',
+    'github', 'https://github.com/HngWu',
+    'linkedin', 'https://linkedin.com/in/hngwu',
+    'telegram', 'https://t.me/hngwu'
+  ),
+  deep_dive = jsonb_build_object(
+    'pgp_key', '-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: OpenPGP.js v4.10.1
+Comment: https://openpgpjs.org
+
+xjMEY5G3oBAYJKwYBBAHaRw8BAQdAsK7X8wL5U8zO/Q+pL9eP9B0h1e7h2wJ3m
+z9qK8B1w8zCzA3N1c3RfZGV2ZWxvcGVyIDxzeXN0ZW1zQGhuZ3d1LmNvbT7C
+OBYEEBYKADgFiEE5Y5G3oBAYJKwYBBAHaRw8BAQdAsK7X8wL5U8zO/Q+pL9e
+P9B0h1e7h2wJ3mz9qK8B1w8zCzA3N1c3RfZGV2ZWxvcGVyIDxzeXN0ZW1zQG
+huZ3d1LmNvbT4=
+-----END PGP PUBLIC KEY BLOCK-----',
+    'availability', 'Available Q3 2026',
+    'timezone', 'Singapore (SST - UTC+8)'
+  )
+WHERE type = 'contact';
+
+

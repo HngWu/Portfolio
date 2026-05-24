@@ -42,8 +42,41 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
   const [commandHistory, setCommandHistory] = React.useState<string[]>([])
   const [historyIndex, setHistoryIndex] = React.useState(-1)
   
-  const scrollRef = React.useRef<HTMLDivElement>(null)
-  const inputRef = React.useRef<HTMLInputElement>(null)
+  const [isMaximized, setIsMaximized] = React.useState(false)
+  const [isHidden, setIsHidden] = React.useState(false)
+  const [showCloseConfirm, setShowCloseConfirm] = React.useState(false)
+  
+  const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
+  const tileInputRef = React.useRef<HTMLInputElement>(null)
+  const maxInputRef = React.useRef<HTMLInputElement>(null)
+  
+  const setScrollRef = (node: HTMLDivElement | null) => {
+    scrollContainerRef.current = node
+    if (node) {
+      node.scrollTop = node.scrollHeight
+    }
+  }
+  
+  const handleMinimize = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setIsMaximized(false)
+  }
+
+  const handleExpand = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setIsMaximized(true)
+  }
+
+  const handleCloseClick = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setShowCloseConfirm(true)
+  }
+
+  const confirmClose = () => {
+    setShowCloseConfirm(false)
+    setIsMaximized(false)
+    setIsHidden(true)
+  }
   
   const ignite = useIgniteStore((state) => state.ignite)
   const { navigateWithTransition } = usePageTransition()
@@ -90,8 +123,8 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
   }, [])
 
   const scrollToBottom = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
     }
   }
 
@@ -244,12 +277,39 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
     }
   }
 
-  return (
-    <BentoTile id={id} size={size} className="p-0 md:p-0 overflow-hidden h-full w-full border-none" isDragging={isDragging} sortableProps={sortableProps}>
-      <div className="flex flex-col h-full w-full">
+  const renderHeaderAndBody = (maximized: boolean) => {
+    const activeInputRef = maximized ? maxInputRef : tileInputRef
+    return (
+      <div className="flex flex-col h-full w-full relative">
+        {/* Close Confirmation Overlay */}
+        {showCloseConfirm && (
+          <div className="absolute inset-0 z-50 bg-black/75 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center select-none animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-5 bg-white/5 border border-white/10 rounded-2xl max-w-xs shadow-2xl backdrop-blur-md">
+              <h4 className="text-white font-medium mb-2 text-sm font-sans">Terminate Session?</h4>
+              <p className="text-[11px] text-white/55 mb-5 leading-normal font-sans">This will terminate the active shell session and hide the terminal.</p>
+              <div className="flex gap-3 justify-center">
+                <button 
+                  onClick={confirmClose} 
+                  type="button"
+                  className="px-4 py-1.5 bg-red-500/20 hover:bg-red-500/35 border border-red-500/35 rounded-lg text-xs font-semibold text-red-200 cursor-pointer transition-colors"
+                >
+                  Terminate
+                </button>
+                <button 
+                  onClick={() => setShowCloseConfirm(false)} 
+                  type="button"
+                  className="px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-semibold text-white/70 cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className={cn(
-          "flex items-center justify-between px-3 py-2 border-b",
+          "flex items-center justify-between px-3 py-2 border-b select-none shrink-0",
           os === "windows" ? "bg-[#0c0c0c] border-[#333333]" : "bg-white/5 border-white/5"
         )}>
           <div className="flex items-center gap-2">
@@ -259,15 +319,42 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
                   <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2z"/>
                   <path d="M4.5 11a.5.5 0 0 1-.5-.5V5.5a.5.5 0 0 1 1 0v5a.5.5 0 0 1-.5.5zm2.5-3a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 1 1 0v2a.5.5 0 0 1-.5.5zm3 3a.5.5 0 0 1-.5-.5v-5a.5.5 0 0 1 1 0v5a.5.5 0 0 1-.5.5z"/>
                 </svg>
-                <span className="text-[#cccccc] text-[10px] font-bold">C:\Windows\System32\cmd.exe</span>
+                <span className="text-[#cccccc] text-[10px] font-bold font-mono">C:\Windows\System32\cmd.exe</span>
               </div>
             ) : (
-              <div className="flex gap-2 ml-0.5 text-white">
-                <div className="w-3 h-3 rounded-full bg-[#ff5f56] shadow-inner" />
-                <div className="w-3 h-3 rounded-full bg-[#ffbd2e] shadow-inner" />
-                <div className="w-3 h-3 rounded-full bg-[#27c93f] shadow-inner" />
+              <div className="flex gap-2 ml-0.5 text-white items-center group/mac-buttons">
+                {/* Mac Close Button (Red) */}
+                <button 
+                  onClick={handleCloseClick} 
+                  type="button"
+                  className="size-3 rounded-full bg-[#ff5f56] shadow-inner flex items-center justify-center text-[7px] text-black/60 font-black cursor-pointer border-none outline-none hover:brightness-90 active:scale-95 transition-all"
+                >
+                  <span className="opacity-0 group-hover/mac-buttons:opacity-100 transition-opacity font-sans">×</span>
+                </button>
+                {/* Mac Minimize Button (Yellow) */}
+                <button 
+                  onClick={maximized ? handleMinimize : undefined} 
+                  disabled={!maximized}
+                  type="button"
+                  className={cn(
+                    "size-3 rounded-full shadow-inner flex items-center justify-center text-[7px] font-black border-none outline-none transition-all",
+                    maximized 
+                      ? "bg-[#ffbd2e] hover:brightness-90 active:scale-95 cursor-pointer text-black/60" 
+                      : "bg-[#555] opacity-40 cursor-not-allowed text-transparent"
+                  )}
+                >
+                  <span className={cn("opacity-0 transition-opacity font-sans", maximized && "group-hover/mac-buttons:opacity-100")}>-</span>
+                </button>
+                {/* Mac Expand Button (Green) */}
+                <button 
+                  onClick={maximized ? handleMinimize : handleExpand} 
+                  type="button"
+                  className="size-3 rounded-full bg-[#27c93f] shadow-inner flex items-center justify-center text-[6px] text-black/60 font-black cursor-pointer border-none outline-none hover:brightness-90 active:scale-95 transition-all"
+                >
+                  <span className="opacity-0 group-hover/mac-buttons:opacity-100 transition-opacity font-sans">{maximized ? "⤭" : "⤢"}</span>
+                </button>
                 <span className={cn(
-                  "ml-2 uppercase tracking-[0.2em] text-[9px] font-black",
+                  "ml-2 uppercase tracking-[0.2em] text-[9px] font-black font-sans",
                   os === "mac" ? "text-white/40" : "text-white/30"
                 )}>
                   {config.headerTitle}
@@ -278,49 +365,74 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
           
           {os === "windows" && (
             <div className="flex items-center">
-              {/* Minimize */}
-              <div className="px-4 py-2 hover:bg-white/10 transition-colors cursor-default group/win">
+              {/* Windows Minimize */}
+              <button 
+                onClick={maximized ? handleMinimize : undefined}
+                disabled={!maximized}
+                type="button"
+                className={cn(
+                  "px-4 py-2 transition-colors border-none outline-none bg-transparent flex items-center justify-center h-8",
+                  maximized 
+                    ? "hover:bg-white/10 cursor-pointer text-[#cccccc]" 
+                    : "opacity-25 cursor-not-allowed text-white/10"
+                )}
+              >
                 <div className="w-2.5 h-[1px] bg-[#cccccc]" />
-              </div>
-              {/* Maximize */}
-              <div className="px-4 py-2 hover:bg-white/10 transition-colors cursor-default group/win">
-                <div className="size-2.5 border border-[#cccccc]" />
-              </div>
-              {/* Close */}
-              <div className="px-4 py-2 hover:bg-[#e81123] transition-colors cursor-default group/win">
+              </button>
+              {/* Windows Maximize / Expand */}
+              <button 
+                onClick={maximized ? handleMinimize : handleExpand}
+                type="button"
+                className="px-4 py-2 hover:bg-white/10 transition-colors cursor-pointer border-none outline-none bg-transparent flex items-center justify-center h-8"
+              >
+                {maximized ? (
+                  <div className="size-2.5 relative">
+                    <div className="size-2 border border-[#cccccc] absolute top-0 right-0 bg-[#0c0c0c]" />
+                    <div className="size-2 border border-[#cccccc] absolute bottom-0 left-0 bg-[#0c0c0c]" />
+                  </div>
+                ) : (
+                  <div className="size-2.5 border border-[#cccccc]" />
+                )}
+              </button>
+              {/* Windows Close */}
+              <button 
+                onClick={handleCloseClick}
+                type="button"
+                className="px-4 py-2 hover:bg-[#e81123] transition-colors cursor-pointer border-none outline-none bg-transparent flex items-center justify-center h-8 group/win"
+              >
                 <X className="size-3.5 text-[#cccccc] group-hover/win:text-white" />
-              </div>
+              </button>
             </div>
           )}
         </div>
         
         {/* Terminal Body */}
         <div 
-          ref={scrollRef}
+          ref={setScrollRef}
           className={cn(
-            "flex-1 p-5 overflow-y-auto flex flex-col gap-1 [&::-webkit-scrollbar]:hidden w-full h-full",
+            "flex-1 p-5 overflow-y-auto flex flex-col gap-1 [&::-webkit-scrollbar]:hidden w-full h-full font-mono text-xs md:text-sm select-text cursor-text",
             os === "windows" ? "bg-black" : "bg-transparent"
           )}
-          onClick={() => inputRef.current?.focus()}
+          onClick={() => activeInputRef.current?.focus()}
         >
           {history.map((item, i) => (
-            <div key={i} className={cn(item.type === "command" ? "text-white/60" : "text-white/90 whitespace-pre-wrap")}>
-              {item.type === "command" && <span>{config.prompt}</span>}
+            <div key={i} className="text-white/90 whitespace-pre-wrap font-mono text-xs md:text-sm">
+              {item.type === "command" && <span className="text-white/60 font-mono text-xs md:text-sm mr-1">{config.prompt}</span>}
               {item.content}
             </div>
           ))}
           
           <form onSubmit={handleSubmit} className="flex items-start relative min-h-[1.5rem] mt-1">
-            <span className="text-white shrink-0 leading-tight">{config.prompt}</span>
+            <span className="text-white shrink-0 leading-tight font-mono text-xs md:text-sm">{config.prompt}</span>
             <div className="relative flex-1 inline-flex items-baseline ml-0.5">
-              <span className="text-white whitespace-pre-wrap break-all leading-tight">{input}</span>
+              <span className="text-white whitespace-pre-wrap break-all leading-tight font-mono text-xs md:text-sm">{input}</span>
               <span className={cn(
-                "inline-block w-2 h-[1.1em] translate-y-[0.1em] ml-0.5 shrink-0", 
+                "inline-block w-2 h-[1.1em] ml-0.5 shrink-0", 
                 config.cursorColor, 
                 os === "windows" ? "" : "animate-pulse"
               )} />
               <input
-                ref={inputRef}
+                ref={activeInputRef}
                 autoFocus
                 type="text"
                 value={input}
@@ -334,6 +446,33 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
           </form>
         </div>
       </div>
-    </BentoTile>
+    )
+  }
+
+  if (isHidden) return null
+
+  return (
+    <>
+      <BentoTile 
+        id={id} 
+        size={size} 
+        className="p-0 md:p-0 overflow-hidden h-full w-full border-none" 
+        isDragging={isDragging} 
+        sortableProps={sortableProps}
+        canDeepDive={false}
+        layout={false}
+      >
+        {renderHeaderAndBody(false)}
+      </BentoTile>
+
+      {/* Maximized Full-Screen Viewport Overlay */}
+      {isMaximized && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl p-4 md:p-8 flex items-center justify-center animate-in fade-in duration-300">
+          <div className="w-full h-full max-w-6xl bg-[#0c0c0c] border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col relative animate-in zoom-in-95 duration-300">
+            {renderHeaderAndBody(true)}
+          </div>
+        </div>
+      )}
+    </>
   )
 }
