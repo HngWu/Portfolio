@@ -95,8 +95,8 @@ export function BentoTile({
       style={dynamicRows ? { gridRow: `span ${dynamicRows}` } : undefined}
       className={cn(
         spanClass, 
-        "h-full perspective-[1500px] touch-none", // Enable 3D space and prevent touch scrolling
-        isDragging && "opacity-30"
+        "h-full perspective-[1500px]", 
+        isDragging ? "touch-none opacity-30" : "touch-pan-y"
       )}
       {...sortableProps}
     >

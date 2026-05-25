@@ -410,26 +410,26 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
         <div 
           ref={setScrollRef}
           className={cn(
-            "flex-1 p-5 overflow-y-auto flex flex-col gap-1 [&::-webkit-scrollbar]:hidden w-full h-full font-mono text-xs md:text-sm select-text cursor-text",
+            "flex-1 p-5 overflow-y-auto flex flex-col gap-1 [&::-webkit-scrollbar]:hidden w-full h-full font-mono text-base md:text-sm select-text cursor-text",
             os === "windows" ? "bg-black" : "bg-transparent"
           )}
           onClick={() => activeInputRef.current?.focus()}
         >
           {history.map((item, i) => (
-            <div key={i} className="text-white/90 whitespace-pre-wrap font-mono text-xs md:text-sm">
-              {item.type === "command" && <span className="text-white/60 font-mono text-xs md:text-sm mr-1">{config.prompt}</span>}
+            <div key={i} className="text-white/90 whitespace-pre-wrap font-mono text-base md:text-sm">
+              {item.type === "command" && <span className="text-white/60 font-mono text-base md:text-sm mr-1">{config.prompt}</span>}
               {item.content}
             </div>
           ))}
           
-          <form onSubmit={handleSubmit} className="flex items-start relative min-h-[1.5rem] mt-1">
-            <span className="text-white shrink-0 leading-tight font-mono text-xs md:text-sm">{config.prompt}</span>
-            <div className="relative flex-1 inline-flex items-baseline ml-0.5">
-              <span className="text-white whitespace-pre-wrap break-all leading-tight font-mono text-xs md:text-sm">{input}</span>
+          <form onSubmit={handleSubmit} className="flex items-center relative min-h-[1.5rem] mt-1">
+            <span className="text-white shrink-0 leading-tight font-mono text-base md:text-sm">{config.prompt}</span>
+            <div className="relative flex-1 inline-flex items-center ml-0.5">
+              <span className="text-white whitespace-pre-wrap break-all leading-tight font-mono text-base md:text-sm">{input}</span>
               <span className={cn(
-                "inline-block w-2 h-[1.1em] ml-0.5 shrink-0", 
+                "inline-block w-2 h-[1.15em] ml-0.5 shrink-0", 
                 config.cursorColor, 
-                os === "windows" ? "" : "animate-pulse"
+                "animate-terminal-blink"
               )} />
               <input
                 ref={activeInputRef}
@@ -453,6 +453,15 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
 
   return (
     <>
+      <style>{`
+        @keyframes terminal-blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        .animate-terminal-blink {
+          animation: terminal-blink 1s step-end infinite;
+        }
+      `}</style>
       <BentoTile 
         id={id} 
         size={size} 

@@ -30,6 +30,15 @@ export function ArcaneCursor() {
   const [smoothedPos, setSmoothedPos] = useState({ x: 0, y: 0 })
   const [isHovered, setIsHovered] = useState(false)
   const [hasWebGLFailed, setHasWebGLFailed] = useState(false)
+  const [isTouchDevice, setIsTouchDevice] = useState(false)
+
+  useEffect(() => {
+    const checkTouch = () => {
+      const isTouch = window.matchMedia("(pointer: coarse)").matches || 'ontouchstart' in window
+      setIsTouchDevice(isTouch)
+    }
+    checkTouch()
+  }, [])
 
   // Refs for tracking mouse position and velocity
   const mouseRef = useRef({ x: 0, y: 0 })
@@ -431,6 +440,8 @@ export function ArcaneCursor() {
       }
     }
   }, [isActive, isDeep, isHovered, hasWebGLFailed])
+
+  if (isTouchDevice) return null
 
   if (!isActive) return null
 

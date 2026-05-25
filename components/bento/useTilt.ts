@@ -7,6 +7,8 @@ export function useTilt() {
 
   const onMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return
+    // Ignore coarse pointer devices (touchscreens) to prevent permanent skewing
+    if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) return
 
     const { left, top, width, height } = ref.current.getBoundingClientRect()
     const x = (e.clientX - left) / width

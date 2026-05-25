@@ -314,7 +314,7 @@ export function ContactTile({
             ) : (
               <>
                 <Copy className="size-4 text-white/40 group-hover/email:text-lume-primary group-hover/email:scale-105 transition-all" />
-                <span className="absolute bottom-[-24px] right-0 opacity-0 group-hover/email:opacity-100 font-mono text-[8px] uppercase text-white/30 tracking-widest transition-opacity duration-300 pointer-events-none whitespace-nowrap">
+                <span className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 opacity-0 group-hover/email:opacity-100 font-mono text-[8px] uppercase text-lume-primary bg-black/85 border border-lume-primary/20 px-2 py-0.5 rounded shadow-lg tracking-widest transition-all duration-300 pointer-events-none whitespace-nowrap scale-90 group-hover/email:scale-100 translate-y-1 group-hover/email:translate-y-0 backdrop-blur-sm z-50">
                   Click to Copy
                 </span>
               </>
