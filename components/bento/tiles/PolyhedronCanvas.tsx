@@ -186,16 +186,13 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
         uniform float uGlowIntensity;
         varying vec3 vNormal;
         varying vec3 vViewPosition;
-        varying vec3 vWorldPosition;
         void main() {
           vec3 normal = normalize(vNormal);
           vec3 viewDir = normalize(vViewPosition);
           float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), uFresnelPower);
-          float scanline = sin(vWorldPosition.y * 20.0 - uTime * 4.0) * 0.5 + 0.5;
-          scanline = pow(scanline, 3.0) * 0.3;
           float pulse = 0.85 + 0.15 * sin(uTime * 3.0);
           vec3 glow = uGlowColor * fresnel * uGlowIntensity * pulse;
-          vec3 finalColor = uColor + glow + uGlowColor * scanline;
+          vec3 finalColor = uColor + glow; // Black with golden fresnel edges only
           float alpha = 0.85 + 0.15 * fresnel;
           gl_FragColor = vec4(finalColor, alpha);
         }
@@ -236,16 +233,13 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
         uniform float uGlowIntensity;
         varying vec3 vNormal;
         varying vec3 vViewPosition;
-        varying vec3 vWorldPosition;
         void main() {
           vec3 normal = normalize(vNormal);
           vec3 viewDir = normalize(vViewPosition);
           float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), uFresnelPower);
-          float scanline = sin(vWorldPosition.y * 15.0 + uTime * 3.5) * 0.5 + 0.5;
-          scanline = pow(scanline, 3.0) * 0.3;
           float pulse = 0.85 + 0.15 * sin(uTime * 2.5);
           vec3 glow = uGlowColor * fresnel * uGlowIntensity * pulse;
-          vec3 finalColor = uColor + glow + uGlowColor * scanline;
+          vec3 finalColor = uColor + glow; // Black with golden fresnel edges only
           float alpha = 0.85 + 0.15 * fresnel;
           gl_FragColor = vec4(finalColor, alpha);
         }
@@ -400,8 +394,8 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
       }
       
       coreRef.current.scale.setScalar(0.72 * pulse)
-      const coreColor = "#D4AF37"
-      const coreEmissive = "#FF9800"
+      const coreColor = "#C5A029"
+      const coreEmissive = "#C5A029"
       if (coreRef.current.material && !Array.isArray(coreRef.current.material)) {
         const mat = coreRef.current.material as THREE.MeshStandardMaterial
         mat.color.set(coreColor)
@@ -411,7 +405,7 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
     }
 
     if (coreLightRef.current) {
-      const coreLightColor = "#FFB300"
+      const coreLightColor = "#FFD700"
       coreLightRef.current.color.set(coreLightColor)
     }
   })
@@ -422,15 +416,15 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
         <mesh ref={coreRef}>
           <sphereGeometry args={[1, 32, 32]} />
           <meshStandardMaterial 
-            color="#D4AF37" 
-            emissive="#FF9800" 
+            color="#C5A029" 
+            emissive="#C5A029" 
             emissiveIntensity={3.5} 
-            metalness={0.9} 
-            roughness={0.15} 
+            metalness={0.95} 
+            roughness={0.08} 
             toneMapped={false} 
           />
         </mesh>
-        <pointLight ref={coreLightRef} intensity={50} color="#FFB300" distance={10} />
+        <pointLight ref={coreLightRef} intensity={50} color="#FFD700" distance={10} />
         
         {/* Ring 1: Robust 3D Cuboid Ring (Custom Shader Material) with Dark Engraved Runes */}
         <group ref={ring1Ref} rotation={[Math.PI / 4, Math.PI / 4, 0]}>
