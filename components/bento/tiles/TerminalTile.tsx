@@ -122,6 +122,19 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
     return () => clearTimeout(timer)
   }, [])
 
+  React.useEffect(() => {
+    // Autofocus input only on desktop screens (width >= 1024px and not touch device)
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches && !window.matchMedia("(pointer: coarse)").matches
+    if (isDesktop) {
+      const timer = setTimeout(() => {
+        if (tileInputRef.current) {
+          tileInputRef.current.focus()
+        }
+      }, 150)
+      return () => clearTimeout(timer)
+    }
+  }, [])
+
   const scrollToBottom = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
