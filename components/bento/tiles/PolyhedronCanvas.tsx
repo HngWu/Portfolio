@@ -341,8 +341,8 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
       groupRef.current.rotation.y += 0.002
       groupRef.current.rotation.z += 0.001
 
-      // Scale animation for deep dive
-      const targetScale = isDeepDive ? 1.4 : 1.0
+      // Scale animation for deep dive (disabled overall scale to keep core and rings stable, only outer shell fragments expand)
+      const targetScale = 1.0
       currentScale.current += (targetScale - currentScale.current) * delta * 5
       groupRef.current.scale.setScalar(currentScale.current)
     }
