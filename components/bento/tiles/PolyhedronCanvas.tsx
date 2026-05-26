@@ -186,27 +186,29 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
         uniform float uGlowIntensity;
         varying vec3 vNormal;
         varying vec3 vViewPosition;
+        varying vec3 vWorldPosition;
         void main() {
           vec3 normal = normalize(vNormal);
           vec3 viewDir = normalize(vViewPosition);
           float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), uFresnelPower);
+          float scanline = sin(vWorldPosition.y * 20.0 - uTime * 4.0) * 0.5 + 0.5;
+          scanline = pow(scanline, 3.0) * 0.3;
           float pulse = 0.85 + 0.15 * sin(uTime * 3.0);
           vec3 glow = uGlowColor * fresnel * uGlowIntensity * pulse;
-          vec3 finalColor = uColor + glow; // Black with golden fresnel edges only
+          vec3 finalColor = uColor + glow + uGlowColor * scanline;
           float alpha = 0.85 + 0.15 * fresnel;
           gl_FragColor = vec4(finalColor, alpha);
         }
       `,
       uniforms: {
-        uColor: { value: new THREE.Color("#05050a") },
-        uGlowColor: { value: new THREE.Color("#FFD700") }, // Gold (No Orange Hue)
+        uColor: { value: new THREE.Color("#ffffff") },
+        uGlowColor: { value: new THREE.Color("#4AFFB4") }, // Neon Mint
         uTime: { value: 0 },
         uFresnelPower: { value: 2.0 },
         uGlowIntensity: { value: 0.6 }
       },
       transparent: true,
       depthWrite: true,
-      toneMapped: false,
     })
   }
   const runicShaderMaterial1 = _mat1Ref.current!
@@ -234,27 +236,29 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
         uniform float uGlowIntensity;
         varying vec3 vNormal;
         varying vec3 vViewPosition;
+        varying vec3 vWorldPosition;
         void main() {
           vec3 normal = normalize(vNormal);
           vec3 viewDir = normalize(vViewPosition);
           float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), uFresnelPower);
+          float scanline = sin(vWorldPosition.y * 15.0 + uTime * 3.5) * 0.5 + 0.5;
+          scanline = pow(scanline, 3.0) * 0.3;
           float pulse = 0.85 + 0.15 * sin(uTime * 2.5);
           vec3 glow = uGlowColor * fresnel * uGlowIntensity * pulse;
-          vec3 finalColor = uColor + glow; // Black with golden fresnel edges only
+          vec3 finalColor = uColor + glow + uGlowColor * scanline;
           float alpha = 0.85 + 0.15 * fresnel;
           gl_FragColor = vec4(finalColor, alpha);
         }
       `,
       uniforms: {
-        uColor: { value: new THREE.Color("#05050a") },
-        uGlowColor: { value: new THREE.Color("#FFD700") }, // Gold (No Orange Hue)
+        uColor: { value: new THREE.Color("#ffffff") },
+        uGlowColor: { value: new THREE.Color("#4A8FFF") }, // Neon Blue
         uTime: { value: 0 },
         uFresnelPower: { value: 2.0 },
         uGlowIntensity: { value: 0.6 }
       },
       transparent: true,
       depthWrite: true,
-      toneMapped: false,
     })
   }
   const runicShaderMaterial2 = _mat2Ref.current!
@@ -323,11 +327,11 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
       runicShaderMaterial1.uniforms.uGlowIntensity.value = 1.6 + Math.sin(t * 18.0) * 0.4
       runicShaderMaterial2.uniforms.uGlowIntensity.value = 1.6 + Math.cos(t * 18.0) * 0.4
     } else {
-      // Keep consistent Quick Pitch (Magic) colors in all modes: Golden (No Orange) and Black
-      runicShaderMaterial1.uniforms.uGlowColor.value.set("#FFD700")
-      runicShaderMaterial2.uniforms.uGlowColor.value.set("#FFD700")
-      runicShaderMaterial1.uniforms.uColor.value.set("#05050a")
-      runicShaderMaterial2.uniforms.uColor.value.set("#05050a")
+      // Keep consistent Quick Pitch (Magic) colors in all modes: Neon Emerald & Warm Gold
+      runicShaderMaterial1.uniforms.uGlowColor.value.set("#4AFFB4")
+      runicShaderMaterial2.uniforms.uGlowColor.value.set("#FFB44A")
+      runicShaderMaterial1.uniforms.uColor.value.set("#ffffff")
+      runicShaderMaterial2.uniforms.uColor.value.set("#ffffff")
       runicShaderMaterial1.uniforms.uGlowIntensity.value = 0.6
       runicShaderMaterial2.uniforms.uGlowIntensity.value = 0.6
     }
@@ -388,30 +392,26 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
     // Core pulsing & lightning flickers
     if (coreRef.current) {
       const pulse = 1 + Math.sin(t * 4) * 0.05
-      let emissiveIntensity = 0.0 // Pure metallic gold in normal state (zero flat yellow/orange emissive wash)
+      let emissiveIntensity = 25
       
       const lightningActive = typeof window !== 'undefined' ? !!(window as unknown as Record<string, unknown>).__technomancy_lightning : false
       if (lightningActive) {
-        emissiveIntensity = Math.random() > 0.35 ? 8.0 : 0.5
+        emissiveIntensity = Math.random() > 0.35 ? 130 : 8
       }
       
       coreRef.current.scale.setScalar(0.72 * pulse)
-      const coreColor = "#D4AF37" // Brilliant, premium metallic gold
-      const coreEmissive = "#FFD700" // Classic bright gold emissive flash
+      const coreColor = "#4AFFB4"
       if (coreRef.current.material && !Array.isArray(coreRef.current.material)) {
         const mat = coreRef.current.material as THREE.MeshStandardMaterial
         mat.color.set(coreColor)
-        mat.emissive.set(coreEmissive)
+        mat.emissive.set(coreColor)
         mat.emissiveIntensity = emissiveIntensity
       }
     }
 
     if (coreLightRef.current) {
-      const lightningActive = typeof window !== 'undefined' ? !!(window as unknown as Record<string, unknown>).__technomancy_lightning : false
-      // Disable core point light by default to prevent casting glow/orange reflections onto the rings
-      coreLightRef.current.intensity = lightningActive ? (Math.random() > 0.35 ? 80 : 5) : 0
-      const coreLightColor = "#FFD700"
-      coreLightRef.current.color.set(coreLightColor)
+      const coreColor = "#4AFFB4"
+      coreLightRef.current.color.set(coreColor)
     }
   })
 
@@ -420,16 +420,9 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
       <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.2}>
         <mesh ref={coreRef}>
           <sphereGeometry args={[1, 32, 32]} />
-          <meshStandardMaterial 
-            color="#D4AF37" 
-            emissive="#FFD700" 
-            emissiveIntensity={0.0} 
-            metalness={0.95} 
-            roughness={0.1} 
-            toneMapped={false} 
-          />
+          <meshStandardMaterial color="#4AFFB4" emissive="#4AFFB4" emissiveIntensity={25} toneMapped={false} />
         </mesh>
-        <pointLight ref={coreLightRef} intensity={0} color="#FFD700" distance={10} />
+        <pointLight ref={coreLightRef} intensity={50} color="#4AFFB4" distance={10} />
         
         {/* Ring 1: Robust 3D Cuboid Ring (Custom Shader Material) with Dark Engraved Runes */}
         <group ref={ring1Ref} rotation={[Math.PI / 4, Math.PI / 4, 0]}>
@@ -444,7 +437,7 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
               anchorX="center"
               anchorY="middle"
             >
-              <meshBasicMaterial color="#FFD700" toneMapped={false} depthWrite={true} />
+              <meshBasicMaterial color="#000000" toneMapped={false} depthWrite={true} />
               {rd.rune}
             </Text>
           ))}
@@ -463,7 +456,7 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
               anchorX="center"
               anchorY="middle"
             >
-              <meshBasicMaterial color="#FFD700" toneMapped={false} depthWrite={true} />
+              <meshBasicMaterial color="#000000" toneMapped={false} depthWrite={true} />
               {rd.rune}
             </Text>
           ))}
