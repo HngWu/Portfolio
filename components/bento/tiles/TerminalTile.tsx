@@ -433,7 +433,6 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
               )} />
               <input
                 ref={activeInputRef}
-                autoFocus
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
