@@ -206,6 +206,7 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
       },
       transparent: true,
       depthWrite: true,
+      toneMapped: false,
     })
   }
   const runicShaderMaterial1 = _mat1Ref.current!
@@ -253,6 +254,7 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
       },
       transparent: true,
       depthWrite: true,
+      toneMapped: false,
     })
   }
   const runicShaderMaterial2 = _mat2Ref.current!
