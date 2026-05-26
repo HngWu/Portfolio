@@ -386,16 +386,16 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
     // Core pulsing & lightning flickers
     if (coreRef.current) {
       const pulse = 1 + Math.sin(t * 4) * 0.05
-      let emissiveIntensity = 0.8 // Lowered baseline to permit metallic reflections & deep gold shadows (prevents cheap yellow light look)
+      let emissiveIntensity = 0.0 // Pure metallic gold in normal state (zero flat yellow/orange emissive wash)
       
       const lightningActive = typeof window !== 'undefined' ? !!(window as unknown as Record<string, unknown>).__technomancy_lightning : false
       if (lightningActive) {
-        emissiveIntensity = Math.random() > 0.35 ? 4.5 : 0.4
+        emissiveIntensity = Math.random() > 0.35 ? 8.0 : 0.5
       }
       
       coreRef.current.scale.setScalar(0.72 * pulse)
-      const coreColor = "#8C691E" // Rich deep antique bronze-gold
-      const coreEmissive = "#B8860B" // Deep golden glow
+      const coreColor = "#D4AF37" // Brilliant, premium metallic gold
+      const coreEmissive = "#FFD700" // Classic bright gold emissive flash
       if (coreRef.current.material && !Array.isArray(coreRef.current.material)) {
         const mat = coreRef.current.material as THREE.MeshStandardMaterial
         mat.color.set(coreColor)
@@ -405,6 +405,9 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
     }
 
     if (coreLightRef.current) {
+      const lightningActive = typeof window !== 'undefined' ? !!(window as unknown as Record<string, unknown>).__technomancy_lightning : false
+      // Disable core point light by default to prevent casting glow/orange reflections onto the rings
+      coreLightRef.current.intensity = lightningActive ? (Math.random() > 0.35 ? 80 : 5) : 0
       const coreLightColor = "#FFD700"
       coreLightRef.current.color.set(coreLightColor)
     }
@@ -416,15 +419,15 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
         <mesh ref={coreRef}>
           <sphereGeometry args={[1, 32, 32]} />
           <meshStandardMaterial 
-            color="#8C691E" 
-            emissive="#B8860B" 
-            emissiveIntensity={0.8} 
-            metalness={0.9} 
-            roughness={0.12} 
+            color="#D4AF37" 
+            emissive="#FFD700" 
+            emissiveIntensity={0.0} 
+            metalness={0.95} 
+            roughness={0.1} 
             toneMapped={false} 
           />
         </mesh>
-        <pointLight ref={coreLightRef} intensity={50} color="#FFD700" distance={10} />
+        <pointLight ref={coreLightRef} intensity={0} color="#FFD700" distance={10} />
         
         {/* Ring 1: Robust 3D Cuboid Ring (Custom Shader Material) with Dark Engraved Runes */}
         <group ref={ring1Ref} rotation={[Math.PI / 4, Math.PI / 4, 0]}>
