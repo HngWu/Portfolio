@@ -386,16 +386,16 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
     // Core pulsing & lightning flickers
     if (coreRef.current) {
       const pulse = 1 + Math.sin(t * 4) * 0.05
-      let emissiveIntensity = 3.5 // Sleek, non-blown-out metallic gold glow
+      let emissiveIntensity = 0.8 // Lowered baseline to permit metallic reflections & deep gold shadows (prevents cheap yellow light look)
       
       const lightningActive = typeof window !== 'undefined' ? !!(window as unknown as Record<string, unknown>).__technomancy_lightning : false
       if (lightningActive) {
-        emissiveIntensity = Math.random() > 0.35 ? 18 : 1.5
+        emissiveIntensity = Math.random() > 0.35 ? 4.5 : 0.4
       }
       
       coreRef.current.scale.setScalar(0.72 * pulse)
-      const coreColor = "#C5A029"
-      const coreEmissive = "#C5A029"
+      const coreColor = "#8C691E" // Rich deep antique bronze-gold
+      const coreEmissive = "#B8860B" // Deep golden glow
       if (coreRef.current.material && !Array.isArray(coreRef.current.material)) {
         const mat = coreRef.current.material as THREE.MeshStandardMaterial
         mat.color.set(coreColor)
@@ -416,11 +416,11 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
         <mesh ref={coreRef}>
           <sphereGeometry args={[1, 32, 32]} />
           <meshStandardMaterial 
-            color="#C5A029" 
-            emissive="#C5A029" 
-            emissiveIntensity={3.5} 
-            metalness={0.95} 
-            roughness={0.08} 
+            color="#8C691E" 
+            emissive="#B8860B" 
+            emissiveIntensity={0.8} 
+            metalness={0.9} 
+            roughness={0.12} 
             toneMapped={false} 
           />
         </mesh>
