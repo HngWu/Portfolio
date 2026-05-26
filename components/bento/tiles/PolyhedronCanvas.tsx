@@ -201,8 +201,8 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
         }
       `,
       uniforms: {
-        uColor: { value: new THREE.Color("#ffffff") },
-        uGlowColor: { value: new THREE.Color("#4AFFB4") }, // Neon Mint
+        uColor: { value: new THREE.Color("#05050a") },
+        uGlowColor: { value: new THREE.Color("#ffcc00") }, // Warm Gold
         uTime: { value: 0 },
         uFresnelPower: { value: 2.0 },
         uGlowIntensity: { value: 0.6 }
@@ -251,8 +251,8 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
         }
       `,
       uniforms: {
-        uColor: { value: new THREE.Color("#ffffff") },
-        uGlowColor: { value: new THREE.Color("#4A8FFF") }, // Neon Blue
+        uColor: { value: new THREE.Color("#05050a") },
+        uGlowColor: { value: new THREE.Color("#ffcc00") }, // Warm Gold
         uTime: { value: 0 },
         uFresnelPower: { value: 2.0 },
         uGlowIntensity: { value: 0.6 }
@@ -327,11 +327,11 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
       runicShaderMaterial1.uniforms.uGlowIntensity.value = 1.6 + Math.sin(t * 18.0) * 0.4
       runicShaderMaterial2.uniforms.uGlowIntensity.value = 1.6 + Math.cos(t * 18.0) * 0.4
     } else {
-      // Keep consistent Quick Pitch (Magic) colors in all modes: Neon Emerald & Warm Gold
-      runicShaderMaterial1.uniforms.uGlowColor.value.set("#4AFFB4")
-      runicShaderMaterial2.uniforms.uGlowColor.value.set("#FFB44A")
-      runicShaderMaterial1.uniforms.uColor.value.set("#ffffff")
-      runicShaderMaterial2.uniforms.uColor.value.set("#ffffff")
+      // Keep consistent Quick Pitch (Magic) colors in all modes: Golden and Black
+      runicShaderMaterial1.uniforms.uGlowColor.value.set("#ffcc00")
+      runicShaderMaterial2.uniforms.uGlowColor.value.set("#ffcc00")
+      runicShaderMaterial1.uniforms.uColor.value.set("#05050a")
+      runicShaderMaterial2.uniforms.uColor.value.set("#05050a")
       runicShaderMaterial1.uniforms.uGlowIntensity.value = 0.6
       runicShaderMaterial2.uniforms.uGlowIntensity.value = 0.6
     }
@@ -392,15 +392,15 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
     // Core pulsing & lightning flickers
     if (coreRef.current) {
       const pulse = 1 + Math.sin(t * 4) * 0.05
-      let emissiveIntensity = 25
+      let emissiveIntensity = 8
       
       const lightningActive = typeof window !== 'undefined' ? !!(window as unknown as Record<string, unknown>).__technomancy_lightning : false
       if (lightningActive) {
-        emissiveIntensity = Math.random() > 0.35 ? 130 : 8
+        emissiveIntensity = Math.random() > 0.35 ? 40 : 3
       }
       
       coreRef.current.scale.setScalar(0.72 * pulse)
-      const coreColor = "#4AFFB4"
+      const coreColor = "#b38600"
       if (coreRef.current.material && !Array.isArray(coreRef.current.material)) {
         const mat = coreRef.current.material as THREE.MeshStandardMaterial
         mat.color.set(coreColor)
@@ -410,7 +410,7 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
     }
 
     if (coreLightRef.current) {
-      const coreColor = "#4AFFB4"
+      const coreColor = "#ffcc00"
       coreLightRef.current.color.set(coreColor)
     }
   })
@@ -420,9 +420,9 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
       <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.2}>
         <mesh ref={coreRef}>
           <sphereGeometry args={[1, 32, 32]} />
-          <meshStandardMaterial color="#4AFFB4" emissive="#4AFFB4" emissiveIntensity={25} toneMapped={false} />
+          <meshStandardMaterial color="#b38600" emissive="#b38600" emissiveIntensity={8} toneMapped={false} />
         </mesh>
-        <pointLight ref={coreLightRef} intensity={50} color="#4AFFB4" distance={10} />
+        <pointLight ref={coreLightRef} intensity={50} color="#ffcc00" distance={10} />
         
         {/* Ring 1: Robust 3D Cuboid Ring (Custom Shader Material) with Dark Engraved Runes */}
         <group ref={ring1Ref} rotation={[Math.PI / 4, Math.PI / 4, 0]}>
@@ -432,12 +432,12 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
               key={i}
               position={rd.pos}
               rotation={rd.rot}
-              fontSize={0.15}
+              fontSize={0.20}
               font="/fonts/NotoSansRunic-Regular.ttf"
               anchorX="center"
               anchorY="middle"
             >
-              <meshBasicMaterial color="#000000" toneMapped={false} depthWrite={true} />
+              <meshBasicMaterial color="#ffcc00" toneMapped={false} depthWrite={true} />
               {rd.rune}
             </Text>
           ))}
@@ -451,12 +451,12 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
               key={i}
               position={rd.pos}
               rotation={rd.rot}
-              fontSize={0.18}
+              fontSize={0.24}
               font="/fonts/NotoSansRunic-Regular.ttf"
               anchorX="center"
               anchorY="middle"
             >
-              <meshBasicMaterial color="#000000" toneMapped={false} depthWrite={true} />
+              <meshBasicMaterial color="#ffcc00" toneMapped={false} depthWrite={true} />
               {rd.rune}
             </Text>
           ))}
