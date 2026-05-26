@@ -156,8 +156,8 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
   // Mathematically perfect 3D rectangular cuboid rings
   const { ring1Geo, ring2Geo } = useMemo(() => {
     return {
-      ring1Geo: makeRectangularTorus(1.3, 0.16, 0.45, 1.3),
-      ring2Geo: makeRectangularTorus(1.8, 0.20, 0.45, 1.3)
+      ring1Geo: makeRectangularTorus(1.5, 0.28, 0.45, 2.2),
+      ring2Geo: makeRectangularTorus(1.9, 0.28, 0.45, 2.2)
     }
   }, [])
 
@@ -266,7 +266,7 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
   // Position and orient runes around outer face of Ring 1
   const ring1Runes = useMemo<RuneData[]>(() => {
     const N = 12
-    const radiusRune = 1.3 + (0.16 * Math.cos(Math.PI / 4) * 0.45) + 0.015
+    const radiusRune = 1.5 + (0.28 * Math.cos(Math.PI / 4) * 0.45) + 0.015
     const runesData: RuneData[] = []
     for (let i = 0; i < N; i++) {
       const theta = (2 * Math.PI * i) / N
@@ -286,7 +286,7 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
   // Position and orient runes around outer face of Ring 2
   const ring2Runes = useMemo<RuneData[]>(() => {
     const N = 16
-    const radiusRune = 1.8 + (0.20 * Math.cos(Math.PI / 4) * 0.45) + 0.015
+    const radiusRune = 1.9 + (0.28 * Math.cos(Math.PI / 4) * 0.45) + 0.015
     const runesData: RuneData[] = []
     for (let i = 0; i < N; i++) {
       const theta = (2 * Math.PI * i) / N
@@ -399,7 +399,7 @@ function PolyhedronScene({ isHovered, isDeepDive }: { isHovered: boolean, isDeep
         emissiveIntensity = Math.random() > 0.35 ? 130 : 8
       }
       
-      coreRef.current.scale.setScalar(0.5 * pulse)
+      coreRef.current.scale.setScalar(0.72 * pulse)
       const coreColor = "#4AFFB4"
       if (coreRef.current.material && !Array.isArray(coreRef.current.material)) {
         const mat = coreRef.current.material as THREE.MeshStandardMaterial
