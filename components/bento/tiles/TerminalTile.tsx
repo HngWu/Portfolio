@@ -156,15 +156,22 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
       { cmd: "open <url>", desc: "Navigate to a URL or page" },
       { cmd: "back", desc: "Return to home page" },
       { cmd: "login", desc: "Access administration portal" },
-      { cmd: "sudo ignite", desc: "Initialize neural bridge" }
+      { cmd: "sudo ignite", desc: "Initialize neural bridge" },
+      { cmd: "shatter", desc: "Shatter 3D core fragments" },
+      { cmd: "pulse", desc: "Emit 3D core kinetic shockwave" },
+      { cmd: "antigravity <on/off>", desc: "Control 3D gravity field" },
+      { cmd: "ignite <on/off>", desc: "Control thermal core overload" },
+      { cmd: "lightning <on/off>", desc: "Control electrical ionization arcs" },
+      { cmd: "lockdown <on/off>", desc: "Control EMP grid lockdown" },
+      { cmd: "reset", desc: "Restore 3D core to default state" }
     ]
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 mt-2 mb-2">
         {commonCmds.map((c, i) => (
           <div key={i} className="flex gap-2">
-            <span className={cn("min-w-[120px]", os === "windows" ? "text-white" : "text-lume-primary")}>{c.cmd}</span>
-            <span className="text-white/40">- {c.desc}</span>
+            <span className={cn("min-w-[120px] font-mono", os === "windows" ? "text-white" : "text-lume-primary")}>{c.cmd}</span>
+            <span className="text-white/40 font-sans">- {c.desc}</span>
           </div>
         ))}
       </div>
@@ -256,6 +263,21 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
     } else if (trimmedCmd === "login") {
       setHistory([...newHistory, { type: "output", content: "Accessing administrative portal..." }])
       navigateWithTransition("/admin")
+    } else if (
+      trimmedCmd === "shatter" ||
+      trimmedCmd === "pulse" ||
+      trimmedCmd === "reset" ||
+      trimmedCmd.startsWith("antigravity") ||
+      trimmedCmd.startsWith("ignite") ||
+      trimmedCmd.startsWith("lightning") ||
+      trimmedCmd.startsWith("lockdown")
+    ) {
+      if (typeof window !== "undefined" && (window as any).__hexcore_cmd) {
+        const hexRes = (window as any).__hexcore_cmd(trimmedCmd)
+        setHistory([...newHistory, { type: "output", content: hexRes }])
+      } else {
+        setHistory([...newHistory, { type: "output", content: "Hexcore telemetry link offline. Cannot execute command." }])
+      }
     } else if (trimmedCmd !== "") {
       setHistory([...newHistory, { type: "output", content: `'${trimmedCmd}' is not recognized as an internal or external command.` }])
     } else {

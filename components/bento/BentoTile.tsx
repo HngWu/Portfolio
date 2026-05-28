@@ -22,6 +22,7 @@ interface BentoTileProps {
   canMorph?: boolean
   canExpand?: boolean
   layout?: boolean | "position" | "size"
+  noPadding?: boolean
 }
 
 export function BentoTile({
@@ -38,6 +39,7 @@ export function BentoTile({
   canMorph = true,
   canExpand = true,
   layout = true,
+  noPadding = false,
 }: BentoTileProps) {
   const { navigateWithTransition } = usePageTransition()
   const { ref, onMouseMove, onMouseLeave } = useTilt()
@@ -130,7 +132,8 @@ export function BentoTile({
             interactive={!isDragging}
             data-id={id}
             className={cn(
-              "p-4 md:p-6 flex flex-col",
+              noPadding ? "p-0" : "p-4 md:p-6",
+              "flex flex-col",
               isMobile ? "h-auto" : "h-full",
               isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
               className
@@ -153,7 +156,8 @@ export function BentoTile({
             onClick={handleClick}
             interactive={!isDragging}
             className={cn(
-              "p-4 md:p-6 flex flex-col bg-lume-secondary/5 border-lume-secondary/20",
+              noPadding ? "p-0" : "p-4 md:p-6",
+              "flex flex-col bg-lume-secondary/5 border-lume-secondary/20",
               isMobile ? "h-auto" : "h-full",
               isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
               className
