@@ -80,6 +80,7 @@ const _scratchVector5 = new THREE.Vector3()
 const _scratchQuat1 = new THREE.Quaternion()
 const _scratchQuat2 = new THREE.Quaternion()
 const _scratchQuat3 = new THREE.Quaternion()
+const _scratchEuler = new THREE.Euler()
 
 // Pre-allocated vector pool for high-performance midpoint displacement lightning arcs
 const LIGHTNING_POOL_SIZE = 128
@@ -1040,17 +1041,30 @@ function PolyhedronScene({
     const gearRatios = [1.0, -2.0, 3.0] // Ring 2 counter-clockwise
     const baseFreq = 0.8
 
+    const flatAxis = _scratchVector1.set(0, 1, 0)
     refs.forEach((ref, idx) => {
       if (!ref.current) return
-      // Calculate slerp between idle wobble precession and active cursor orientation
-      const idleQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), currentPrecessedAxes[idx])
-      const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), cursorVector)
-      ref.current.quaternion.slerpQuaternions(idleQuat, targetQuat, hoverProgress)
       
-      // Calculate and accumulate smooth local Y-axis spin
+      // 1. Calculate base idle wobble precession quaternion
+      const idleQuat = _scratchQuat1.setFromUnitVectors(flatAxis, currentPrecessedAxes[idx])
+      
+      // 2. Target coplanar/flat locked orientation
+      const lockedQuat = _scratchQuat2.setFromEuler(_scratchEuler.set(0, 0, 0))
+      
+      // 3. Slerp precession wobble down based on scroll progress (Concept A)
+      const baseAlignedQuat = _scratchQuat3.slerpQuaternions(idleQuat, lockedQuat, sharedSpellState.scrollProgress)
+      
+      // 4. Slerp to active pointer tracking based on hoverProgress
+      const targetCursorQuat = _scratchQuat1.setFromUnitVectors(flatAxis, cursorVector)
+      ref.current.quaternion.slerpQuaternions(baseAlignedQuat, targetCursorQuat, hoverProgress)
+      
+      // Smoothly coupling speed to strict integer gear ratios as scroll progress increases
       const idleSpeed = idx === 1 ? -0.5 : (idx === 2 ? 0.3 : 0.6)
       const targetSpeed = baseFreq * gearRatios[idx]
-      let currentSpeed = THREE.MathUtils.lerp(idleSpeed, targetSpeed, hoverProgress)
+      
+      // Blend speeds using scroll progress (harmonic resonance)
+      const speedBlend = Math.pow(sharedSpellState.scrollProgress, 1.5)
+      let currentSpeed = THREE.MathUtils.lerp(idleSpeed, targetSpeed, speedBlend)
 
       // Apply special spell speed overrides (EMP lockdown / Ignite overload)
       if (sharedSpellState.lockdown) currentSpeed = 0.0
