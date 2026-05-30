@@ -623,19 +623,12 @@ function LightningArcs({ faces }: { faces: FaceData[] }) {
   const maxVertices = 200
   const positions = useMemo(() => new Float32Array(maxVertices * 3), [])
   
-  const smoothScroll = useRef(0)
-
   useFrame((state, delta) => {
     const active = sharedSpellState.lightning
     
-    // Check Detonation Act (0.0 to 0.25 scroll)
-    const docH = typeof document !== 'undefined' ? document.documentElement.scrollHeight : 1000
-    const winH = typeof window !== 'undefined' ? window.innerHeight : 800
-    const maxScroll = docH - winH
-    const scrollPercent = maxScroll > 0 && typeof window !== 'undefined' ? window.scrollY / maxScroll : 0
-    
-    smoothScroll.current = THREE.MathUtils.lerp(smoothScroll.current, scrollPercent, delta * 4.0)
-    const isDetonationAct = smoothScroll.current > 0.0 && smoothScroll.current < 0.25
+    // Check Detonation Act (0.0 to 0.25 scroll) using the centralized scroll progress
+    const scrollVal = sharedSpellState.scrollProgress
+    const isDetonationAct = scrollVal > 0.0 && scrollVal < 0.25
 
     const showLightning = active || (isDetonationAct && Math.random() > 0.3)
     
@@ -1431,7 +1424,7 @@ function PyramidFragment({
       delta * (7.5 - data.center.length() * 1.5)
     )
 
-    // Base expansion + scroll + proximity + shatter offset
+    // Base expansion + proximity + shatter offset
     targetExp += stateRef.current.shatterVal * 4.2
 
     stateRef.current.targetExpansion = targetExp
