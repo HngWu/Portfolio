@@ -78,7 +78,7 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
     setIsHidden(true)
   }
   
-  const ignite = useIgniteStore((state) => state.ignite)
+  const { ignite, reset: resetIgnite } = useIgniteStore()
   const { navigateWithTransition } = usePageTransition()
   const pathname = usePathname()
 
@@ -194,6 +194,9 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
     } else if (trimmedCmd === "sudo ignite") {
       setHistory([...newHistory, { type: "output", content: "🔥 Root access granted. Initializing neural bridge..." }])
       ignite()
+      if (typeof window !== "undefined" && (window as any).__hexcore_cmd) {
+        (window as any).__hexcore_cmd("ignite on")
+      }
     } else if (trimmedCmd === `${config.commands.list} projects`) {
       const projects = SEARCHABLE_CONTENT.filter(item => item.category === "Projects")
       setHistory([
@@ -275,6 +278,13 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
       if (typeof window !== "undefined" && (window as any).__hexcore_cmd) {
         const hexRes = (window as any).__hexcore_cmd(trimmedCmd)
         setHistory([...newHistory, { type: "output", content: hexRes }])
+
+        // Synchronize bento grid global overlay with Hexcore spell telemetry
+        if (trimmedCmd === "ignite" || trimmedCmd === "ignite on") {
+          ignite()
+        } else if (trimmedCmd === "ignite off" || trimmedCmd.startsWith("lockdown") || trimmedCmd === "reset") {
+          resetIgnite()
+        }
       } else {
         setHistory([...newHistory, { type: "output", content: "Hexcore telemetry link offline. Cannot execute command." }])
       }

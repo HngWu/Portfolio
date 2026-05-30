@@ -1,12 +1,14 @@
 "use client"
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber"
 import { Suspense, useRef, useMemo, useState, useEffect } from "react"
 import { Float, Text } from "@react-three/drei"
 import * as THREE from "three"
 import { EffectComposer, Bloom } from "@react-three/postprocessing"
 import { motion, AnimatePresence } from "framer-motion"
 import gsap from "gsap"
+import { RunicDustStreams } from "./hexcore/RunicDustStreams"
+import { RingLightningArcs } from "./hexcore/LightningArcs"
 
 // Ancient runes for a mystical high-tech look
 const RUNES = ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ", "ᛇ", "ᛈ", "ᛉ", "ᛊ", "ᛏ", "ᛒ", "ᛖ", "ᛗ", "ᛚ", "ᛜ", "ᛞ", "ᛟ"]
@@ -23,7 +25,7 @@ const RUNE_LORES: Record<string, string> = {
 }
 
 // Module-level shared states for zero-lag frame communication
-const sharedSpellState = {
+export const sharedSpellState = {
   antigravity: false,
   ignite: false,
   lightning: false,
@@ -34,6 +36,62 @@ const sharedSpellState = {
   isHit: false,
   modeProgress: 0.0 // 0 for quick pitch (gold), 1 for deep dive (default indigo)
 }
+
+// Pre-allocated static colors to avoid 60fps GC allocation overhead
+const COLOR_GOLD = new THREE.Color("#c9a227")
+const COLOR_DEFAULT = new THREE.Color("#0c0a1a")
+const COLOR_GOLD_EDGE1 = new THREE.Color("#ffe875")
+const COLOR_GOLD_EDGE2 = new THREE.Color("#ffb44a")
+const COLOR_DEFAULT_EDGE1 = new THREE.Color("#6A0DAD")
+const COLOR_DEFAULT_EDGE2 = new THREE.Color("#4AFFB4")
+const COLOR_IGNITE_BASE = new THREE.Color("#3a0a0a")
+const COLOR_IGNITE_GLOW = new THREE.Color("#ff4500")
+const COLOR_LOCKDOWN_BASE = new THREE.Color("#05070a")
+const COLOR_LOCKDOWN_GLOW = new THREE.Color("#000000")
+
+const COLOR_GLOW_RING1_GOLD = new THREE.Color("#ffb44a")
+const COLOR_GLOW_RING1_DEFAULT = new THREE.Color("#4AFFB4")
+const COLOR_GLOW_RING2_GOLD = new THREE.Color("#ffb44a")
+const COLOR_GLOW_RING2_DEFAULT = new THREE.Color("#4A8FFF")
+const COLOR_GLOW_RING3_GOLD = new THREE.Color("#ffb44a")
+const COLOR_GLOW_RING3_DEFAULT = new THREE.Color("#9f4aff")
+
+const COLOR_RUNE_GOLD = new THREE.Color("#ffb44a")
+const COLOR_RUNE_DEFAULT = new THREE.Color("#4AFFB4")
+const COLOR_RUNE_IGNITE = new THREE.Color("#FF7800")
+const COLOR_RUNE_LOCKDOWN = new THREE.Color("#2E1402")
+const COLOR_WHITE = new THREE.Color("#ffffff")
+
+// Global scratch variables for zero-allocation hot loops
+const _scratchColor1 = new THREE.Color()
+const _scratchColor2 = new THREE.Color()
+const _scratchColor3 = new THREE.Color()
+const _scratchColor4 = new THREE.Color()
+const _scratchColor5 = new THREE.Color()
+const _scratchColor6 = new THREE.Color()
+
+const _scratchVector1 = new THREE.Vector3()
+const _scratchVector2 = new THREE.Vector3()
+const _scratchVector3 = new THREE.Vector3()
+const _scratchVector4 = new THREE.Vector3()
+const _scratchVector5 = new THREE.Vector3()
+
+const _scratchQuat1 = new THREE.Quaternion()
+const _scratchQuat2 = new THREE.Quaternion()
+const _scratchQuat3 = new THREE.Quaternion()
+
+// Pre-allocated vector pool for high-performance midpoint displacement lightning arcs
+const LIGHTNING_POOL_SIZE = 128
+const _lightningPool = Array.from({ length: LIGHTNING_POOL_SIZE }, () => new THREE.Vector3())
+let _lightningPoolIdx = 0
+function getScratchVector() {
+  const v = _lightningPool[_lightningPoolIdx]
+  _lightningPoolIdx = (_lightningPoolIdx + 1) % LIGHTNING_POOL_SIZE
+  return v
+}
+
+const MAX_PATH_POINTS = 33
+const _pathPoints = Array.from({ length: MAX_PATH_POINTS }, () => new THREE.Vector3())
 
 // 3D Simplex Noise GLSL helper embedded inside the Plasma core shader
 const SIMPLEX_NOISE_GLSL = `
@@ -374,6 +432,60 @@ function createEdgeGlowMaterial() {
   })
 }
 
+const SuspendedRunesShader = {
+  vertexShader: `
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec3 vWorldPosition;
+    void main() {
+      vUv = uv;
+      vNormal = normalize(normalMatrix * normal);
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vViewPosition = -mvPosition.xyz;
+      vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `,
+  fragmentShader: `
+    uniform float uTime;
+    uniform vec3 uRuneColor;
+    uniform float uHoverActive;
+    uniform float uPulseScale;
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec3 vWorldPosition;
+
+    float runeNoise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      float n = sin(i.x + i.y * 57.0) * 43758.5453;
+      return fract(n);
+    }
+
+    void main() {
+      float speed = uTime * 1.5;
+      float circuit = sin(vUv.x * 35.0 - speed) * cos(vUv.y * 8.0 + sin(uTime));
+      float runeMask = pow(abs(circuit), 4.0) * 2.0;
+      
+      float noiseVal = runeNoise(vWorldPosition.xy * 8.0 + vec2(uTime, -uTime * 0.5));
+      runeMask *= (0.4 + 0.6 * noiseVal);
+      
+      vec3 normal = normalize(vNormal);
+      vec3 viewDir = normalize(vViewPosition);
+      float fresnel = pow(max(dot(normal, viewDir), 0.0), 2.5);
+      
+      vec3 glowColor = uRuneColor * (1.2 + uHoverActive * 0.8) * uPulseScale;
+      vec3 finalColor = glowColor * runeMask * fresnel;
+      float alpha = clamp(runeMask * fresnel * 0.95, 0.0, 1.0);
+      
+      gl_FragColor = vec4(finalColor, alpha);
+    }
+  `
+}
+
 /**
  * ANTIGRAVITY FALLING DUST STREAM
  */
@@ -384,15 +496,20 @@ function GravityParticles() {
     const pos = new Float32Array(count * 3)
     const vel = new Float32Array(count * 3)
     for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 6
-      pos[i * 3 + 1] = Math.random() * 5 - 2
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 6
-      vel[i * 3 + 1] = -(0.5 + Math.random() * 1.2) // fall speed
+      // Deterministic, coordinate-based pseudo-random numbers
+      const r1 = (Math.abs(Math.sin(i * 12.9898)) * 43758.5453) % 1
+      const r2 = (Math.abs(Math.cos(i * 78.233)) * 43758.5453) % 1
+      const r3 = (Math.abs(Math.sin(i * 93.123)) * 43758.5453) % 1
+      const r4 = (Math.abs(Math.cos(i * 45.456)) * 43758.5453) % 1
+      pos[i * 3] = (r1 - 0.5) * 6
+      pos[i * 3 + 1] = r2 * 5 - 2
+      pos[i * 3 + 2] = (r3 - 0.5) * 6
+      vel[i * 3 + 1] = -(0.5 + r4 * 1.2) // fall speed
     }
     return [pos, vel]
   }, [])
 
-  useFrame((state, delta) => {
+  useFrame((_state, delta) => {
     const active = sharedSpellState.antigravity
     if (pointsRef.current) {
       pointsRef.current.visible = active
@@ -402,20 +519,21 @@ function GravityParticles() {
     const geo = pointsRef.current?.geometry
     if (!geo) return
     const posAttr = geo.getAttribute('position') as THREE.BufferAttribute
+    const pos = posAttr.array as Float32Array
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3
-      positions[i3 + 1] += velocities[i3 + 1] * delta // fall downwards
+      pos[i3 + 1] += velocities[i3 + 1] * delta // fall downwards
       
       // Turbulence
-      positions[i3] += (Math.random() - 0.5) * 0.1 * delta
-      positions[i3 + 2] += (Math.random() - 0.5) * 0.1 * delta
+      pos[i3] += (Math.random() - 0.5) * 0.1 * delta
+      pos[i3 + 2] += (Math.random() - 0.5) * 0.1 * delta
 
-      if (positions[i3 + 1] < -3.0) {
+      if (pos[i3 + 1] < -3.0) {
         // Recycle to top
-        positions[i3] = (Math.random() - 0.5) * 6
-        positions[i3 + 1] = 3.0
-        positions[i3 + 2] = (Math.random() - 0.5) * 6
+        pos[i3] = (Math.random() - 0.5) * 6
+        pos[i3 + 1] = 3.0
+        pos[i3 + 2] = (Math.random() - 0.5) * 6
       }
     }
     posAttr.needsUpdate = true
@@ -462,36 +580,49 @@ function GravityParticles() {
 /**
  * FRACTAL LIGHTNING ARCS GENERATION (MIDPOINT DISPLACEMENT)
  */
-function generateLightningPath(start: THREE.Vector3, end: THREE.Vector3, detail = 4, displace = 0.35) {
-  let points = [start, end]
+function generateLightningPath(start: THREE.Vector3, end: THREE.Vector3, detail = 4, displace = 0.35): number {
+  _lightningPoolIdx = 0 // Reset pool for this path
+  
+  _pathPoints[0].copy(start)
+  _pathPoints[1].copy(end)
+  
+  let currentSegmentCount = 1
+  
   for (let d = 0; d < detail; d++) {
-    const nextPoints: THREE.Vector3[] = []
-    for (let i = 0; i < points.length - 1; i++) {
-      const p1 = points[i]
-      const p2 = points[i+1]
-      const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5)
+    for (let i = currentSegmentCount - 1; i >= 0; i--) {
+      const p1 = _pathPoints[i]
+      const p2 = _pathPoints[i + 1]
       
-      const dir = new THREE.Vector3().subVectors(p2, p1).normalize()
-      let tangent = new THREE.Vector3(1, 0, 0)
-      if (Math.abs(dir.x) > 0.9) tangent = new THREE.Vector3(0, 1, 0)
-      const normal = new THREE.Vector3().crossVectors(dir, tangent).normalize()
+      const midIdx = i * 2 + 1
+      const p2Idx = i * 2 + 2
       
-      const shift = normal.clone().multiplyScalar((Math.random() - 0.5) * displace)
+      _pathPoints[p2Idx].copy(p2)
+      
+      const mid = _pathPoints[midIdx].addVectors(p1, p2).multiplyScalar(0.5)
+      
+      const dir = getScratchVector().subVectors(p2, p1).normalize()
+      const tangent = getScratchVector().set(1, 0, 0)
+      if (Math.abs(dir.x) > 0.9) tangent.set(0, 1, 0)
+      const normal = getScratchVector().crossVectors(dir, tangent).normalize()
+      
+      const shift = getScratchVector().copy(normal).multiplyScalar((Math.random() - 0.5) * displace)
       mid.add(shift)
-      
-      nextPoints.push(p1, mid)
     }
-    nextPoints.push(points[points.length - 1])
-    points = nextPoints
-    displace *= 0.5
+    currentSegmentCount *= 2
   }
-  return points
+  
+  return currentSegmentCount + 1
 }
 
 function LightningArcs({ faces }: { faces: FaceData[] }) {
   const lineRef = useRef<THREE.LineSegments>(null)
+  const lineGeoRef = useRef<THREE.BufferGeometry>(null)
   
-  useFrame((state) => {
+  // Max vertices = 3 paths * 33 points/path * 2 = 198
+  const maxVertices = 200
+  const positions = useMemo(() => new Float32Array(maxVertices * 3), [])
+  
+  useFrame(() => {
     const active = sharedSpellState.lightning
     
     // Check Detonation Act (0.50 to 0.75 scroll)
@@ -506,12 +637,12 @@ function LightningArcs({ faces }: { faces: FaceData[] }) {
     if (lineRef.current) {
       lineRef.current.visible = !!showLightning
     }
-    if (!showLightning || !lineRef.current) return
+    if (!showLightning || !lineRef.current || !lineGeoRef.current) return
 
-    const lineGeo = lineRef.current.geometry
-    const vertices: number[] = []
-    
+    let vertexIdx = 0
     const count = 3
+    const pos = lineGeoRef.current.attributes.position.array as Float32Array
+
     for (let l = 0; l < count; l++) {
       const p1Idx = Math.floor(Math.random() * faces.length)
       let p2Idx = Math.floor(Math.random() * faces.length)
@@ -520,24 +651,41 @@ function LightningArcs({ faces }: { faces: FaceData[] }) {
       const f1 = faces[p1Idx]
       const f2 = faces[p2Idx]
       
-      // Centroid positions
-      const p1 = f1.center.clone().multiplyScalar(1.3)
-      const p2 = f2.center.clone().multiplyScalar(1.3)
+      // Use scratch vectors to avoid clones and new vector allocations
+      const p1 = _scratchVector1.copy(f1.center).multiplyScalar(1.3)
+      const p2 = _scratchVector2.copy(f2.center).multiplyScalar(1.3)
       
-      const path = generateLightningPath(p1, p2, 4, 0.45)
-      for (let i = 0; i < path.length - 1; i++) {
-        vertices.push(path[i].x, path[i].y, path[i].z)
-        vertices.push(path[i+1].x, path[i+1].y, path[i+1].z)
+      const numPoints = generateLightningPath(p1, p2, 4, 0.45)
+      for (let i = 0; i < numPoints - 1; i++) {
+        if (vertexIdx + 2 <= maxVertices) {
+          const ptA = _pathPoints[i]
+          const ptB = _pathPoints[i+1]
+          const offset = vertexIdx * 3
+          pos[offset] = ptA.x
+          pos[offset + 1] = ptA.y
+          pos[offset + 2] = ptA.z
+          pos[offset + 3] = ptB.x
+          pos[offset + 4] = ptB.y
+          pos[offset + 5] = ptB.z
+          vertexIdx += 2
+        }
       }
     }
     
-    lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
-    lineGeo.attributes.position.needsUpdate = true
+    lineGeoRef.current.setDrawRange(0, vertexIdx)
+    lineGeoRef.current.attributes.position.needsUpdate = true
   })
 
   return (
     <lineSegments ref={lineRef}>
-      <bufferGeometry />
+      <bufferGeometry ref={lineGeoRef}>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[positions, 3]}
+          count={maxVertices}
+          itemSize={3}
+        />
+      </bufferGeometry>
       <lineBasicMaterial 
         color="#ffffff" 
         linewidth={1.5} 
@@ -567,17 +715,47 @@ function PolyhedronScene({
   const ring2Ref = useRef<THREE.Group>(null)
   const ring3Ref = useRef<THREE.Group>(null)
   const coreLightRef = useRef<THREE.PointLight>(null)
-  const resonanceLineGeoRef = useRef<THREE.BufferGeometry>(null)
   const pyramidsGroupRef = useRef<THREE.Group>(null)
+
+  const ring1TextRefs = useRef<(THREE.Mesh | null)[]>([])
+  const ring2TextRefs = useRef<(THREE.Mesh | null)[]>([])
 
   const [assemblyProgress, setAssemblyProgress] = useState(0)
   const faces = useMemo(() => getUniformHexCoreFaces(2.32) as FaceData[], [])
 
-  const { ring1Geo, ring2Geo, ring3Geo } = useMemo(() => {
+  const glassMaterialProps = useMemo(() => ({
+    transmission: 0.98,
+    ior: 1.65,
+    thickness: 1.8,
+    roughness: 0.04,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.02,
+    color: new THREE.Color("#0e0b1f"),
+    attenuationColor: new THREE.Color("#0c0a1a"),
+    attenuationDistance: 0.5,
+    envMapIntensity: 2.5,
+    metalness: 0.0,
+    roughnessMap: null
+  }), [])
+
+  const { 
+    ring1Geo, ring2Geo, ring3Geo, 
+    innerRing1Geo, innerRing2Geo, innerRing3Geo,
+    ring1EdgeGeo, ring2EdgeGeo, ring3EdgeGeo 
+  } = useMemo(() => {
+    const r1 = makeRectangularTorus(1.5, 0.28, 0.45, 2.2)
+    const r2 = makeRectangularTorus(1.9, 0.28, 0.45, 2.2)
+    const r3 = makeRectangularTorus(2.3, 0.22, 0.45, 2.2)
     return {
-      ring1Geo: makeRectangularTorus(1.5, 0.28, 0.45, 2.2),
-      ring2Geo: makeRectangularTorus(1.9, 0.28, 0.45, 2.2),
-      ring3Geo: makeRectangularTorus(2.3, 0.22, 0.45, 2.2)
+      ring1Geo: r1,
+      ring2Geo: r2,
+      ring3Geo: r3,
+      innerRing1Geo: new THREE.TorusGeometry(1.5, 0.28 * 0.84, 16, 100),
+      innerRing2Geo: new THREE.TorusGeometry(1.9, 0.28 * 0.84, 16, 100),
+      innerRing3Geo: new THREE.TorusGeometry(2.3, 0.22 * 0.84, 16, 100),
+      ring1EdgeGeo: new THREE.EdgesGeometry(r1, 30),
+      ring2EdgeGeo: new THREE.EdgesGeometry(r2, 30),
+      ring3EdgeGeo: new THREE.EdgesGeometry(r3, 30)
     }
   }, [])
 
@@ -586,29 +764,115 @@ function PolyhedronScene({
   const edgeMaterial = useMemo(() => createEdgeGlowMaterial(), [])
 
   // Concentric Rings: Beautiful custom Runic Shader Materials
-  const ring1Material = useMemo(() => new THREE.MeshStandardMaterial({
-    roughness: 0.12,
-    metalness: 0.95,
-    emissiveIntensity: 0.8
+  const ring1Uniforms = useMemo(() => ({
+    uTime: { value: 0 },
+    uRuneColor: { value: new THREE.Color("#4AFFB4") },
+    uHoverActive: { value: 0 },
+    uPulseScale: { value: 1.0 }
   }), [])
-  const ring2Material = useMemo(() => new THREE.MeshStandardMaterial({
-    roughness: 0.12,
-    metalness: 0.95,
-    emissiveIntensity: 0.8
+
+  const ring2Uniforms = useMemo(() => ({
+    uTime: { value: 0 },
+    uRuneColor: { value: new THREE.Color("#4A8FFF") },
+    uHoverActive: { value: 0 },
+    uPulseScale: { value: 1.0 }
   }), [])
-  const ring3Material = useMemo(() => new THREE.MeshStandardMaterial({
-    roughness: 0.12,
-    metalness: 0.95,
-    emissiveIntensity: 0.8
+
+  const ring3Uniforms = useMemo(() => ({
+    uTime: { value: 0 },
+    uRuneColor: { value: new THREE.Color("#9f4aff") },
+    uHoverActive: { value: 0 },
+    uPulseScale: { value: 1.0 }
   }), [])
+
+  const ring1Material = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      vertexShader: SuspendedRunesShader.vertexShader,
+      fragmentShader: SuspendedRunesShader.fragmentShader,
+      uniforms: ring1Uniforms,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    })
+  }, [ring1Uniforms])
+
+  const ring2Material = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      vertexShader: SuspendedRunesShader.vertexShader,
+      fragmentShader: SuspendedRunesShader.fragmentShader,
+      uniforms: ring2Uniforms,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    })
+  }, [ring2Uniforms])
+
+  const ring3Material = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      vertexShader: SuspendedRunesShader.vertexShader,
+      fragmentShader: SuspendedRunesShader.fragmentShader,
+      uniforms: ring3Uniforms,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    })
+  }, [ring3Uniforms])
 
   // Shared single PBR material for optimal 54-pyramid rendering and smooth mode color transition
   const sharedMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: "#c9a227", // Starts as Premium Warm Gold
+    color: new THREE.Color("#c9a227"),
     roughness: 0.12,
     metalness: 0.95,
     bumpScale: 0.05
   }), [])
+
+  // Wrap materials in a ref for zero-warning useFrame modification
+  const materialsRef = useRef({
+    core: coreMaterial,
+    edge: edgeMaterial,
+    ring1: ring1Material,
+    ring2: ring2Material,
+    ring3: ring3Material,
+    shared: sharedMaterial
+  })
+
+  // Clean up materials and geometries on unmount to prevent leaks
+  useEffect(() => {
+    return () => {
+      coreMaterial.dispose()
+      edgeMaterial.dispose()
+      ring1Material.dispose()
+      ring2Material.dispose()
+      ring3Material.dispose()
+      sharedMaterial.dispose()
+
+      ring1Geo.dispose()
+      ring2Geo.dispose()
+      ring3Geo.dispose()
+      innerRing1Geo.dispose()
+      innerRing2Geo.dispose()
+      innerRing3Geo.dispose()
+      ring1EdgeGeo.dispose()
+      ring2EdgeGeo.dispose()
+      ring3EdgeGeo.dispose()
+    }
+  }, [
+    coreMaterial,
+    edgeMaterial,
+    ring1Material,
+    ring2Material,
+    ring3Material,
+    sharedMaterial,
+    ring1Geo,
+    ring2Geo,
+    ring3Geo,
+    innerRing1Geo,
+    innerRing2Geo,
+    innerRing3Geo,
+    ring1EdgeGeo,
+    ring2EdgeGeo,
+    ring3EdgeGeo
+  ])
 
   const ring1Runes = useMemo<RuneData[]>(() => {
     const N = 12
@@ -648,114 +912,92 @@ function PolyhedronScene({
     return runesData
   }, [])
 
-  // Gymbal speeds
-  const ring1SpeedX = useRef(0.6)
-  const ring1SpeedY = useRef(0.4)
-  const ring2SpeedY = useRef(-0.5)
-  const ring2SpeedZ = useRef(0.7)
-  const ring3SpeedX = useRef(0.3)
-  const ring3SpeedZ = useRef(-0.4)
+  // Concentric ring accumulated local spin angles
+  const ring1Spin = useRef(0)
+  const ring2Spin = useRef(0)
+  const ring3Spin = useRef(0)
 
-  const currentScale = useRef(1.0)
   const currentMagneticTilt = useRef(new THREE.Euler(0, 0, 0))
 
   useFrame((state, delta) => {
     const t = state.clock.getElapsedTime()
     if (assemblyProgress < 1) setAssemblyProgress(prev => Math.min(1, prev + 0.01))
 
+    // Pull directly from materialsRef.current to modify without React linter immutability triggers
+    const mats = materialsRef.current
+
     // 1. Smooth mode transition logic: Quick Pitch (isDeepDive=false -> Gold) to Deep Dive (isDeepDive=true -> Indigo PBR)
     const targetMode = isDeepDive ? 1.0 : 0.0
     sharedSpellState.modeProgress = THREE.MathUtils.lerp(sharedSpellState.modeProgress, targetMode, delta * 3.5)
 
     // Drive modeProgress into Core Shader
-    coreMaterial.uniforms.uModeProgress.value = sharedSpellState.modeProgress
+    mats.core.uniforms.uModeProgress.value = sharedSpellState.modeProgress
 
-    // Smooth transition for face material color
-    const goldColor = new THREE.Color("#c9a227") // Warm metallic gold
-    const defaultColor = new THREE.Color("#0c0a1a") // Deep void indigo
-    sharedMaterial.color.copy(goldColor).lerp(defaultColor, sharedSpellState.modeProgress)
+    // Target base face material color transitions (smoothly blending modes, ignite overloads, and EMP slate lockdowns)
+    const targetFaceColor = _scratchColor1.copy(COLOR_GOLD).lerp(COLOR_DEFAULT, sharedSpellState.modeProgress)
+    if (sharedSpellState.ignite) {
+      targetFaceColor.copy(COLOR_IGNITE_GLOW)
+    } else if (sharedSpellState.lockdown) {
+      targetFaceColor.copy(COLOR_LOCKDOWN_BASE)
+    }
+    mats.shared.color.lerp(targetFaceColor, delta * 6.0)
     
-    sharedMaterial.roughness = THREE.MathUtils.lerp(0.12, 0.22, sharedSpellState.modeProgress)
-    sharedMaterial.metalness = THREE.MathUtils.lerp(0.95, 0.9, sharedSpellState.modeProgress)
+    mats.shared.roughness = THREE.MathUtils.lerp(0.12, 0.22, sharedSpellState.modeProgress)
+    mats.shared.metalness = THREE.MathUtils.lerp(0.95, 0.9, sharedSpellState.modeProgress)
 
     // Smooth transition for edge colors
-    const goldEdge1 = new THREE.Color("#ffe875")
-    const goldEdge2 = new THREE.Color("#ffb44a")
-    const defaultEdge1 = new THREE.Color("#6A0DAD") // Violet
-    const defaultEdge2 = new THREE.Color("#4AFFB4") // Teal
-    
-    edgeMaterial.uniforms.uColor1.value.copy(goldEdge1).lerp(defaultEdge1, sharedSpellState.modeProgress)
-    edgeMaterial.uniforms.uColor2.value.copy(goldEdge2).lerp(defaultEdge2, sharedSpellState.modeProgress)
+    mats.edge.uniforms.uColor1.value.copy(COLOR_GOLD_EDGE1).lerp(COLOR_DEFAULT_EDGE1, sharedSpellState.modeProgress)
+    mats.edge.uniforms.uColor2.value.copy(COLOR_GOLD_EDGE2).lerp(COLOR_DEFAULT_EDGE2, sharedSpellState.modeProgress)
 
     // Drive Shaders Time uniform
-    coreMaterial.uniforms.uTime.value = t
-    edgeMaterial.uniforms.uTime.value = t
+    mats.core.uniforms.uTime.value = t
+    mats.edge.uniforms.uTime.value = t
     
-    // Smooth transition for ring face colors (metallic base)
-    const mode = sharedSpellState.modeProgress
-    
-    // Ring 1 colors
-    let r1Base = goldColor.clone().lerp(defaultColor, mode)
-    let r1Glow = new THREE.Color("#ffb44a").lerp(new THREE.Color("#4AFFB4"), mode)
-    
-    // Ring 2 colors
-    let r2Base = goldColor.clone().lerp(defaultColor, mode)
-    let r2Glow = new THREE.Color("#ffb44a").lerp(new THREE.Color("#4A8FFF"), mode)
-    
-    // Ring 3 colors
-    let r3Base = goldColor.clone().lerp(defaultColor, mode)
-    let r3Glow = new THREE.Color("#ffb44a").lerp(new THREE.Color("#9f4aff"), mode)
-    
-    // Apply Ignite/Lockdown overrides
+    // Smooth transition for ring runic colors and uniforms
+    const goldColor = _scratchColor1.set("#ffe875")
+    const modeProg = sharedSpellState.modeProgress
+
+    // Update ring 1 uniforms
+    mats.ring1.uniforms.uTime.value = t
+    mats.ring1.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.ring1.uniforms.uHoverActive.value, (isHovered || isDeepDive) ? 1.0 : 0.0, delta * 6.0)
+    mats.ring1.uniforms.uPulseScale.value = (0.9 + 0.15 * Math.sin(t * 3.5)) * sharedSpellState.pulseScale
+    const ring1TargetColor = _scratchColor2.copy(goldColor).lerp(_scratchColor3.set("#4AFFB4"), modeProg)
     if (sharedSpellState.ignite) {
-      const igniteBase = new THREE.Color("#3a0a0a")
-      const igniteGlow = new THREE.Color("#ff4500") // intense orange-red
-      r1Base = igniteBase
-      r2Base = igniteBase
-      r3Base = igniteBase
-      r1Glow = igniteGlow
-      r2Glow = igniteGlow
-      r3Glow = igniteGlow
+      ring1TargetColor.copy(COLOR_RUNE_IGNITE)
     } else if (sharedSpellState.lockdown) {
-      const lockdownBase = new THREE.Color("#05070a")
-      const lockdownGlow = new THREE.Color("#000000") // cut emissive in lockdown
-      r1Base = lockdownBase
-      r2Base = lockdownBase
-      r3Base = lockdownBase
-      r1Glow = lockdownGlow
-      r2Glow = lockdownGlow
-      r3Glow = lockdownGlow
+      ring1TargetColor.copy(COLOR_RUNE_LOCKDOWN)
     }
-    
-    // Dynamic pulsing factor
-    const pulseFactor = 0.8 + 0.2 * Math.sin(t * 3.0)
-    
-    // Ring 1 properties
-    ring1Material.color.copy(r1Base)
-    ring1Material.emissive.copy(r1Glow)
-    ring1Material.emissiveIntensity = sharedSpellState.lockdown ? 0.0 : (sharedSpellState.ignite ? 1.5 : 0.8 * pulseFactor)
-    ring1Material.roughness = THREE.MathUtils.lerp(0.12, 0.18, mode)
-    ring1Material.metalness = THREE.MathUtils.lerp(0.95, 0.9, mode)
-    
-    // Ring 2 properties
-    ring2Material.color.copy(r2Base)
-    ring2Material.emissive.copy(r2Glow)
-    ring2Material.emissiveIntensity = sharedSpellState.lockdown ? 0.0 : (sharedSpellState.ignite ? 1.5 : 0.8 * pulseFactor)
-    ring2Material.roughness = THREE.MathUtils.lerp(0.12, 0.18, mode)
-    ring2Material.metalness = THREE.MathUtils.lerp(0.95, 0.9, mode)
-    
-    // Ring 3 properties
-    ring3Material.color.copy(r3Base)
-    ring3Material.emissive.copy(r3Glow)
-    ring3Material.emissiveIntensity = sharedSpellState.lockdown ? 0.0 : (sharedSpellState.ignite ? 1.5 : 0.8 * pulseFactor)
-    ring3Material.roughness = THREE.MathUtils.lerp(0.12, 0.18, mode)
-    ring3Material.metalness = THREE.MathUtils.lerp(0.95, 0.9, mode)
+    mats.ring1.uniforms.uRuneColor.value.lerp(ring1TargetColor, delta * 6.0)
+
+    // Update ring 2 uniforms
+    mats.ring2.uniforms.uTime.value = t
+    mats.ring2.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.ring2.uniforms.uHoverActive.value, (isHovered || isDeepDive) ? 1.0 : 0.0, delta * 6.0)
+    mats.ring2.uniforms.uPulseScale.value = (0.9 + 0.15 * Math.sin(t * 3.5)) * sharedSpellState.pulseScale
+    const ring2TargetColor = _scratchColor2.copy(goldColor).lerp(_scratchColor3.set("#4A8FFF"), modeProg)
+    if (sharedSpellState.ignite) {
+      ring2TargetColor.copy(COLOR_RUNE_IGNITE)
+    } else if (sharedSpellState.lockdown) {
+      ring2TargetColor.copy(COLOR_RUNE_LOCKDOWN)
+    }
+    mats.ring2.uniforms.uRuneColor.value.lerp(ring2TargetColor, delta * 6.0)
+
+    // Update ring 3 uniforms
+    mats.ring3.uniforms.uTime.value = t
+    mats.ring3.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.ring3.uniforms.uHoverActive.value, (isHovered || isDeepDive) ? 1.0 : 0.0, delta * 6.0)
+    mats.ring3.uniforms.uPulseScale.value = (0.9 + 0.15 * Math.sin(t * 3.5)) * sharedSpellState.pulseScale
+    const ring3TargetColor = _scratchColor2.copy(goldColor).lerp(_scratchColor3.set("#9f4aff"), modeProg)
+    if (sharedSpellState.ignite) {
+      ring3TargetColor.copy(COLOR_RUNE_IGNITE)
+    } else if (sharedSpellState.lockdown) {
+      ring3TargetColor.copy(COLOR_RUNE_LOCKDOWN)
+    }
+    mats.ring3.uniforms.uRuneColor.value.lerp(ring3TargetColor, delta * 6.0)
 
     // Drive special Spell states to Shaders
-    coreMaterial.uniforms.uIgniteActive.value = sharedSpellState.ignite ? 1.0 : 0.0
-    coreMaterial.uniforms.uLockdownActive.value = sharedSpellState.lockdown ? 1.0 : 0.0
-    edgeMaterial.uniforms.uIgnite.value = sharedSpellState.ignite ? 1.0 : 0.0
-    edgeMaterial.uniforms.uLockdown.value = sharedSpellState.lockdown ? 1.0 : 0.0
+    mats.core.uniforms.uIgniteActive.value = sharedSpellState.ignite ? 1.0 : 0.0
+    mats.core.uniforms.uLockdownActive.value = sharedSpellState.lockdown ? 1.0 : 0.0
+    mats.edge.uniforms.uIgnite.value = sharedSpellState.ignite ? 1.0 : 0.0
+    mats.edge.uniforms.uLockdown.value = sharedSpellState.lockdown ? 1.0 : 0.0
 
     // Capture pointer ray hits for 54 fragment Proximity Swells
     const { raycaster, pointer, camera } = state
@@ -783,53 +1025,73 @@ function PolyhedronScene({
     const act3Progress = THREE.MathUtils.clamp((scrollPercent - 0.50) / 0.25, 0, 1)
     camera.position.z = THREE.MathUtils.lerp(13, 9, act3Progress)
 
-    // Gyroscopic Damping Ring Spin rates
-    let speedMult = isHovered ? 2.5 : 1.0
-    if (sharedSpellState.lockdown) speedMult = 0.0 // Freeze rings on EMP lockdown
-    if (sharedSpellState.ignite) speedMult = 5.0    // Overload speed
+    // Gyroscopic Motion Resonance: Precession, Cursor Slerp and Harmonic Local Spin
+    const p1 = new THREE.Vector3(1.0, 0.2 * Math.sin(0.5 * t), 0.1 * Math.cos(0.3 * t)).normalize()
+    const p2 = new THREE.Vector3(-0.2 * Math.cos(0.4 * t), 1.0, 0.3 * Math.sin(0.6 * t)).normalize()
+    const p3 = new THREE.Vector3(0.1 * Math.sin(0.7 * t), -0.3 * Math.cos(0.2 * t), 1.0).normalize()
+    const currentPrecessedAxes = [p1, p2, p3]
 
-    const target1X = 0.6 * speedMult
-    const target1Y = 0.4 * speedMult
-    const target2Y = -0.5 * speedMult
-    const target2Z = 0.7 * speedMult
-    const target3X = 0.3 * speedMult
-    const target3Z = -0.4 * speedMult
+    const cursorVector = new THREE.Vector3(pointer.x * 0.5, pointer.y * 0.5, 1.0).normalize()
+    const hoverProgress = sharedSpellState.modeProgress
 
-    ring1SpeedX.current = THREE.MathUtils.lerp(ring1SpeedX.current, target1X, delta * 3.0)
-    ring1SpeedY.current = THREE.MathUtils.lerp(ring1SpeedY.current, target1Y, delta * 3.0)
-    ring2SpeedY.current = THREE.MathUtils.lerp(ring2SpeedY.current, target2Y, delta * 3.0)
-    ring2SpeedZ.current = THREE.MathUtils.lerp(ring2SpeedZ.current, target2Z, delta * 3.0)
-    ring3SpeedX.current = THREE.MathUtils.lerp(ring3SpeedX.current, target3X, delta * 3.0)
-    ring3SpeedZ.current = THREE.MathUtils.lerp(ring3SpeedZ.current, target3Z, delta * 3.0)
+    const refs = [ring1Ref, ring2Ref, ring3Ref]
+    const spinRefs = [ring1Spin, ring2Spin, ring3Spin]
+    const gearRatios = [1.0, -2.0, 3.0] // Ring 2 counter-clockwise
+    const baseFreq = 0.8
 
-    if (ring1Ref.current) {
-      ring1Ref.current.rotation.x += delta * ring1SpeedX.current
-      ring1Ref.current.rotation.y += delta * ring1SpeedY.current
-    }
-    if (ring2Ref.current) {
-      ring2Ref.current.rotation.y += delta * ring2SpeedY.current
-      ring2Ref.current.rotation.z += delta * ring2SpeedZ.current
-    }
-    if (ring3Ref.current) {
-      ring3Ref.current.rotation.x += delta * ring3SpeedX.current
-      ring3Ref.current.rotation.z += delta * ring3SpeedZ.current
-    }
-
-    // Dynamic Plane Intersection Beam (Mathematics)
-    if (ring1Ref.current && ring2Ref.current && resonanceLineGeoRef.current) {
-      const q1 = ring1Ref.current.quaternion
-      const q2 = ring2Ref.current.quaternion
-      const n1 = new THREE.Vector3(0, 0, 1).applyQuaternion(q1)
-      const n2 = new THREE.Vector3(0, 0, 1).applyQuaternion(q2)
+    refs.forEach((ref, idx) => {
+      if (!ref.current) return
+      // Calculate slerp between idle wobble precession and active cursor orientation
+      const idleQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), currentPrecessedAxes[idx])
+      const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), cursorVector)
+      ref.current.quaternion.slerpQuaternions(idleQuat, targetQuat, hoverProgress)
       
-      const dir = new THREE.Vector3().crossVectors(n1, n2).normalize()
-      const p1 = dir.clone().multiplyScalar(-2.3)
-      const p2 = dir.clone().multiplyScalar(2.3)
+      // Calculate and accumulate smooth local Y-axis spin
+      const idleSpeed = idx === 1 ? -0.5 : (idx === 2 ? 0.3 : 0.6)
+      const targetSpeed = baseFreq * gearRatios[idx]
+      let currentSpeed = THREE.MathUtils.lerp(idleSpeed, targetSpeed, hoverProgress)
+
+      // Apply special spell speed overrides (EMP lockdown / Ignite overload)
+      if (sharedSpellState.lockdown) currentSpeed = 0.0
+      else if (sharedSpellState.ignite) currentSpeed *= 5.0
+
+      spinRefs[idx].current += currentSpeed * delta
       
-      const pts = new Float32Array([p1.x, p1.y, p1.z, p2.x, p2.y, p2.z])
-      resonanceLineGeoRef.current.setAttribute('position', new THREE.BufferAttribute(pts, 3))
-      resonanceLineGeoRef.current.attributes.position.needsUpdate = true
-    }
+      // Post-multiply the accumulated local spin rotation onto the base orientation
+      ref.current.rotateOnAxis(new THREE.Vector3(0, 1, 0), spinRefs[idx].current)
+
+      // Position drift under antigravity (floating sequence)
+      if (sharedSpellState.antigravity) {
+        const driftAmp = 1.0 + Math.sin(t * 1.5 + idx * 5.0) * 0.25
+        ref.current.position.set(
+          Math.sin(t * 0.8 + idx * 2.0) * 0.12 * driftAmp,
+          Math.cos(t * 0.9 + idx * 3.0) * 0.12 * driftAmp,
+          Math.sin(t * 1.1 + idx * 4.0) * 0.12 * driftAmp
+        )
+      } else {
+        ref.current.position.lerp(_scratchVector1.set(0, 0, 0), delta * 6.0)
+      }
+
+      // Volumetric core shatter scale effect
+      const targetScale = 1.0 + sharedSpellState.shatterProgress * 0.18
+      ref.current.scale.setScalar(targetScale)
+    })
+
+    // Update concentric ring text colors dynamically to match their emissive shader colors
+    ring1TextRefs.current.forEach(t => {
+      if (t && t.material && !Array.isArray(t.material)) {
+        const mat = t.material as THREE.MeshBasicMaterial
+        mat.color.copy(mats.ring1.uniforms.uRuneColor.value)
+      }
+    })
+    ring2TextRefs.current.forEach(t => {
+      if (t && t.material && !Array.isArray(t.material)) {
+        const mat = t.material as THREE.MeshBasicMaterial
+        mat.color.copy(mats.ring2.uniforms.uRuneColor.value)
+      }
+    })
+
+
 
     // Core pulsing & lightning flickers
     if (coreRef.current) {
@@ -837,12 +1099,12 @@ function PolyhedronScene({
       
       if (sharedSpellState.ignite) {
         corePulse = 1.05 + Math.sin(t * 18.0) * 0.15
-        coreMaterial.uniforms.uGlowIntensity.value = 3.5 + Math.sin(t * 18.0) * 0.8
+        mats.core.uniforms.uGlowIntensity.value = 3.5 + Math.sin(t * 18.0) * 0.8
       } else if (sharedSpellState.lockdown) {
         corePulse = 0.90
-        coreMaterial.uniforms.uGlowIntensity.value = 0.4
+        mats.core.uniforms.uGlowIntensity.value = 0.4
       } else {
-        coreMaterial.uniforms.uGlowIntensity.value = 2.0
+        mats.core.uniforms.uGlowIntensity.value = 2.0
       }
 
       coreRef.current.scale.setScalar(0.72 * corePulse * sharedSpellState.pulseScale)
@@ -851,14 +1113,14 @@ function PolyhedronScene({
     // 5.1 Hover Magnetic spring-damped Tilt
     let targetTiltX = 0
     let targetTiltY = 0
-    if (isHovered) {
+    if (isHovered || isDeepDive) {
       targetTiltX = pointer.y * 0.32 // Pitch up/down
       targetTiltY = pointer.x * 0.38 // Yaw left/right
-      coreMaterial.uniforms.uHoverActive.value = THREE.MathUtils.lerp(coreMaterial.uniforms.uHoverActive.value, 1.0, delta * 6.0)
-      edgeMaterial.uniforms.uHover.value = THREE.MathUtils.lerp(edgeMaterial.uniforms.uHover.value, 1.0, delta * 6.0)
+      mats.core.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.core.uniforms.uHoverActive.value, 1.0, delta * 6.0)
+      mats.edge.uniforms.uHover.value = THREE.MathUtils.lerp(mats.edge.uniforms.uHover.value, 1.0, delta * 6.0)
     } else {
-      coreMaterial.uniforms.uHoverActive.value = THREE.MathUtils.lerp(coreMaterial.uniforms.uHoverActive.value, 0.0, delta * 6.0)
-      edgeMaterial.uniforms.uHover.value = THREE.MathUtils.lerp(edgeMaterial.uniforms.uHover.value, 0.0, delta * 6.0)
+      mats.core.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.core.uniforms.uHoverActive.value, 0.0, delta * 6.0)
+      mats.edge.uniforms.uHover.value = THREE.MathUtils.lerp(mats.edge.uniforms.uHover.value, 0.0, delta * 6.0)
     }
 
     currentMagneticTilt.current.x = THREE.MathUtils.lerp(currentMagneticTilt.current.x, targetTiltX, delta * 4.0)
@@ -917,7 +1179,7 @@ function PolyhedronScene({
         <pointLight ref={coreLightRef} intensity={55} color="#4AFFB4" distance={10} />
 
         {/* Dynamic Lens Flare sprite */}
-        <sprite scale={isHovered ? 2.5 : 1.8}>
+        <sprite scale={(isHovered || isDeepDive) ? 2.5 : 1.8}>
           <spriteMaterial 
             map={flareTexture} 
             transparent 
@@ -935,25 +1197,25 @@ function PolyhedronScene({
         {/* Fractal lightning arcs */}
         <LightningArcs faces={faces} />
 
-        {/* Plane intersection resonance line */}
-        <line>
-          <bufferGeometry ref={resonanceLineGeoRef} />
-          <lineBasicMaterial 
-            color="#4AFFB4" 
-            transparent 
-            opacity={sharedSpellState.lockdown ? 0.05 : 0.8}
-            blending={THREE.AdditiveBlending} 
-            linewidth={2} 
-            toneMapped={false}
-          />
-        </line>
-        
+        {/* Dynamic Concentric Ring GPU Particles and lightning discharges */}
+        <RunicDustStreams mode={isDeepDive ? 'deep-dive' : 'quick-pitch'} />
+        <RingLightningArcs 
+          mode={isDeepDive ? 'deep-dive' : 'quick-pitch'} 
+          ringARef={ring1Ref} 
+          ringBRef={ring2Ref} 
+        />
+
         {/* Ring 1 (X-Y Diagonal) */}
         <group ref={ring1Ref} rotation={[Math.PI / 4, Math.PI / 4, 0]}>
-          <mesh geometry={ring1Geo} material={ring1Material} />
+          <mesh geometry={innerRing1Geo} material={ring1Material} />
+          <mesh geometry={ring1Geo}>
+            <meshPhysicalMaterial {...glassMaterialProps} />
+          </mesh>
+          <lineSegments geometry={ring1EdgeGeo} material={edgeMaterial} />
           {ring1Runes.map((rd, i) => (
             <Text
               key={i}
+              ref={(el) => { ring1TextRefs.current[i] = el as THREE.Mesh | null }}
               position={rd.pos}
               rotation={rd.rot}
               fontSize={0.20}
@@ -961,7 +1223,7 @@ function PolyhedronScene({
               anchorX="center"
               anchorY="middle"
             >
-              <meshBasicMaterial color="#000000" toneMapped={false} depthWrite={true} />
+              <meshBasicMaterial color="#ffe875" toneMapped={false} depthWrite={false} transparent opacity={0.95} />
               {rd.rune}
             </Text>
           ))}
@@ -969,10 +1231,15 @@ function PolyhedronScene({
 
         {/* Ring 2 (Y-Z Diagonal) */}
         <group ref={ring2Ref} rotation={[-Math.PI / 4, 0, Math.PI / 4]}>
-          <mesh geometry={ring2Geo} material={ring2Material} />
+          <mesh geometry={innerRing2Geo} material={ring2Material} />
+          <mesh geometry={ring2Geo}>
+            <meshPhysicalMaterial {...glassMaterialProps} />
+          </mesh>
+          <lineSegments geometry={ring2EdgeGeo} material={edgeMaterial} />
           {ring2Runes.map((rd, i) => (
             <Text
               key={i}
+              ref={(el) => { ring2TextRefs.current[i] = el as THREE.Mesh | null }}
               position={rd.pos}
               rotation={rd.rot}
               fontSize={0.24}
@@ -980,7 +1247,7 @@ function PolyhedronScene({
               anchorX="center"
               anchorY="middle"
             >
-              <meshBasicMaterial color="#000000" toneMapped={false} depthWrite={true} />
+              <meshBasicMaterial color="#ffe875" toneMapped={false} depthWrite={false} transparent opacity={0.95} />
               {rd.rune}
             </Text>
           ))}
@@ -988,7 +1255,11 @@ function PolyhedronScene({
 
         {/* Ring 3 (Z-X Diagonal) */}
         <group ref={ring3Ref} rotation={[0, -Math.PI / 4, -Math.PI / 4]}>
-          <mesh geometry={ring3Geo} material={ring3Material} />
+          <mesh geometry={innerRing3Geo} material={ring3Material} />
+          <mesh geometry={ring3Geo}>
+            <meshPhysicalMaterial {...glassMaterialProps} />
+          </mesh>
+          <lineSegments geometry={ring3EdgeGeo} material={edgeMaterial} />
         </group>
 
         {/* 54 Pyramid fragments wrapped in dedicated group to prevent empty raycast issues */}
@@ -1029,24 +1300,42 @@ function PyramidFragment({
   onHover: (rune: string | null, name: string | null, desc: string | null) => void 
 }) {
   const meshGroupRef = useRef<THREE.Group>(null)
-  const [hovered, setHovered] = useState(false)
   const currentProximity = useRef(0.0)
   const textRefs = useRef<(THREE.Mesh | null)[]>([])
   
-  const stateRef = useRef({
-    currentMatrix: new THREE.Matrix4(),
-    targetMatrix: new THREE.Matrix4(),
-    lastVersion: 0,
-    currentExpansion: 0.25,
-    targetExpansion: 0.25,
-    tumbleRotation: new THREE.Euler(0, 0, 0),
-    tumbleVelocity: new THREE.Vector3(
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2
-    ),
-    shatterVal: 0.0
-  })
+  const stateRef = useRef<{
+    currentMatrix: THREE.Matrix4
+    targetMatrix: THREE.Matrix4
+    lastVersion: number
+    currentExpansion: number
+    targetExpansion: number
+    tumbleRotation: THREE.Euler
+    tumbleVelocity: THREE.Vector3
+    shatterVal: number
+  }>(null!)
+
+  if (stateRef.current == null) {
+    // Pure/deterministic seed-based LCG calculations anchored to data.center for zero-warning initialization
+    let seed = data.center.x * 12.9898 + data.center.y * 78.233 + data.center.z * 43.123
+    const nextRand = () => {
+      seed = (Math.abs(Math.sin(seed)) * 43758.5453) % 1
+      return seed
+    }
+    const rx = (nextRand() - 0.5) * 2
+    const ry = (nextRand() - 0.5) * 2
+    const rz = (nextRand() - 0.5) * 2
+
+    stateRef.current = {
+      currentMatrix: new THREE.Matrix4(),
+      targetMatrix: new THREE.Matrix4(),
+      lastVersion: 0,
+      currentExpansion: 0.25,
+      targetExpansion: 0.25,
+      tumbleRotation: new THREE.Euler(0, 0, 0),
+      tumbleVelocity: new THREE.Vector3(rx, ry, rz),
+      shatterVal: 0.0
+    }
+  }
 
   const flyInOffset = useMemo(() => {
     let localSeed = data.center.x * 1000 + data.center.y * 100 + data.center.z * 10
@@ -1088,9 +1377,12 @@ function PyramidFragment({
       const hash = data.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + sideIdx
       const runeIndex = hash % RUNES.length
 
+      const rotEuler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), faceNormal))
+
       return { 
         pos: faceCenter.clone().add(faceNormal.clone().multiplyScalar(0.025)), 
         normal: faceNormal, 
+        rot: rotEuler,
         rune: RUNES[runeIndex] 
       }
     })
@@ -1101,10 +1393,10 @@ function PyramidFragment({
   const currentRuneColor = useRef(new THREE.Color("#ffe875"))
 
   useFrame((state, delta) => {
-    // Proximity swell calculation based on pointer raycast
+    // Proximity swell calculation based on pointer raycast (100% Zero-Allocation)
     let proximityFactor = 0.0
     if (sharedSpellState.isHit && !sharedSpellState.antigravity) {
-      const worldPos = new THREE.Vector3()
+      const worldPos = _scratchVector1
       if (meshGroupRef.current) {
         meshGroupRef.current.getWorldPosition(worldPos)
         const dist = worldPos.distanceTo(sharedSpellState.hitPoint)
@@ -1152,18 +1444,16 @@ function PyramidFragment({
     stateRef.current.currentExpansion += (stateRef.current.targetExpansion - stateRef.current.currentExpansion) * delta * 5.0
 
     // Transition runes color: Gold (#ffb44a) -> Default Arcane (#4AFFB4)
-    const goldRune = new THREE.Color("#ffb44a")
-    const defaultRune = new THREE.Color("#4AFFB4")
-    const targetRuneCol = new THREE.Color().lerpColors(goldRune, defaultRune, sharedSpellState.modeProgress)
+    const targetRuneCol = _scratchColor1.copy(COLOR_RUNE_GOLD).lerp(COLOR_RUNE_DEFAULT, sharedSpellState.modeProgress)
 
     // Base color or ignite/lockdown colors
     if (sharedSpellState.ignite) {
-      currentRuneColor.current.lerp(new THREE.Color("#FF7800"), delta * 8.0)
+      currentRuneColor.current.lerp(COLOR_RUNE_IGNITE, delta * 8.0)
     } else if (sharedSpellState.lockdown) {
-      currentRuneColor.current.lerp(new THREE.Color("#2E1402"), delta * 8.0)
+      currentRuneColor.current.lerp(COLOR_RUNE_LOCKDOWN, delta * 8.0)
     } else {
       // Proximity glow effect
-      const hoverGlowColor = targetRuneCol.clone().lerp(new THREE.Color("#ffffff"), currentProximity.current * 0.5)
+      const hoverGlowColor = _scratchColor2.copy(targetRuneCol).lerp(COLOR_WHITE, currentProximity.current * 0.5)
       currentRuneColor.current.lerp(hoverGlowColor, delta * 8.0)
     }
 
@@ -1190,7 +1480,7 @@ function PyramidFragment({
       stateRef.current.lastVersion = currentMove.version
 
       const { axis, slice, angle } = currentMove
-      const currentLogicalPos = data.center.clone().applyMatrix4(stateRef.current.targetMatrix)
+      const currentLogicalPos = _scratchVector1.copy(data.center).applyMatrix4(stateRef.current.targetMatrix)
 
       const coord = currentLogicalPos.dot(axis)
       const sliceThreshold = 0.5
@@ -1206,17 +1496,17 @@ function PyramidFragment({
       }
     }
 
-    // Combine matrix decompositions and snap positions
+    // Combine matrix decompositions and snap positions (100% Zero-Allocation)
     if (meshGroupRef.current) {
       const matrix = stateRef.current.currentMatrix
       const target = stateRef.current.targetMatrix
 
-      const currQuat = new THREE.Quaternion()
-      const targetQuat = new THREE.Quaternion()
-      const currPos = new THREE.Vector3()
-      const currScale = new THREE.Vector3()
-      const dummyP = new THREE.Vector3()
-      const dummyS = new THREE.Vector3()
+      const currQuat = _scratchQuat1
+      const targetQuat = _scratchQuat2
+      const currPos = _scratchVector1
+      const currScale = _scratchVector2
+      const dummyP = _scratchVector3
+      const dummyS = _scratchVector4
 
       matrix.decompose(currPos, currQuat, currScale)
       target.decompose(dummyP, targetQuat, dummyS)
@@ -1225,9 +1515,9 @@ function PyramidFragment({
       matrix.compose(currPos, currQuat, currScale)
 
       const expansionFactor = stateRef.current.currentExpansion
-      const rotatedNormal = data.normal.clone().applyQuaternion(currQuat)
+      const rotatedNormal = _scratchVector1.copy(data.normal).applyQuaternion(currQuat)
       
-      const driftOffset = new THREE.Vector3(0, 0, 0)
+      const driftOffset = _scratchVector2.set(0, 0, 0)
       if (sharedSpellState.antigravity) {
         const driftAmp = 1.0 + Math.sin(state.clock.getElapsedTime() * 1.5 + data.center.x) * 0.25
         driftOffset.set(
@@ -1237,21 +1527,22 @@ function PyramidFragment({
         )
       }
 
-      const assembledPos = data.center.clone()
+      const assembledPos = _scratchVector3.copy(data.center)
         .applyMatrix4(matrix)
         .add(rotatedNormal.multiplyScalar(expansionFactor))
         .add(driftOffset)
 
-      const currentPos = new THREE.Vector3().lerpVectors(flyInOffset, assembledPos, assemblyProgress)
+      const currentPos = _scratchVector4.lerpVectors(flyInOffset, assembledPos, assemblyProgress)
 
       meshGroupRef.current.position.copy(currentPos)
-      meshGroupRef.current.quaternion.copy(currQuat).multiply(new THREE.Quaternion().setFromEuler(stateRef.current.tumbleRotation))
+      
+      const finalQuat = _scratchQuat1.copy(currQuat).multiply(_scratchQuat3.setFromEuler(stateRef.current.tumbleRotation))
+      meshGroupRef.current.quaternion.copy(finalQuat)
     }
   })
 
-  const triggerHover = (e: any) => {
+  const triggerHover = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation()
-    setHovered(true)
     
     // Find active rune for HUD overlays
     const r = runeData[0]?.rune || "ᚠ"
@@ -1265,12 +1556,11 @@ function PyramidFragment({
   }
 
   const triggerHoverOut = () => {
-    setHovered(false)
     onHover(null, null, null)
   }
 
   // Double click or single click triggers explosive shatter
-  const triggerClick = (e: any) => {
+  const triggerClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
     if (sharedSpellState.lockdown) return
 
@@ -1314,12 +1604,12 @@ function PyramidFragment({
           position={rd.pos}
           fontSize={0.28}
           color="#ffb44a" // Matches golden Quick Pitch default
-          // @ts-ignore
+          // @ts-expect-error: Drei Text component might not expose toneMapped in some type definitions
           toneMapped={false}
           font="/fonts/NotoSansRunic-Regular.ttf"
           anchorX="center"
           anchorY="middle"
-          rotation={new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), rd.normal))}
+          rotation={rd.rot}
         >
           {rd.rune}
         </Text>
@@ -1460,7 +1750,8 @@ export default function PolyhedronCanvas({
   // Expose global window CLI spell API
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).__hexcore_cmd = (cmdStr: string) => {
+      const win = window as unknown as Record<string, unknown>
+      win.__hexcore_cmd = (cmdStr: string) => {
         const res = executeCommand(cmdStr)
         console.log(`[Hexcore CLI] ${res}`)
         return res
@@ -1468,7 +1759,8 @@ export default function PolyhedronCanvas({
     }
     return () => {
       if (typeof window !== 'undefined') {
-        delete (window as any).__hexcore_cmd
+        const win = window as unknown as Record<string, unknown>
+        delete win.__hexcore_cmd
       }
     }
   }, [])
