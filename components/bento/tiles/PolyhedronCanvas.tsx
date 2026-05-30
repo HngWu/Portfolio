@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import gsap from "gsap"
 import { RunicDustStreams } from "./hexcore/RunicDustStreams"
 import { RingLightningArcs } from "./hexcore/LightningArcs"
+import { useIgniteStore } from "@/store/useIgniteStore"
 
 // Ancient runes for a mystical high-tech look
 const RUNES = ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ", "ᛇ", "ᛈ", "ᛉ", "ᛊ", "ᛏ", "ᛒ", "ᛖ", "ᛗ", "ᛚ", "ᛜ", "ᛞ", "ᛟ"]
@@ -45,17 +46,8 @@ const COLOR_GOLD_EDGE1 = new THREE.Color("#ffe875")
 const COLOR_GOLD_EDGE2 = new THREE.Color("#ffb44a")
 const COLOR_DEFAULT_EDGE1 = new THREE.Color("#6A0DAD")
 const COLOR_DEFAULT_EDGE2 = new THREE.Color("#4AFFB4")
-const COLOR_IGNITE_BASE = new THREE.Color("#3a0a0a")
 const COLOR_IGNITE_GLOW = new THREE.Color("#ff4500")
 const COLOR_LOCKDOWN_BASE = new THREE.Color("#05070a")
-const COLOR_LOCKDOWN_GLOW = new THREE.Color("#000000")
-
-const COLOR_GLOW_RING1_GOLD = new THREE.Color("#ffb44a")
-const COLOR_GLOW_RING1_DEFAULT = new THREE.Color("#4AFFB4")
-const COLOR_GLOW_RING2_GOLD = new THREE.Color("#ffb44a")
-const COLOR_GLOW_RING2_DEFAULT = new THREE.Color("#4A8FFF")
-const COLOR_GLOW_RING3_GOLD = new THREE.Color("#ffb44a")
-const COLOR_GLOW_RING3_DEFAULT = new THREE.Color("#9f4aff")
 
 const COLOR_RUNE_GOLD = new THREE.Color("#ffb44a")
 const COLOR_RUNE_DEFAULT = new THREE.Color("#4AFFB4")
@@ -67,20 +59,24 @@ const COLOR_WHITE = new THREE.Color("#ffffff")
 const _scratchColor1 = new THREE.Color()
 const _scratchColor2 = new THREE.Color()
 const _scratchColor3 = new THREE.Color()
-const _scratchColor4 = new THREE.Color()
-const _scratchColor5 = new THREE.Color()
-const _scratchColor6 = new THREE.Color()
 
 const _scratchVector1 = new THREE.Vector3()
 const _scratchVector2 = new THREE.Vector3()
 const _scratchVector3 = new THREE.Vector3()
 const _scratchVector4 = new THREE.Vector3()
-const _scratchVector5 = new THREE.Vector3()
 
 const _scratchQuat1 = new THREE.Quaternion()
 const _scratchQuat2 = new THREE.Quaternion()
 const _scratchQuat3 = new THREE.Quaternion()
 const _scratchEuler = new THREE.Euler()
+
+// Dedicated scratch variables for gyroscopic motion precession
+const _gyroPrecess1 = new THREE.Vector3()
+const _gyroPrecess2 = new THREE.Vector3()
+const _gyroPrecess3 = new THREE.Vector3()
+const _gyroCursor = new THREE.Vector3()
+const _gyroAxisY = new THREE.Vector3(0, 1, 0)
+const _gyroZero = new THREE.Vector3(0, 0, 0)
 
 // Pre-allocated vector pool for high-performance midpoint displacement lightning arcs
 const LIGHTNING_POOL_SIZE = 128
@@ -624,7 +620,7 @@ function LightningArcs({ faces }: { faces: FaceData[] }) {
   const maxVertices = 200
   const positions = useMemo(() => new Float32Array(maxVertices * 3), [])
   
-  useFrame((state, delta) => {
+  useFrame(() => {
     const active = sharedSpellState.lightning
     
     // Check Detonation Act (0.0 to 0.25 scroll) using the centralized scroll progress
@@ -713,6 +709,9 @@ function PolyhedronScene({
   const ring1Ref = useRef<THREE.Group>(null)
   const ring2Ref = useRef<THREE.Group>(null)
   const ring3Ref = useRef<THREE.Group>(null)
+  const ring1GlassRef = useRef<THREE.MeshPhysicalMaterial>(null)
+  const ring2GlassRef = useRef<THREE.MeshPhysicalMaterial>(null)
+  const ring3GlassRef = useRef<THREE.MeshPhysicalMaterial>(null)
   const coreLightRef = useRef<THREE.PointLight>(null)
   const pyramidsGroupRef = useRef<THREE.Group>(null)
 
@@ -721,6 +720,7 @@ function PolyhedronScene({
   const smoothScroll = useRef(0)
 
   const [assemblyProgress, setAssemblyProgress] = useState(0)
+  const isIgnited = useIgniteStore((state) => state.isIgnited)
   const faces = useMemo(() => getUniformHexCoreFaces(2.32) as FaceData[], [])
 
   const glassMaterialProps = useMemo(() => ({
@@ -930,6 +930,43 @@ function PolyhedronScene({
     const targetMode = isDeepDive ? 1.0 : 0.0
     sharedSpellState.modeProgress = THREE.MathUtils.lerp(sharedSpellState.modeProgress, targetMode, delta * 3.5)
 
+    // Drive the Zustand isIgnited into sharedSpellState.ignite
+    sharedSpellState.ignite = isIgnited
+
+    const modeProg = sharedSpellState.modeProgress
+
+    // Dynamic ring glass casing PBR color transitions (magma overloading & EMP lockdowns)
+    const targetGlassColor = _scratchColor1.set("#0e0b1f")
+    const targetGlassAtten = _scratchColor2.set("#0c0a1a")
+    
+    if (sharedSpellState.ignite) {
+      targetGlassColor.set("#3a0a0a") // Heated Magma glass
+      targetGlassAtten.set("#ff4500") // Glowing attenuation
+    } else if (sharedSpellState.lockdown) {
+      targetGlassColor.set("#05070a") // Dead EMP slate
+      targetGlassAtten.set("#000000") // No attenuation glow
+    } else {
+      // Smoothly transition between gold and indigo glass attenuation
+      const baseGlassColor = _scratchColor3.copy(new THREE.Color("#1a1005")).lerp(new THREE.Color("#0e0b1f"), modeProg)
+      targetGlassColor.copy(baseGlassColor)
+      
+      const baseGlassAtten = _scratchColor3.copy(new THREE.Color("#ffb44a")).lerp(new THREE.Color("#0c0a1a"), modeProg)
+      targetGlassAtten.copy(baseGlassAtten)
+    }
+
+    if (ring1GlassRef.current) {
+      ring1GlassRef.current.color.lerp(targetGlassColor, delta * 6.0)
+      ring1GlassRef.current.attenuationColor.lerp(targetGlassAtten, delta * 6.0)
+    }
+    if (ring2GlassRef.current) {
+      ring2GlassRef.current.color.lerp(targetGlassColor, delta * 6.0)
+      ring2GlassRef.current.attenuationColor.lerp(targetGlassAtten, delta * 6.0)
+    }
+    if (ring3GlassRef.current) {
+      ring3GlassRef.current.color.lerp(targetGlassColor, delta * 6.0)
+      ring3GlassRef.current.attenuationColor.lerp(targetGlassAtten, delta * 6.0)
+    }
+
     // Drive modeProgress into Core Shader
     mats.core.uniforms.uModeProgress.value = sharedSpellState.modeProgress
 
@@ -955,7 +992,7 @@ function PolyhedronScene({
     
     // Smooth transition for ring runic colors and uniforms
     const goldColor = _scratchColor1.set("#ffe875")
-    const modeProg = sharedSpellState.modeProgress
+
 
     // Update ring 1 uniforms
     mats.ring1.uniforms.uTime.value = t
@@ -1028,12 +1065,12 @@ function PolyhedronScene({
     camera.position.z = 13
 
     // Gyroscopic Motion Resonance: Precession, Cursor Slerp and Harmonic Local Spin
-    const p1 = new THREE.Vector3(1.0, 0.2 * Math.sin(0.5 * t), 0.1 * Math.cos(0.3 * t)).normalize()
-    const p2 = new THREE.Vector3(-0.2 * Math.cos(0.4 * t), 1.0, 0.3 * Math.sin(0.6 * t)).normalize()
-    const p3 = new THREE.Vector3(0.1 * Math.sin(0.7 * t), -0.3 * Math.cos(0.2 * t), 1.0).normalize()
+    const p1 = _gyroPrecess1.set(1.0, 0.2 * Math.sin(0.5 * t), 0.1 * Math.cos(0.3 * t)).normalize()
+    const p2 = _gyroPrecess2.set(-0.2 * Math.cos(0.4 * t), 1.0, 0.3 * Math.sin(0.6 * t)).normalize()
+    const p3 = _gyroPrecess3.set(0.1 * Math.sin(0.7 * t), -0.3 * Math.cos(0.2 * t), 1.0).normalize()
     const currentPrecessedAxes = [p1, p2, p3]
 
-    const cursorVector = new THREE.Vector3(pointer.x * 0.5, pointer.y * 0.5, 1.0).normalize()
+    const cursorVector = _gyroCursor.set(pointer.x * 0.5, pointer.y * 0.5, 1.0).normalize()
     const hoverProgress = sharedSpellState.modeProgress
 
     const refs = [ring1Ref, ring2Ref, ring3Ref]
@@ -1041,12 +1078,11 @@ function PolyhedronScene({
     const gearRatios = [1.0, -2.0, 3.0] // Ring 2 counter-clockwise
     const baseFreq = 0.8
 
-    const flatAxis = _scratchVector1.set(0, 1, 0)
     refs.forEach((ref, idx) => {
       if (!ref.current) return
       
       // 1. Calculate base idle wobble precession quaternion
-      const idleQuat = _scratchQuat1.setFromUnitVectors(flatAxis, currentPrecessedAxes[idx])
+      const idleQuat = _scratchQuat1.setFromUnitVectors(_gyroAxisY, currentPrecessedAxes[idx])
       
       // 2. Target coplanar/flat locked orientation
       const lockedQuat = _scratchQuat2.setFromEuler(_scratchEuler.set(0, 0, 0))
@@ -1055,7 +1091,7 @@ function PolyhedronScene({
       const baseAlignedQuat = _scratchQuat3.slerpQuaternions(idleQuat, lockedQuat, sharedSpellState.scrollProgress)
       
       // 4. Slerp to active pointer tracking based on hoverProgress
-      const targetCursorQuat = _scratchQuat1.setFromUnitVectors(flatAxis, cursorVector)
+      const targetCursorQuat = _scratchQuat1.setFromUnitVectors(_gyroAxisY, cursorVector)
       ref.current.quaternion.slerpQuaternions(baseAlignedQuat, targetCursorQuat, hoverProgress)
       
       // Smoothly coupling speed to strict integer gear ratios as scroll progress increases
@@ -1073,7 +1109,7 @@ function PolyhedronScene({
       spinRefs[idx].current += currentSpeed * delta
       
       // Post-multiply the accumulated local spin rotation onto the base orientation
-      ref.current.rotateOnAxis(new THREE.Vector3(0, 1, 0), spinRefs[idx].current)
+      ref.current.rotateOnAxis(_gyroAxisY, spinRefs[idx].current)
 
       // Position drift under antigravity (floating sequence)
       if (sharedSpellState.antigravity) {
@@ -1084,7 +1120,7 @@ function PolyhedronScene({
           Math.sin(t * 1.1 + idx * 4.0) * 0.12 * driftAmp
         )
       } else {
-        ref.current.position.lerp(_scratchVector1.set(0, 0, 0), delta * 6.0)
+        ref.current.position.lerp(_gyroZero, delta * 6.0)
       }
 
       // Volumetric core shatter scale effect
@@ -1224,7 +1260,7 @@ function PolyhedronScene({
         <group ref={ring1Ref} rotation={[Math.PI / 4, Math.PI / 4, 0]}>
           <mesh geometry={innerRing1Geo} material={ring1Material} />
           <mesh geometry={ring1Geo}>
-            <meshPhysicalMaterial {...glassMaterialProps} />
+            <meshPhysicalMaterial ref={ring1GlassRef} {...glassMaterialProps} />
           </mesh>
           <lineSegments geometry={ring1EdgeGeo} material={edgeMaterial} />
           {ring1Runes.map((rd, i) => (
@@ -1248,7 +1284,7 @@ function PolyhedronScene({
         <group ref={ring2Ref} rotation={[-Math.PI / 4, 0, Math.PI / 4]}>
           <mesh geometry={innerRing2Geo} material={ring2Material} />
           <mesh geometry={ring2Geo}>
-            <meshPhysicalMaterial {...glassMaterialProps} />
+            <meshPhysicalMaterial ref={ring2GlassRef} {...glassMaterialProps} />
           </mesh>
           <lineSegments geometry={ring2EdgeGeo} material={edgeMaterial} />
           {ring2Runes.map((rd, i) => (
@@ -1272,7 +1308,7 @@ function PolyhedronScene({
         <group ref={ring3Ref} rotation={[0, -Math.PI / 4, -Math.PI / 4]}>
           <mesh geometry={innerRing3Geo} material={ring3Material} />
           <mesh geometry={ring3Geo}>
-            <meshPhysicalMaterial {...glassMaterialProps} />
+            <meshPhysicalMaterial ref={ring3GlassRef} {...glassMaterialProps} />
           </mesh>
           <lineSegments geometry={ring3EdgeGeo} material={edgeMaterial} />
         </group>
@@ -1423,8 +1459,10 @@ function PyramidFragment({
     }
     currentProximity.current = THREE.MathUtils.lerp(currentProximity.current, proximityFactor, delta * 7.5)
 
-    // Assemble base expansion based on Deep Dive mode progress
-    let targetExp = isDeepDive ? 0.35 : 0.25
+    // Base expansion plus subtle cinematic sinusoidal micro-expansion (Breathing Singularity)
+    const baseExpansion = isDeepDive ? 0.35 : 0.25
+    const scrollExpansion = 0.08 * Math.sin(sharedSpellState.scrollProgress * Math.PI)
+    let targetExp = baseExpansion + scrollExpansion
 
     // Override with Proximity swell
     if (!sharedSpellState.lockdown) {
@@ -1525,6 +1563,16 @@ function PyramidFragment({
           Math.sin(state.clock.getElapsedTime() * 0.8 + data.center.y) * 0.5,
           Math.cos(state.clock.getElapsedTime() * 1.1 + data.center.z) * 0.5 + driftAmp,
           Math.cos(state.clock.getElapsedTime() * 0.9 + data.center.x) * 0.5
+        )
+      } else {
+        // Volumetric out-of-phase Z-parallax drift using piece-distance coordinates (Concept B)
+        const pieceDist = data.center.length()
+        const phaseOffset = pieceDist * Math.PI
+        const driftAmp = 0.08 * sharedSpellState.scrollProgress
+        driftOffset.set(
+          Math.sin(state.clock.getElapsedTime() * 0.6 + phaseOffset) * 0.03 * sharedSpellState.scrollProgress,
+          Math.cos(state.clock.getElapsedTime() * 0.8 + phaseOffset) * 0.03 * sharedSpellState.scrollProgress,
+          Math.cos(state.clock.getElapsedTime() * 1.0 + phaseOffset) * driftAmp
         )
       }
 
@@ -1686,12 +1734,12 @@ export default function PolyhedronCanvas({
 
     if (t === "ignite" || t === "ignite on") {
       if (sharedSpellState.lockdown) return "Error: Cannot ignite during lockdown."
-      sharedSpellState.ignite = true
+      useIgniteStore.getState().ignite()
       return "Ignition core overload: Connected. Overheating..."
     }
 
     if (t === "ignite off") {
-      sharedSpellState.ignite = false
+      useIgniteStore.getState().reset()
       return "Ignition core overload: Suspended."
     }
 
@@ -1724,7 +1772,7 @@ export default function PolyhedronCanvas({
 
     if (t === "lockdown" || t === "lockdown on") {
       sharedSpellState.lockdown = true
-      sharedSpellState.ignite = false
+      useIgniteStore.getState().reset() // Shut down heat core
       sharedSpellState.lightning = false
       sharedSpellState.antigravity = false
       return "EMP shockwave. Hexcore completely Locked Down."
@@ -1737,7 +1785,7 @@ export default function PolyhedronCanvas({
 
     if (t === "reset") {
       sharedSpellState.lockdown = false
-      sharedSpellState.ignite = false
+      useIgniteStore.getState().reset() // Reset heat core
       sharedSpellState.lightning = false
       sharedSpellState.antigravity = false
       sharedSpellState.shatterProgress = 0.0
