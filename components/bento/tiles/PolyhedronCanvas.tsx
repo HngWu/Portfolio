@@ -34,7 +34,8 @@ export const sharedSpellState = {
   pulseScale: 1.0,
   hitPoint: new THREE.Vector3(),
   isHit: false,
-  modeProgress: 0.0 // 0 for quick pitch (gold), 1 for deep dive (default indigo)
+  modeProgress: 0.0, // 0 for quick pitch (gold), 1 for deep dive (default indigo)
+  scrollProgress: 0.0
 }
 
 // Pre-allocated static colors to avoid 60fps GC allocation overhead
@@ -1020,14 +1021,14 @@ function PolyhedronScene({
       }
     }
 
-    // Scroll progress calculations
+    // Query scroll progress exactly once per frame at scene root (prevents 54x DOM query layout thrashing)
     const docH = typeof document !== 'undefined' ? document.documentElement.scrollHeight : 1000
     const winH = typeof window !== 'undefined' ? window.innerHeight : 800
     const maxScroll = docH - winH
     const scrollPercent = maxScroll > 0 && typeof window !== 'undefined' ? window.scrollY / maxScroll : 0
 
-    // Smoothly interpolate scroll percent to prevent mousewheel jitters
     smoothScroll.current = THREE.MathUtils.lerp(smoothScroll.current, scrollPercent, delta * 4.0)
+    sharedSpellState.scrollProgress = smoothScroll.current
 
     // Stable camera positioning to prevent visual motion friction
     camera.position.z = 13
@@ -1309,7 +1310,6 @@ function PyramidFragment({
   const meshGroupRef = useRef<THREE.Group>(null)
   const currentProximity = useRef(0.0)
   const textRefs = useRef<(THREE.Mesh | null)[]>([])
-  const smoothScroll = useRef(0)
   
   const stateRef = useRef<{
     currentMatrix: THREE.Matrix4
@@ -1415,15 +1415,6 @@ function PyramidFragment({
       }
     }
     currentProximity.current = THREE.MathUtils.lerp(currentProximity.current, proximityFactor, delta * 7.5)
-
-    // Dynamic scroll logic
-    const docH = typeof document !== 'undefined' ? document.documentElement.scrollHeight : 1000
-    const winH = typeof window !== 'undefined' ? window.innerHeight : 800
-    const maxScroll = docH - winH
-    const scrollPercent = maxScroll > 0 && typeof window !== 'undefined' ? window.scrollY / maxScroll : 0
-
-    // Smoothly interpolate scroll percent to prevent mousewheel jitters
-    smoothScroll.current = THREE.MathUtils.lerp(smoothScroll.current, scrollPercent, delta * 4.0)
 
     // Assemble base expansion based on Deep Dive mode progress
     let targetExp = isDeepDive ? 0.35 : 0.25
