@@ -1029,9 +1029,8 @@ function PolyhedronScene({
     // Smoothly interpolate scroll percent to prevent mousewheel jitters
     smoothScroll.current = THREE.MathUtils.lerp(smoothScroll.current, scrollPercent, delta * 4.0)
 
-    // Act 3 Detonation: Camera Dolly Closer (Triggered in the first 0% to 25% of scroll while fully visible)
-    const act3Progress = THREE.MathUtils.clamp(smoothScroll.current / 0.25, 0, 1)
-    camera.position.z = THREE.MathUtils.lerp(13, 9, act3Progress)
+    // Stable camera positioning to prevent visual motion friction
+    camera.position.z = 13
 
     // Gyroscopic Motion Resonance: Precession, Cursor Slerp and Harmonic Local Spin
     const p1 = new THREE.Vector3(1.0, 0.2 * Math.sin(0.5 * t), 0.1 * Math.cos(0.3 * t)).normalize()
@@ -1426,16 +1425,8 @@ function PyramidFragment({
     // Smoothly interpolate scroll percent to prevent mousewheel jitters
     smoothScroll.current = THREE.MathUtils.lerp(smoothScroll.current, scrollPercent, delta * 4.0)
 
-    // Assemble acts
-    let targetExp = isDeepDive ? 0.45 : 0.25
-    
-    // Act 3 Detonation: Expand outward (Triggered in the first 0% to 25% of scroll while fully visible)
-    const act3Progress = THREE.MathUtils.clamp(smoothScroll.current / 0.25, 0, 1)
-    targetExp += act3Progress * 2.8
-
-    // Act 4 Lockdown: Slam completely shut (Triggered in the next 25% to 50% of scroll)
-    const act4Progress = THREE.MathUtils.clamp((smoothScroll.current - 0.25) / 0.25, 0, 1)
-    targetExp = THREE.MathUtils.lerp(targetExp, 0.02, act4Progress)
+    // Assemble base expansion based on Deep Dive mode progress
+    let targetExp = isDeepDive ? 0.35 : 0.25
 
     // Override with Proximity swell
     if (!sharedSpellState.lockdown) {
