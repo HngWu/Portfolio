@@ -622,15 +622,19 @@ function LightningArcs({ faces }: { faces: FaceData[] }) {
   const maxVertices = 200
   const positions = useMemo(() => new Float32Array(maxVertices * 3), [])
   
-  useFrame(() => {
+  const smoothScroll = useRef(0)
+
+  useFrame((state, delta) => {
     const active = sharedSpellState.lightning
     
-    // Check Detonation Act (0.50 to 0.75 scroll)
+    // Check Detonation Act (0.0 to 0.25 scroll)
     const docH = typeof document !== 'undefined' ? document.documentElement.scrollHeight : 1000
     const winH = typeof window !== 'undefined' ? window.innerHeight : 800
     const maxScroll = docH - winH
     const scrollPercent = maxScroll > 0 && typeof window !== 'undefined' ? window.scrollY / maxScroll : 0
-    const isDetonationAct = scrollPercent > 0.50 && scrollPercent < 0.75
+    
+    smoothScroll.current = THREE.MathUtils.lerp(smoothScroll.current, scrollPercent, delta * 4.0)
+    const isDetonationAct = smoothScroll.current > 0.0 && smoothScroll.current < 0.25
 
     const showLightning = active || (isDetonationAct && Math.random() > 0.3)
     
@@ -719,6 +723,7 @@ function PolyhedronScene({
 
   const ring1TextRefs = useRef<(THREE.Mesh | null)[]>([])
   const ring2TextRefs = useRef<(THREE.Mesh | null)[]>([])
+  const smoothScroll = useRef(0)
 
   const [assemblyProgress, setAssemblyProgress] = useState(0)
   const faces = useMemo(() => getUniformHexCoreFaces(2.32) as FaceData[], [])
@@ -1021,8 +1026,11 @@ function PolyhedronScene({
     const maxScroll = docH - winH
     const scrollPercent = maxScroll > 0 && typeof window !== 'undefined' ? window.scrollY / maxScroll : 0
 
-    // Act 3 Detonation: Camera Dolly Closer
-    const act3Progress = THREE.MathUtils.clamp((scrollPercent - 0.50) / 0.25, 0, 1)
+    // Smoothly interpolate scroll percent to prevent mousewheel jitters
+    smoothScroll.current = THREE.MathUtils.lerp(smoothScroll.current, scrollPercent, delta * 4.0)
+
+    // Act 3 Detonation: Camera Dolly Closer (Triggered in the first 0% to 25% of scroll while fully visible)
+    const act3Progress = THREE.MathUtils.clamp(smoothScroll.current / 0.25, 0, 1)
     camera.position.z = THREE.MathUtils.lerp(13, 9, act3Progress)
 
     // Gyroscopic Motion Resonance: Precession, Cursor Slerp and Harmonic Local Spin
@@ -1302,6 +1310,7 @@ function PyramidFragment({
   const meshGroupRef = useRef<THREE.Group>(null)
   const currentProximity = useRef(0.0)
   const textRefs = useRef<(THREE.Mesh | null)[]>([])
+  const smoothScroll = useRef(0)
   
   const stateRef = useRef<{
     currentMatrix: THREE.Matrix4
@@ -1414,15 +1423,18 @@ function PyramidFragment({
     const maxScroll = docH - winH
     const scrollPercent = maxScroll > 0 && typeof window !== 'undefined' ? window.scrollY / maxScroll : 0
 
+    // Smoothly interpolate scroll percent to prevent mousewheel jitters
+    smoothScroll.current = THREE.MathUtils.lerp(smoothScroll.current, scrollPercent, delta * 4.0)
+
     // Assemble acts
     let targetExp = isDeepDive ? 0.45 : 0.25
     
-    // Act 3 Detonation: Expand outward
-    const act3Progress = THREE.MathUtils.clamp((scrollPercent - 0.50) / 0.25, 0, 1)
+    // Act 3 Detonation: Expand outward (Triggered in the first 0% to 25% of scroll while fully visible)
+    const act3Progress = THREE.MathUtils.clamp(smoothScroll.current / 0.25, 0, 1)
     targetExp += act3Progress * 2.8
 
-    // Act 4 Lockdown: Slam completely shut
-    const act4Progress = THREE.MathUtils.clamp((scrollPercent - 0.75) / 0.25, 0, 1)
+    // Act 4 Lockdown: Slam completely shut (Triggered in the next 25% to 50% of scroll)
+    const act4Progress = THREE.MathUtils.clamp((smoothScroll.current - 0.25) / 0.25, 0, 1)
     targetExp = THREE.MathUtils.lerp(targetExp, 0.02, act4Progress)
 
     // Override with Proximity swell
