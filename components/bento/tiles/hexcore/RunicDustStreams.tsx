@@ -88,7 +88,6 @@ const RunicDustShader = {
       float angle = time + aRandoms.x * 6.2831;
       float radius = length(pos.xz) + sin(time + aRandoms.y * 3.0) * 0.1;
       pos.x = cos(angle) * radius;
-      pos.z = Math.sin(angle) > 0.0 ? Math.sin(angle) * radius : Math.sin(angle) * radius; // safe sign
       pos.z = sin(angle) * radius;
       vec3 noisePos = pos * 1.5 + vec3(0.0, time * 0.5, 0.0);
       vec3 noiseForce = curlNoise(noisePos) * mix(0.18, 0.35, uModeBlend);
