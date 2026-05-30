@@ -173,10 +173,18 @@ const currentMove = {
   version: 0
 }
 
-function makeRectangularTorus(radius: number, tube: number, radialScale: number, zScale: number) {
-  const geo = new THREE.TorusGeometry(radius, tube, 4, 64)
+function makeRectangularTorus(
+  radius: number, 
+  tube: number, 
+  radialScale: number, 
+  zScale: number
+): THREE.BufferGeometry {
+  const baseGeo = new THREE.TorusGeometry(radius, tube, 4, 64)
+  const geo = baseGeo.toNonIndexed()
+  baseGeo.dispose()
+  
   const posAttr = geo.getAttribute('position') as THREE.BufferAttribute
-  const normalAttr = geo.getAttribute('normal') as THREE.BufferAttribute
+  if (!posAttr) return geo
   
   const cosA = Math.cos(Math.PI / 4)
   const sinA = Math.sin(Math.PI / 4)
@@ -186,37 +194,27 @@ function makeRectangularTorus(radius: number, tube: number, radialScale: number,
     const y = posAttr.getY(i)
     const z = posAttr.getZ(i)
     
-    const theta = Math.atan2(y, x)
-    const cosT = Math.cos(theta)
-    const sinT = Math.sin(theta)
+    // Optimize: calculate radial distance directly to avoid Math.atan2, Math.cos, and Math.sin calls
+    const r = Math.sqrt(x * x + y * y)
+    const cosT = r > 0.0001 ? x / r : 1
+    const sinT = r > 0.0001 ? y / r : 0
     
-    const d_radial = x * cosT + y * sinT - radius
+    // d_radial = x * cosT + y * sinT - radius => simplifies to r - radius
+    const d_radial = r - radius
     const d_z = z
     
+    // Rotate cross-section by 45 degrees
     const d_radial_new = d_radial * cosA - d_z * sinA
     const d_z_new = d_radial * sinA + d_z * cosA
     
+    // Scale along radial and z axes
     const d_radial_scaled = d_radial_new * radialScale
     const d_z_scaled = d_z_new * zScale
     
     posAttr.setXYZ(i, (radius + d_radial_scaled) * cosT, (radius + d_radial_scaled) * sinT, d_z_scaled)
-    
-    const nx = normalAttr.getX(i)
-    const ny = normalAttr.getY(i)
-    const nz = normalAttr.getZ(i)
-    
-    const n_radial = nx * cosT + ny * sinT
-    const n_z = nz
-    
-    const n_radial_new = n_radial * cosA - n_z * sinA
-    const n_z_new = n_radial * sinA + n_z * cosA
-    
-    normalAttr.setXYZ(i, n_radial_new * cosT, n_radial_new * sinT, n_z_new)
   }
   
-  posAttr.needsUpdate = true
-  normalAttr.needsUpdate = true
-  
+  geo.computeVertexNormals()
   return geo
 }
 
