@@ -375,83 +375,6 @@ function createEdgeGlowMaterial() {
 }
 
 /**
- * DYNAMIC RUNIC RING SHADER MATERIAL
- */
-function createRunicRingMaterial(glowColorStr: string) {
-  return new THREE.ShaderMaterial({
-    vertexShader: `
-      varying vec3 vNormal;
-      varying vec3 vViewPosition;
-      varying vec3 vWorldPosition;
-      void main() {
-        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        vViewPosition = -mvPosition.xyz;
-        vNormal = normalize(normalMatrix * normal);
-        vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
-        gl_Position = projectionMatrix * mvPosition;
-      }
-    `,
-    fragmentShader: `
-      uniform vec3 uColor;
-      uniform vec3 uGlowColor;
-      uniform float uTime;
-      uniform float uFresnelPower;
-      uniform float uGlowIntensity;
-      uniform float uModeProgress;
-      uniform float uIgnite;
-      uniform float uLockdown;
-      varying vec3 vNormal;
-      varying vec3 vViewPosition;
-      varying vec3 vWorldPosition;
-      void main() {
-        vec3 normal = normalize(vNormal);
-        vec3 viewDir = normalize(vViewPosition);
-        float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), uFresnelPower);
-        
-        // Animated scanline wave
-        float scanline = sin(vWorldPosition.y * 15.0 - uTime * 4.0) * 0.5 + 0.5;
-        scanline = pow(scanline, 3.0) * 0.3;
-        float pulse = 0.85 + 0.15 * sin(uTime * 3.0);
-        
-        // Mode transition color blends (Quick Pitch Gold vs Deep Dive default)
-        vec3 goldGlow = vec3(1.0, 0.73, 0.08); // Gold relic glow
-        vec3 activeGlow = mix(goldGlow, uGlowColor, uModeProgress);
-        
-        vec3 goldBase = vec3(0.18, 0.08, 0.0); // Gold base
-        vec3 activeBase = mix(goldBase, uColor, uModeProgress);
-        
-        if (uIgnite > 0.5) {
-          activeBase = vec3(0.18, 0.01, 0.01);
-          activeGlow = vec3(1.0, 0.45, 0.0);
-        } else if (uLockdown > 0.5) {
-          activeBase = vec3(0.06, 0.08, 0.14);
-          activeGlow = vec3(0.48, 0.27, 0.05);
-        }
-        
-        vec3 glow = activeGlow * fresnel * uGlowIntensity * pulse;
-        vec3 finalColor = activeBase + glow + activeGlow * scanline;
-        float alpha = 0.85 + 0.15 * fresnel;
-        gl_FragColor = vec4(finalColor, alpha);
-      }
-    `,
-    uniforms: {
-      uColor: { value: new THREE.Color("#0c0a1a") },
-      uGlowColor: { value: new THREE.Color(glowColorStr) },
-      uTime: { value: 0 },
-      uFresnelPower: { value: 2.0 },
-      uGlowIntensity: { value: 0.8 },
-      uModeProgress: { value: 0.0 },
-      uIgnite: { value: 0.0 },
-      uLockdown: { value: 0.0 }
-    },
-    transparent: true,
-    depthWrite: true,
-  })
-}
-
-
-
-/**
  * ANTIGRAVITY FALLING DUST STREAM
  */
 function GravityParticles() {
@@ -663,9 +586,21 @@ function PolyhedronScene({
   const edgeMaterial = useMemo(() => createEdgeGlowMaterial(), [])
 
   // Concentric Rings: Beautiful custom Runic Shader Materials
-  const ring1Material = useMemo(() => createRunicRingMaterial("#4AFFB4"), [])
-  const ring2Material = useMemo(() => createRunicRingMaterial("#4A8FFF"), [])
-  const ring3Material = useMemo(() => createRunicRingMaterial("#9f4aff"), [])
+  const ring1Material = useMemo(() => new THREE.MeshStandardMaterial({
+    roughness: 0.12,
+    metalness: 0.95,
+    emissiveIntensity: 0.8
+  }), [])
+  const ring2Material = useMemo(() => new THREE.MeshStandardMaterial({
+    roughness: 0.12,
+    metalness: 0.95,
+    emissiveIntensity: 0.8
+  }), [])
+  const ring3Material = useMemo(() => new THREE.MeshStandardMaterial({
+    roughness: 0.12,
+    metalness: 0.95,
+    emissiveIntensity: 0.8
+  }), [])
 
   // Shared single PBR material for optimal 54-pyramid rendering and smooth mode color transition
   const sharedMaterial = useMemo(() => new THREE.MeshStandardMaterial({
@@ -756,14 +691,65 @@ function PolyhedronScene({
     coreMaterial.uniforms.uTime.value = t
     edgeMaterial.uniforms.uTime.value = t
     
-    // Drive uniforms to Ring Shaders
-    const ringMats = [ring1Material, ring2Material, ring3Material]
-    ringMats.forEach(mat => {
-      mat.uniforms.uTime.value = t
-      mat.uniforms.uModeProgress.value = sharedSpellState.modeProgress
-      mat.uniforms.uIgnite.value = sharedSpellState.ignite ? 1.0 : 0.0
-      mat.uniforms.uLockdown.value = sharedSpellState.lockdown ? 1.0 : 0.0
-    })
+    // Smooth transition for ring face colors (metallic base)
+    const mode = sharedSpellState.modeProgress
+    
+    // Ring 1 colors
+    let r1Base = goldColor.clone().lerp(defaultColor, mode)
+    let r1Glow = new THREE.Color("#ffb44a").lerp(new THREE.Color("#4AFFB4"), mode)
+    
+    // Ring 2 colors
+    let r2Base = goldColor.clone().lerp(defaultColor, mode)
+    let r2Glow = new THREE.Color("#ffb44a").lerp(new THREE.Color("#4A8FFF"), mode)
+    
+    // Ring 3 colors
+    let r3Base = goldColor.clone().lerp(defaultColor, mode)
+    let r3Glow = new THREE.Color("#ffb44a").lerp(new THREE.Color("#9f4aff"), mode)
+    
+    // Apply Ignite/Lockdown overrides
+    if (sharedSpellState.ignite) {
+      const igniteBase = new THREE.Color("#3a0a0a")
+      const igniteGlow = new THREE.Color("#ff4500") // intense orange-red
+      r1Base = igniteBase
+      r2Base = igniteBase
+      r3Base = igniteBase
+      r1Glow = igniteGlow
+      r2Glow = igniteGlow
+      r3Glow = igniteGlow
+    } else if (sharedSpellState.lockdown) {
+      const lockdownBase = new THREE.Color("#05070a")
+      const lockdownGlow = new THREE.Color("#000000") // cut emissive in lockdown
+      r1Base = lockdownBase
+      r2Base = lockdownBase
+      r3Base = lockdownBase
+      r1Glow = lockdownGlow
+      r2Glow = lockdownGlow
+      r3Glow = lockdownGlow
+    }
+    
+    // Dynamic pulsing factor
+    const pulseFactor = 0.8 + 0.2 * Math.sin(t * 3.0)
+    
+    // Ring 1 properties
+    ring1Material.color.copy(r1Base)
+    ring1Material.emissive.copy(r1Glow)
+    ring1Material.emissiveIntensity = sharedSpellState.lockdown ? 0.0 : (sharedSpellState.ignite ? 1.5 : 0.8 * pulseFactor)
+    ring1Material.roughness = THREE.MathUtils.lerp(0.12, 0.18, mode)
+    ring1Material.metalness = THREE.MathUtils.lerp(0.95, 0.9, mode)
+    
+    // Ring 2 properties
+    ring2Material.color.copy(r2Base)
+    ring2Material.emissive.copy(r2Glow)
+    ring2Material.emissiveIntensity = sharedSpellState.lockdown ? 0.0 : (sharedSpellState.ignite ? 1.5 : 0.8 * pulseFactor)
+    ring2Material.roughness = THREE.MathUtils.lerp(0.12, 0.18, mode)
+    ring2Material.metalness = THREE.MathUtils.lerp(0.95, 0.9, mode)
+    
+    // Ring 3 properties
+    ring3Material.color.copy(r3Base)
+    ring3Material.emissive.copy(r3Glow)
+    ring3Material.emissiveIntensity = sharedSpellState.lockdown ? 0.0 : (sharedSpellState.ignite ? 1.5 : 0.8 * pulseFactor)
+    ring3Material.roughness = THREE.MathUtils.lerp(0.12, 0.18, mode)
+    ring3Material.metalness = THREE.MathUtils.lerp(0.95, 0.9, mode)
 
     // Drive special Spell states to Shaders
     coreMaterial.uniforms.uIgniteActive.value = sharedSpellState.ignite ? 1.0 : 0.0
@@ -964,9 +950,7 @@ function PolyhedronScene({
         
         {/* Ring 1 (X-Y Diagonal) */}
         <group ref={ring1Ref} rotation={[Math.PI / 4, Math.PI / 4, 0]}>
-          <mesh geometry={ring1Geo}>
-            <primitive object={ring1Material} attach="material" />
-          </mesh>
+          <mesh geometry={ring1Geo} material={ring1Material} />
           {ring1Runes.map((rd, i) => (
             <Text
               key={i}
@@ -985,9 +969,7 @@ function PolyhedronScene({
 
         {/* Ring 2 (Y-Z Diagonal) */}
         <group ref={ring2Ref} rotation={[-Math.PI / 4, 0, Math.PI / 4]}>
-          <mesh geometry={ring2Geo}>
-            <primitive object={ring2Material} attach="material" />
-          </mesh>
+          <mesh geometry={ring2Geo} material={ring2Material} />
           {ring2Runes.map((rd, i) => (
             <Text
               key={i}
@@ -1006,9 +988,7 @@ function PolyhedronScene({
 
         {/* Ring 3 (Z-X Diagonal) */}
         <group ref={ring3Ref} rotation={[0, -Math.PI / 4, -Math.PI / 4]}>
-          <mesh geometry={ring3Geo}>
-            <primitive object={ring3Material} attach="material" />
-          </mesh>
+          <mesh geometry={ring3Geo} material={ring3Material} />
         </group>
 
         {/* 54 Pyramid fragments wrapped in dedicated group to prevent empty raycast issues */}
