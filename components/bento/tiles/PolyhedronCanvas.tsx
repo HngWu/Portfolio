@@ -1123,8 +1123,8 @@ function PolyhedronScene({
         ref.current.position.lerp(_gyroZero, delta * 6.0)
       }
 
-      // Volumetric core shatter scale effect (Concentric rings reactively expand slightly on click)
-      const targetScale = 1.0 + sharedSpellState.shatterProgress * 0.12
+      // Volumetric core shatter scale effect (Concentric rings micro-swell)
+      const targetScale = 1.0 + sharedSpellState.shatterProgress * 0.18
       ref.current.scale.setScalar(targetScale)
     })
 
@@ -1475,8 +1475,8 @@ function PyramidFragment({
       delta * (7.5 - data.center.length() * 1.5)
     )
 
-    // Base expansion + proximity + shatter offset (Click triggers a dramatic volumetric shatter explosion)
-    targetExp += stateRef.current.shatterVal * 2.4
+    // Base expansion + proximity + shatter offset (dramatic volumetric shatter clears core center)
+    targetExp += stateRef.current.shatterVal * 4.5
 
     stateRef.current.targetExpansion = targetExp
     stateRef.current.currentExpansion += (stateRef.current.targetExpansion - stateRef.current.currentExpansion) * delta * 5.0
@@ -1565,10 +1565,24 @@ function PyramidFragment({
         )
       }
 
+      // Beautiful zero-G floating displacement active during click shatter suspension
+      const floatDrift = _scratchVector4.set(0, 0, 0)
+      if (stateRef.current.shatterVal > 0.05) {
+        const floatAmp = stateRef.current.shatterVal * 0.38
+        const idHash = data.id.split('-').reduce((acc, val) => acc * 31 + parseInt(val, 10), 0)
+        const pieceSeed = data.center.length() + idHash
+        floatDrift.set(
+          Math.sin(state.clock.getElapsedTime() * 2.2 + pieceSeed) * 0.08 * floatAmp,
+          Math.cos(state.clock.getElapsedTime() * 1.8 + pieceSeed) * 0.08 * floatAmp,
+          Math.sin(state.clock.getElapsedTime() * 2.5 + pieceSeed) * 0.08 * floatAmp
+        )
+      }
+
       const assembledPos = _scratchVector3.copy(data.center)
         .applyMatrix4(matrix)
         .add(rotatedNormal.multiplyScalar(expansionFactor))
         .add(driftOffset)
+        .add(floatDrift)
 
       const currentPos = _scratchVector4.lerpVectors(flyInOffset, assembledPos, assemblyProgress)
 
@@ -1608,7 +1622,7 @@ function PyramidFragment({
     onHover(null, null, null)
   }
 
-  // Single click triggers a snappy mechanical expand-and-contract recoil pulse (zero delay)
+  // Single click triggers a dramatic zero-g shatter, floating suspension animation, and magnetic reassembly
   const triggerClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
     if (sharedSpellState.lockdown) return
@@ -1618,13 +1632,15 @@ function PyramidFragment({
       { shatterProgress: 0.0 },
       {
         shatterProgress: 1.0,
-        duration: 0.18,       // Snap outward quickly
-        ease: "power2.out",
+        duration: 0.38,       // Fast dramatic shatter explosion
+        ease: "expo.out",
         onComplete: () => {
+          // Suspend shattered state for 1.1s to allow zero-G floating, then magnetically reform
           gsap.to(sharedSpellState, {
             shatterProgress: 0.0,
-            duration: 0.45,     // Snappy mechanical bounce back to base
-            ease: "elastic.out(1.0, 0.6)"
+            delay: 1.1,         // Floating hover window
+            duration: 1.5,      // Magnetic reassembly
+            ease: "elastic.out(1.0, 0.62)"
           })
         }
       }
@@ -1715,13 +1731,14 @@ export default function PolyhedronCanvas({
         { shatterProgress: 0.0 },
         {
           shatterProgress: 1.0,
-          duration: 0.18,
-          ease: "power2.out",
+          duration: 0.38,
+          ease: "expo.out",
           onComplete: () => {
             gsap.to(sharedSpellState, {
               shatterProgress: 0.0,
-              duration: 0.45,
-              ease: "elastic.out(1.0, 0.6)"
+              delay: 1.1,
+              duration: 1.5,
+              ease: "elastic.out(1.0, 0.62)"
             })
           }
         }
