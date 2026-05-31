@@ -1540,7 +1540,9 @@ function PyramidFragment({
       stateRef.current.lastVersion = currentMove.version
 
       const { axis, slice, angle } = currentMove
-      const currentLogicalPos = _scratchVector1.copy(data.center).applyMatrix4(stateRef.current.targetMatrix)
+      
+      // Project logical position using targetQuat for slice containment checking
+      const currentLogicalPos = _scratchVector1.copy(data.center).applyQuaternion(stateRef.current.targetQuat)
 
       const coord = currentLogicalPos.dot(axis)
       const sliceThreshold = 0.5
@@ -1551,8 +1553,22 @@ function PyramidFragment({
       else inSlice = Math.abs(coord) < sliceThreshold
 
       if (inSlice) {
+        // 1. Capture current orientation as the start point for the spring interpolation
+        stateRef.current.prevQuat.copy(stateRef.current.currentQuat)
+        
+        // 2. Symmetrically calculate new target orientation (apply rotation around global axis)
+        stateRef.current.targetQuat.copy(stateRef.current.targetQuat).premultiply(_scratchQuat3.setFromAxisAngle(axis, angle))
+        
+        // 3. Keep targetMatrix updated for the intermediate slerp/decompose code to compile cleanly in Task 2
         const moveMatrix = _scratchMatrix.makeRotationAxis(axis, angle)
         stateRef.current.targetMatrix.premultiply(moveMatrix)
+        
+        // 4. Trigger transition states
+        stateRef.current.moveTime = 0.0
+        stateRef.current.isMoving = true
+        stateRef.current.moveAxis.copy(axis)
+        stateRef.current.moveAngle = angle
+        stateRef.current.moveCoordSign = Math.sign(coord)
       }
     }
 
