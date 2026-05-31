@@ -74,7 +74,6 @@ const _scratchQuat1 = new THREE.Quaternion()
 const _scratchQuat2 = new THREE.Quaternion()
 const _scratchQuat3 = new THREE.Quaternion()
 const _scratchEuler = new THREE.Euler()
-const _scratchMatrix = new THREE.Matrix4()
 
 // Dedicated scratch variables for gyroscopic motion precession
 const _gyroPrecess1 = new THREE.Vector3()
@@ -1375,8 +1374,6 @@ function PyramidFragment({
     tumbleRotation: THREE.Euler
     tumbleVelocity: THREE.Vector3
     shatterVal: number
-    currentMatrix: THREE.Matrix4     // Retained for compilation during Task 1 transition
-    targetMatrix: THREE.Matrix4      // Retained for compilation during Task 1 transition
   }>(null!)
 
   if (stateRef.current == null) {
@@ -1404,9 +1401,7 @@ function PyramidFragment({
       targetExpansion: 0.25,
       tumbleRotation: new THREE.Euler(0, 0, 0),
       tumbleVelocity: new THREE.Vector3(rx, ry, rz),
-      shatterVal: 0.0,
-      currentMatrix: new THREE.Matrix4(),
-      targetMatrix: new THREE.Matrix4()
+      shatterVal: 0.0
     }
   }
 
@@ -1559,11 +1554,7 @@ function PyramidFragment({
         // 2. Symmetrically calculate new target orientation (apply rotation around global axis)
         stateRef.current.targetQuat.copy(stateRef.current.targetQuat).premultiply(_scratchQuat3.setFromAxisAngle(axis, angle))
         
-        // 3. Keep targetMatrix updated for the intermediate slerp/decompose code to compile cleanly in Task 2
-        const moveMatrix = _scratchMatrix.makeRotationAxis(axis, angle)
-        stateRef.current.targetMatrix.premultiply(moveMatrix)
-        
-        // 4. Trigger transition states
+        // 3. Trigger transition states
         stateRef.current.moveTime = 0.0
         stateRef.current.isMoving = true
         stateRef.current.moveAxis.copy(axis)
@@ -1574,27 +1565,45 @@ function PyramidFragment({
 
     // Combine matrix decompositions and snap positions (100% Zero-Allocation)
     if (meshGroupRef.current) {
-      const matrix = stateRef.current.currentMatrix
-      const target = stateRef.current.targetMatrix
-
-      const currQuat = _scratchQuat1
-      const targetQuat = _scratchQuat2
-      const currPos = _scratchVector1
-      const currScale = _scratchVector2
-      const dummyP = _scratchVector3
-      const dummyS = _scratchVector4
-
-      matrix.decompose(currPos, currQuat, currScale)
-      target.decompose(dummyP, targetQuat, dummyS)
-
-      // Perform damped spring physics-style rotation interpolation towards targetQuat
-      currQuat.slerp(targetQuat, 0.15)
-      matrix.compose(currPos, currQuat, currScale)
+      const currQuat = stateRef.current.currentQuat
+      const targetQuat = stateRef.current.targetQuat
+      
+      let springProgress = 1.0
+      const expansionOffset = _scratchVector2.set(0, 0, 0)
+      
+      if (stateRef.current.isMoving) {
+        stateRef.current.moveTime += delta
+        const t = stateRef.current.moveTime
+        
+        // Damping ratio = 0.58, Natural Frequency = 15.0 rad/s
+        const zeta = 0.58
+        const omega = 15.0
+        const omega_d = 12.2215 // omega * Math.sqrt(1.0 - zeta * zeta)
+        const expTerm = Math.exp(-zeta * omega * t)
+        
+        // Second-order underdamped step response
+        springProgress = 1.0 - expTerm * (Math.cos(omega_d * t) + (zeta / 0.8146) * Math.sin(omega_d * t))
+        
+        if (t >= 0.45) {
+          stateRef.current.isMoving = false
+          currQuat.copy(targetQuat)
+        } else {
+          // Concept C: Extrapolated angle overshoot using spring progress
+          const theta = stateRef.current.moveAngle * springProgress
+          currQuat.copy(stateRef.current.prevQuat).premultiply(_scratchQuat3.setFromAxisAngle(stateRef.current.moveAxis, theta))
+          
+          // Concept A: Sinusoidal seam-burst expansion with rebound squeeze
+          const seamExpansion = 0.22 * Math.sin(springProgress * Math.PI)
+          expansionOffset.copy(stateRef.current.moveAxis).multiplyScalar(seamExpansion * stateRef.current.moveCoordSign)
+        }
+      } else {
+        currQuat.copy(targetQuat)
+      }
 
       const expansionFactor = stateRef.current.currentExpansion
       const rotatedNormal = _scratchVector1.copy(data.normal).applyQuaternion(currQuat)
       
-      const driftOffset = _scratchVector2.set(0, 0, 0)
+      const driftOffset = _scratchVector3.set(0, 0, 0)
       if (sharedSpellState.antigravity) {
         const driftAmp = 1.0 + Math.sin(state.clock.getElapsedTime() * 1.5 + data.center.x) * 0.25
         driftOffset.set(
@@ -1604,7 +1613,6 @@ function PyramidFragment({
         )
       }
 
-      // Beautiful zero-G floating displacement active during click shatter suspension
       const floatDrift = _scratchVector4.set(0, 0, 0)
       if (stateRef.current.shatterVal > 0.05) {
         const floatAmp = stateRef.current.shatterVal * 0.38
@@ -1617,17 +1625,18 @@ function PyramidFragment({
         )
       }
 
-      const assembledPos = _scratchVector3.copy(data.center)
-        .applyMatrix4(matrix)
-        .add(rotatedNormal.multiplyScalar(expansionFactor))
-        .add(driftOffset)
-        .add(floatDrift)
+      // Assemble dynamic world position using zero-allocation scratch variables
+      const assembledPos = _scratchVector1.copy(data.center)
+        .applyQuaternion(currQuat) // Symmetrical rotation around core origin
+        .add(rotatedNormal.multiplyScalar(expansionFactor)) // Hover/Swell expansion
+        .add(expansionOffset) // Active mechanical seam displacement
+        .add(driftOffset) // Antigravity float
+        .add(floatDrift) // Click-shatter float
 
       const currentPos = _scratchVector4.lerpVectors(flyInOffset, assembledPos, assemblyProgress)
-
       meshGroupRef.current.position.copy(currentPos)
       
-      // Calculate dynamic click-driven shatter tumble rotation (Concept B)
+      // Tumble and Click Tumble rotations
       const clickTumbleX = stateRef.current.tumbleVelocity.x * stateRef.current.shatterVal * 1.8
       const clickTumbleY = stateRef.current.tumbleVelocity.y * stateRef.current.shatterVal * 1.8
       const clickTumbleZ = stateRef.current.tumbleVelocity.z * stateRef.current.shatterVal * 1.8
@@ -1637,7 +1646,7 @@ function PyramidFragment({
         stateRef.current.tumbleRotation.y + clickTumbleY,
         stateRef.current.tumbleRotation.z + clickTumbleZ
       )
-
+      
       const finalQuat = _scratchQuat1.copy(currQuat).multiply(_scratchQuat3.setFromEuler(finalTumble))
       meshGroupRef.current.quaternion.copy(finalQuat)
     }
