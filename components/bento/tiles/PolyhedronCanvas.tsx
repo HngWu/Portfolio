@@ -1123,8 +1123,8 @@ function PolyhedronScene({
         ref.current.position.lerp(_gyroZero, delta * 6.0)
       }
 
-      // Volumetric core shatter scale effect (Click triggers a subtle, elegant micro-swell)
-      const targetScale = 1.0 + sharedSpellState.shatterProgress * 0.04
+      // Volumetric core shatter scale effect (Concentric rings reactively expand slightly on click)
+      const targetScale = 1.0 + sharedSpellState.shatterProgress * 0.12
       ref.current.scale.setScalar(targetScale)
     })
 
@@ -1475,8 +1475,8 @@ function PyramidFragment({
       delta * (7.5 - data.center.length() * 1.5)
     )
 
-    // Base expansion + proximity + shatter offset (Click triggers a snappy mechanical recoil pulse)
-    targetExp += stateRef.current.shatterVal * 0.22
+    // Base expansion + proximity + shatter offset (Click triggers a dramatic volumetric shatter explosion)
+    targetExp += stateRef.current.shatterVal * 2.4
 
     stateRef.current.targetExpansion = targetExp
     stateRef.current.currentExpansion += (stateRef.current.targetExpansion - stateRef.current.currentExpansion) * delta * 5.0
@@ -1574,7 +1574,18 @@ function PyramidFragment({
 
       meshGroupRef.current.position.copy(currentPos)
       
-      const finalQuat = _scratchQuat1.copy(currQuat).multiply(_scratchQuat3.setFromEuler(stateRef.current.tumbleRotation))
+      // Calculate dynamic click-driven shatter tumble rotation (Concept B)
+      const clickTumbleX = stateRef.current.tumbleVelocity.x * stateRef.current.shatterVal * 1.8
+      const clickTumbleY = stateRef.current.tumbleVelocity.y * stateRef.current.shatterVal * 1.8
+      const clickTumbleZ = stateRef.current.tumbleVelocity.z * stateRef.current.shatterVal * 1.8
+      
+      const finalTumble = _scratchEuler.set(
+        stateRef.current.tumbleRotation.x + clickTumbleX,
+        stateRef.current.tumbleRotation.y + clickTumbleY,
+        stateRef.current.tumbleRotation.z + clickTumbleZ
+      )
+
+      const finalQuat = _scratchQuat1.copy(currQuat).multiply(_scratchQuat3.setFromEuler(finalTumble))
       meshGroupRef.current.quaternion.copy(finalQuat)
     }
   })
