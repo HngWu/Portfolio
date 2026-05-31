@@ -1459,10 +1459,9 @@ function PyramidFragment({
     }
     currentProximity.current = THREE.MathUtils.lerp(currentProximity.current, proximityFactor, delta * 7.5)
 
-    // Base expansion plus subtle cinematic sinusoidal micro-expansion (Breathing Singularity)
+    // Base expansion (Zero size expansion during scroll to ensure absolute stability)
     const baseExpansion = isDeepDive ? 0.35 : 0.25
-    const scrollExpansion = 0.08 * Math.sin(sharedSpellState.scrollProgress * Math.PI)
-    let targetExp = baseExpansion + scrollExpansion
+    let targetExp = baseExpansion
 
     // Override with Proximity swell
     if (!sharedSpellState.lockdown) {
@@ -1476,8 +1475,8 @@ function PyramidFragment({
       delta * (7.5 - data.center.length() * 1.5)
     )
 
-    // Base expansion + proximity + shatter offset (Click triggers a snappy, low-scale recoil)
-    targetExp += stateRef.current.shatterVal * 0.18
+    // Base expansion + proximity + shatter offset (Click triggers a snappy mechanical recoil pulse)
+    targetExp += stateRef.current.shatterVal * 0.22
 
     stateRef.current.targetExpansion = targetExp
     stateRef.current.currentExpansion += (stateRef.current.targetExpansion - stateRef.current.currentExpansion) * delta * 5.0
@@ -1564,16 +1563,6 @@ function PyramidFragment({
           Math.cos(state.clock.getElapsedTime() * 1.1 + data.center.z) * 0.5 + driftAmp,
           Math.cos(state.clock.getElapsedTime() * 0.9 + data.center.x) * 0.5
         )
-      } else {
-        // Volumetric out-of-phase Z-parallax drift using piece-distance coordinates (Concept B)
-        const pieceDist = data.center.length()
-        const phaseOffset = pieceDist * Math.PI
-        const driftAmp = 0.08 * sharedSpellState.scrollProgress
-        driftOffset.set(
-          Math.sin(state.clock.getElapsedTime() * 0.6 + phaseOffset) * 0.03 * sharedSpellState.scrollProgress,
-          Math.cos(state.clock.getElapsedTime() * 0.8 + phaseOffset) * 0.03 * sharedSpellState.scrollProgress,
-          Math.cos(state.clock.getElapsedTime() * 1.0 + phaseOffset) * driftAmp
-        )
       }
 
       const assembledPos = _scratchVector3.copy(data.center)
@@ -1608,25 +1597,23 @@ function PyramidFragment({
     onHover(null, null, null)
   }
 
-  // Double click or single click triggers explosive shatter
+  // Single click triggers a snappy mechanical expand-and-contract recoil pulse (zero delay)
   const triggerClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
     if (sharedSpellState.lockdown) return
 
-    // Animate global shatter value
     gsap.killTweensOf(sharedSpellState)
     gsap.fromTo(sharedSpellState, 
       { shatterProgress: 0.0 },
       {
         shatterProgress: 1.0,
-        duration: 0.75,
-        ease: "expo.out",
+        duration: 0.18,       // Snap outward quickly
+        ease: "power2.out",
         onComplete: () => {
           gsap.to(sharedSpellState, {
             shatterProgress: 0.0,
-            delay: 1.1,
-            duration: 1.4,
-            ease: "elastic.out(1.0, 0.65)"
+            duration: 0.45,     // Snappy mechanical bounce back to base
+            ease: "elastic.out(1.0, 0.6)"
           })
         }
       }
@@ -1717,13 +1704,12 @@ export default function PolyhedronCanvas({
         { shatterProgress: 0.0 },
         {
           shatterProgress: 1.0,
-          duration: 0.8,
-          ease: "expo.out",
+          duration: 0.18,
+          ease: "power2.out",
           onComplete: () => {
             gsap.to(sharedSpellState, {
               shatterProgress: 0.0,
-              delay: 1.2,
-              duration: 1.5,
+              duration: 0.45,
               ease: "elastic.out(1.0, 0.6)"
             })
           }
