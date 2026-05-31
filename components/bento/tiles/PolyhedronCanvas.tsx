@@ -69,6 +69,7 @@ const _scratchVector1 = new THREE.Vector3()
 const _scratchVector2 = new THREE.Vector3()
 const _scratchVector3 = new THREE.Vector3()
 const _scratchVector4 = new THREE.Vector3()
+const _scratchVector5 = new THREE.Vector3()
 
 const _scratchQuat1 = new THREE.Quaternion()
 const _scratchQuat2 = new THREE.Quaternion()
@@ -1601,7 +1602,7 @@ function PyramidFragment({
       }
 
       const expansionFactor = stateRef.current.currentExpansion
-      const rotatedNormal = _scratchVector1.copy(data.normal).applyQuaternion(currQuat)
+      const rotatedNormal = _scratchVector5.copy(data.normal).applyQuaternion(currQuat)
       
       const driftOffset = _scratchVector3.set(0, 0, 0)
       if (sharedSpellState.antigravity) {
