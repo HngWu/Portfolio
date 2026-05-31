@@ -19,6 +19,10 @@ const RunicDustShader = {
     uniform float uModeBlend;
     uniform float uSize;
     uniform float uSpeed;
+    uniform vec3 uColorQPA;
+    uniform vec3 uColorQPB;
+    uniform vec3 uColorDDA;
+    uniform vec3 uColorDDB;
     attribute float aSizeMultiplier;
     attribute vec3 aRandoms;
     varying vec3 vColor;
@@ -119,6 +123,18 @@ const RunicDustShader = {
 
 export const RunicDustStreams = ({ mode, count = 1500 }: { mode: 'quick-pitch' | 'deep-dive', count?: number }) => {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
+  
+  const runicDustUniforms = useMemo(() => ({
+    uTime: { value: 0 },
+    uModeBlend: { value: 0.0 },
+    uSize: { value: 15.0 },
+    uSpeed: { value: 0.3 },
+    uColorQPA: { value: new THREE.Color('#FF8C00') },
+    uColorQPB: { value: new THREE.Color('#FFB44A') },
+    uColorDDA: { value: new THREE.Color('#6A0DAD') },
+    uColorDDB: { value: new THREE.Color('#4AFFB4') },
+  }), []);
+
   const { positions, randoms, sizeMultipliers } = useMemo(() => {
     const pos = new Float32Array(count * 3);
     const rand = new Float32Array(count * 3);
@@ -138,29 +154,25 @@ export const RunicDustStreams = ({ mode, count = 1500 }: { mode: 'quick-pitch' |
   }, [count]);
 
   useFrame((state, delta) => {
-    if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime();
-      
-      let targetBlend = mode === 'quick-pitch' ? 0.0 : 1.0;
-      // If ignited, force deep-dive blend for maximum particle speed and effects
-      if (sharedSpellState.ignite) targetBlend = 1.0;
+    runicDustUniforms.uTime.value = state.clock.getElapsedTime();
+    
+    let targetBlend = mode === 'quick-pitch' ? 0.0 : 1.0;
+    if (sharedSpellState.ignite) targetBlend = 1.0;
 
-      materialRef.current.uniforms.uModeBlend.value = THREE.MathUtils.lerp(
-        materialRef.current.uniforms.uModeBlend.value,
-        targetBlend,
-        0.05
-      );
+    runicDustUniforms.uModeBlend.value = THREE.MathUtils.lerp(
+      runicDustUniforms.uModeBlend.value,
+      targetBlend,
+      0.05
+    );
 
-      // Dynamically adjust speed based on spells
-      let speedFactor = 0.3;
-      if (sharedSpellState.lockdown) speedFactor = 0.0;
-      else if (sharedSpellState.ignite) speedFactor = 1.2;
-      materialRef.current.uniforms.uSpeed.value = THREE.MathUtils.lerp(
-        materialRef.current.uniforms.uSpeed.value,
-        speedFactor,
-        delta * 6.0
-      );
-    }
+    let speedFactor = 0.3;
+    if (sharedSpellState.lockdown) speedFactor = 0.0;
+    else if (sharedSpellState.ignite) speedFactor = 1.2;
+    runicDustUniforms.uSpeed.value = THREE.MathUtils.lerp(
+      runicDustUniforms.uSpeed.value,
+      speedFactor,
+      delta * 6.0
+    );
   });
 
   return (
@@ -174,7 +186,7 @@ export const RunicDustStreams = ({ mode, count = 1500 }: { mode: 'quick-pitch' |
         ref={materialRef}
         vertexShader={RunicDustShader.vertexShader}
         fragmentShader={RunicDustShader.fragmentShader}
-        uniforms={RunicDustShader.uniforms}
+        uniforms={runicDustUniforms}
         transparent
         depthWrite={false}
         blending={THREE.AdditiveBlending}

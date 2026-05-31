@@ -1056,7 +1056,7 @@ function PolyhedronScene({
     const docH = typeof document !== 'undefined' ? document.documentElement.scrollHeight : 1000
     const winH = typeof window !== 'undefined' ? window.innerHeight : 800
     const maxScroll = docH - winH
-    const scrollPercent = maxScroll > 0 && typeof window !== 'undefined' ? window.scrollY / maxScroll : 0
+    const scrollPercent = maxScroll > 0 && typeof window !== 'undefined' ? THREE.MathUtils.clamp(window.scrollY / maxScroll, 0, 1) : 0
 
     smoothScroll.current = THREE.MathUtils.lerp(smoothScroll.current, scrollPercent, delta * 4.0)
     sharedSpellState.scrollProgress = smoothScroll.current
@@ -1099,7 +1099,7 @@ function PolyhedronScene({
       const targetSpeed = baseFreq * gearRatios[idx]
       
       // Blend speeds using scroll progress (harmonic resonance)
-      const speedBlend = Math.pow(sharedSpellState.scrollProgress, 1.5)
+      const speedBlend = Math.pow(THREE.MathUtils.clamp(sharedSpellState.scrollProgress, 0.0, 1.0), 1.5)
       let currentSpeed = THREE.MathUtils.lerp(idleSpeed, targetSpeed, speedBlend)
 
       // Apply special spell speed overrides (EMP lockdown / Ignite overload)
@@ -1123,8 +1123,8 @@ function PolyhedronScene({
         ref.current.position.lerp(_gyroZero, delta * 6.0)
       }
 
-      // Volumetric core shatter scale effect
-      const targetScale = 1.0 + sharedSpellState.shatterProgress * 0.18
+      // Volumetric core shatter scale effect (Click shatter scaling disabled to keep size stable)
+      const targetScale = 1.0 + sharedSpellState.shatterProgress * 0.0
       ref.current.scale.setScalar(targetScale)
     })
 
@@ -1476,8 +1476,8 @@ function PyramidFragment({
       delta * (7.5 - data.center.length() * 1.5)
     )
 
-    // Base expansion + proximity + shatter offset
-    targetExp += stateRef.current.shatterVal * 4.2
+    // Base expansion + proximity + shatter offset (Click shatter expansion disabled to keep size stable)
+    targetExp += stateRef.current.shatterVal * 0.0
 
     stateRef.current.targetExpansion = targetExp
     stateRef.current.currentExpansion += (stateRef.current.targetExpansion - stateRef.current.currentExpansion) * delta * 5.0
