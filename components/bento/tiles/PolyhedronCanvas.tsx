@@ -55,6 +55,11 @@ const COLOR_RUNE_IGNITE = new THREE.Color("#FF7800")
 const COLOR_RUNE_LOCKDOWN = new THREE.Color("#2E1402")
 const COLOR_WHITE = new THREE.Color("#ffffff")
 
+const COLOR_GLASS_GOLD_BASE = new THREE.Color("#1a1005")
+const COLOR_GLASS_INDIGO_BASE = new THREE.Color("#0e0b1f")
+const COLOR_GLASS_GOLD_ATTEN = new THREE.Color("#ffb44a")
+const COLOR_GLASS_INDIGO_ATTEN = new THREE.Color("#0c0a1a")
+
 // Global scratch variables for zero-allocation hot loops
 const _scratchColor1 = new THREE.Color()
 const _scratchColor2 = new THREE.Color()
@@ -69,6 +74,7 @@ const _scratchQuat1 = new THREE.Quaternion()
 const _scratchQuat2 = new THREE.Quaternion()
 const _scratchQuat3 = new THREE.Quaternion()
 const _scratchEuler = new THREE.Euler()
+const _scratchMatrix = new THREE.Matrix4()
 
 // Dedicated scratch variables for gyroscopic motion precession
 const _gyroPrecess1 = new THREE.Vector3()
@@ -947,10 +953,10 @@ function PolyhedronScene({
       targetGlassAtten.set("#000000") // No attenuation glow
     } else {
       // Smoothly transition between gold and indigo glass attenuation
-      const baseGlassColor = _scratchColor3.copy(new THREE.Color("#1a1005")).lerp(new THREE.Color("#0e0b1f"), modeProg)
+      const baseGlassColor = _scratchColor3.copy(COLOR_GLASS_GOLD_BASE).lerp(COLOR_GLASS_INDIGO_BASE, modeProg)
       targetGlassColor.copy(baseGlassColor)
       
-      const baseGlassAtten = _scratchColor3.copy(new THREE.Color("#ffb44a")).lerp(new THREE.Color("#0c0a1a"), modeProg)
+      const baseGlassAtten = _scratchColor3.copy(COLOR_GLASS_GOLD_ATTEN).lerp(COLOR_GLASS_INDIGO_ATTEN, modeProg)
       targetGlassAtten.copy(baseGlassAtten)
     }
 
@@ -1355,14 +1361,22 @@ function PyramidFragment({
   const textRefs = useRef<(THREE.Mesh | null)[]>([])
   
   const stateRef = useRef<{
-    currentMatrix: THREE.Matrix4
-    targetMatrix: THREE.Matrix4
-    lastVersion: number
+    currentQuat: THREE.Quaternion    // Current rendering orientation
+    targetQuat: THREE.Quaternion     // Stable logical target orientation
+    prevQuat: THREE.Quaternion       // Pre-move orientation quaternion
+    moveTime: number                 // Seconds elapsed in current move
+    isMoving: boolean                // Active rotation transition flag
+    moveAxis: THREE.Vector3          // Active rotation axis
+    moveAngle: number                // Active rotation angle (+PI/2 or -PI/2)
+    moveCoordSign: number            // Symmetrical expansion direction (-1, 0, 1)
+    lastVersion: number              // Global move sequence tracker
     currentExpansion: number
     targetExpansion: number
     tumbleRotation: THREE.Euler
     tumbleVelocity: THREE.Vector3
     shatterVal: number
+    currentMatrix: THREE.Matrix4     // Retained for compilation during Task 1 transition
+    targetMatrix: THREE.Matrix4      // Retained for compilation during Task 1 transition
   }>(null!)
 
   if (stateRef.current == null) {
@@ -1377,14 +1391,22 @@ function PyramidFragment({
     const rz = (nextRand() - 0.5) * 2
 
     stateRef.current = {
-      currentMatrix: new THREE.Matrix4(),
-      targetMatrix: new THREE.Matrix4(),
+      currentQuat: new THREE.Quaternion(),
+      targetQuat: new THREE.Quaternion(),
+      prevQuat: new THREE.Quaternion(),
+      moveTime: 0.0,
+      isMoving: false,
+      moveAxis: new THREE.Vector3(0, 1, 0),
+      moveAngle: 0,
+      moveCoordSign: 0,
       lastVersion: 0,
       currentExpansion: 0.25,
       targetExpansion: 0.25,
       tumbleRotation: new THREE.Euler(0, 0, 0),
       tumbleVelocity: new THREE.Vector3(rx, ry, rz),
-      shatterVal: 0.0
+      shatterVal: 0.0,
+      currentMatrix: new THREE.Matrix4(),
+      targetMatrix: new THREE.Matrix4()
     }
   }
 
@@ -1529,7 +1551,7 @@ function PyramidFragment({
       else inSlice = Math.abs(coord) < sliceThreshold
 
       if (inSlice) {
-        const moveMatrix = new THREE.Matrix4().makeRotationAxis(axis, angle)
+        const moveMatrix = _scratchMatrix.makeRotationAxis(axis, angle)
         stateRef.current.targetMatrix.premultiply(moveMatrix)
       }
     }
@@ -1549,6 +1571,7 @@ function PyramidFragment({
       matrix.decompose(currPos, currQuat, currScale)
       target.decompose(dummyP, targetQuat, dummyS)
 
+      // Perform damped spring physics-style rotation interpolation towards targetQuat
       currQuat.slerp(targetQuat, 0.15)
       matrix.compose(currPos, currQuat, currScale)
 
