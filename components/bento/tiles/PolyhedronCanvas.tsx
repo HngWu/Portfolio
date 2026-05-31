@@ -1123,8 +1123,8 @@ function PolyhedronScene({
         ref.current.position.lerp(_gyroZero, delta * 6.0)
       }
 
-      // Volumetric core shatter scale effect (Click shatter scaling disabled to keep size stable)
-      const targetScale = 1.0 + sharedSpellState.shatterProgress * 0.0
+      // Volumetric core shatter scale effect (Click triggers a subtle, elegant micro-swell)
+      const targetScale = 1.0 + sharedSpellState.shatterProgress * 0.04
       ref.current.scale.setScalar(targetScale)
     })
 
@@ -1476,8 +1476,8 @@ function PyramidFragment({
       delta * (7.5 - data.center.length() * 1.5)
     )
 
-    // Base expansion + proximity + shatter offset (Click shatter expansion disabled to keep size stable)
-    targetExp += stateRef.current.shatterVal * 0.0
+    // Base expansion + proximity + shatter offset (Click triggers a snappy, low-scale recoil)
+    targetExp += stateRef.current.shatterVal * 0.18
 
     stateRef.current.targetExpansion = targetExp
     stateRef.current.currentExpansion += (stateRef.current.targetExpansion - stateRef.current.currentExpansion) * delta * 5.0
