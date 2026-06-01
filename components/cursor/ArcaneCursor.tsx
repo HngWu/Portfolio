@@ -311,13 +311,15 @@ export function ArcaneCursor() {
           p.vx *= 0.95
           p.vy *= 0.95
 
-          if (!isDeepRef.current) {
+          const isMagicStage = evolutionValRef.current < 0.5
+          
+          if (isMagicStage) {
             // Magic: undulating sine-wave drifts (runic floating feel)
             p.x += p.vx + Math.sin(time * 0.008 + p.id) * 0.4
             p.y += p.vy + Math.cos(time * 0.008 + p.id) * 0.4
             p.rotation += p.rotationSpeed * 0.016
           } else {
-            // Tech: linear velocity decay
+            // Tech: linear velocity decay following rigid horizontal/vertical traces
             p.x += p.vx
             p.y += p.vy
           }
@@ -325,18 +327,18 @@ export function ArcaneCursor() {
           // Draw the glowing trail particle
           ctx.save()
           ctx.translate(p.x, p.y)
-          if (!isDeepRef.current) {
+          if (isMagicStage) {
             ctx.rotate(p.rotation)
           }
 
-          // Set emissive drop shadow glows (Dark Blue for Tech; Golden/Amber for Magic)
+          // Set emissive glows (Royal Blue/Cyan for Tech; Golden/Amber for Magic)
           ctx.shadowBlur = p.size * 1.5
-          ctx.shadowColor = isDeepRef.current ? '#0044FF' : '#FBBF24' 
+          ctx.shadowColor = isMagicStage ? '#FBBF24' : '#4AFFB4'
 
-          ctx.font = `${p.size}px ${isDeepRef.current ? 'monospace' : 'NotoSansRunic-Regular, monospace'}`
-          ctx.fillStyle = isDeepRef.current 
-            ? `rgba(0, 68, 255, ${p.opacity})` // Dark blue binary coordinates
-            : `rgba(245, 158, 11, ${p.opacity})` // Golden-amber runes
+          ctx.font = `${p.size}px ${isMagicStage ? 'NotoSansRunic-Regular, monospace' : 'monospace'}`
+          ctx.fillStyle = isMagicStage 
+            ? `rgba(245, 158, 11, ${p.opacity})` // Golden-amber runes
+            : `rgba(74, 255, 180, ${p.opacity})` // Cyan-mint binary
           
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
@@ -354,21 +356,22 @@ export function ArcaneCursor() {
 
         if (dist > 8 && particlesRef.current.length < 45) {
           particleIdCounter.current += 1
-          const charPool = isDeepRef.current ? BINARY : RUNES
+          const isMagicStage = evolutionValRef.current < 0.5
+          const charPool = isMagicStage ? RUNES : BINARY
           const randomChar = charPool[Math.floor(Math.random() * charPool.length)]
 
           const newParticle: Particle = {
             id: particleIdCounter.current,
             x: smoothedMouseRef.current.x,
             y: smoothedMouseRef.current.y,
-            vx: -velocityRef.current.x * 0.2 + (Math.random() - 0.5) * 1.2,
-            vy: -velocityRef.current.y * 0.2 + (Math.random() - 0.5) * 1.2,
+            vx: -velocityRef.current.x * 0.25 + (Math.random() - 0.5) * 1.5,
+            vy: -velocityRef.current.y * 0.25 + (Math.random() - 0.5) * 1.5,
             rotation: Math.random() * Math.PI * 2,
             rotationSpeed: (Math.random() - 0.5) * 2.5,
-            size: isDeepRef.current ? 7 + Math.random() * 4 : 9 + Math.random() * 5,
+            size: isMagicStage ? 9 + Math.random() * 5 : 7 + Math.random() * 4,
             opacity: 1.0,
             age: 0,
-            maxAge: isDeepRef.current ? 0.5 + Math.random() * 0.4 : 0.8 + Math.random() * 0.5,
+            maxAge: isMagicStage ? 0.8 + Math.random() * 0.5 : 0.5 + Math.random() * 0.4,
             char: randomChar
           }
 
