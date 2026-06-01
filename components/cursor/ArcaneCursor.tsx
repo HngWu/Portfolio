@@ -22,14 +22,14 @@ const RUNES = ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "�
 const BINARY = ["0", "1"]
 
 const STAGE_PATHS = {
-  step1: "M20 5 L35 25 L25 22 L23 35 L17 35 L15 22 L5 25 Z", // 1. Runic Origin
-  step2: "M20 5 L35 25 L25 22 L23 32 L17 32 L15 22 L5 25 Z", // 2. Awakening
-  step3: "M20 4 L35 25 L25 22 L27 28 L20 25 L13 28 L15 22 L5 25 Z", // 3. Conduit
-  step4: "M20 4 L35 25 L25 22 L20 26 L15 22 L5 25 Z", // 4. Harmonization
-  step5: "M20 4 L35 25 L25 22 L20 26 L15 22 L5 25 Z", // 5. Transition
-  step6: "M20 3 L36 26 L26 23 L20 27 L14 23 L4 26 Z", // 6. Tech Form
-  drag: "M20 2 L38 28 L28 24 L20 34 L12 24 L2 28 Z", // Drag Delta Shape
-  unavailable: "M20 4 L34 22 L20 18 L6 22 Z" // Locked Warning Frame
+  step1: "M20 5 L35 25 L25 22 L23 35 L20 35 L17 35 L15 22 L5 25 Z", // 1. Runic Origin (Padded)
+  step2: "M20 5 L35 25 L25 22 L23 32 L20 32 L17 32 L15 22 L5 25 Z", // 2. Awakening (Padded)
+  step3: "M20 4 L35 25 L25 22 L27 28 L20 25 L13 28 L15 22 L5 25 Z", // 3. Conduit (8 points)
+  step4: "M20 4 L35 25 L25 22 L20 26 L20 26 L15 22 L5 25 L5 25 Z", // 4. Harmonization (Padded)
+  step5: "M20 4 L35 25 L25 22 L20 26 L20 26 L15 22 L5 25 L5 25 Z", // 5. Transition (Padded)
+  step6: "M20 3 L36 26 L26 23 L20 27 L20 27 L14 23 L4 26 L4 26 Z", // 6. Tech Form (Padded)
+  drag: "M20 2 L38 28 L28 24 L20 34 L20 34 L12 24 L2 28 L2 28 Z", // Drag Delta Shape (Padded)
+  unavailable: "M20 4 L34 22 L34 22 L20 18 L20 18 L6 22 L6 22 Z" // Locked Warning Frame (Padded)
 }
 
 export function ArcaneCursor() {
@@ -37,7 +37,6 @@ export function ArcaneCursor() {
   const isDeep = mode === 'deep'
 
   const [isActive, setIsActive] = useState(false)
-  const [clientPos, setClientPos] = useState({ x: 0, y: 0 })
   const [isHovered, setIsHovered] = useState(false)
   const [hasWebGLFailed, setHasWebGLFailed] = useState(false)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
@@ -51,6 +50,17 @@ export function ArcaneCursor() {
 
   // Outer cursor DOM ref for high-performance direct transform manipulation
   const cursorRef = useRef<HTMLDivElement | null>(null)
+
+  const cursorStateRef = useRef(cursorState)
+  useEffect(() => {
+    cursorStateRef.current = cursorState
+  }, [cursorState])
+
+  const pathRef = useRef<SVGPathElement | null>(null)
+  const steelRef = useRef<SVGPathElement | null>(null)
+  const crystalRef = useRef<SVGCircleElement | null>(null)
+  const concentricRef = useRef<HTMLDivElement | null>(null)
+  const crossbarRef = useRef<SVGGElement | null>(null)
 
   // Tracking refs to eliminate React re-render trigger dependencies in loops
   const isHoveredRef = useRef(isHovered)
@@ -129,7 +139,6 @@ export function ArcaneCursor() {
     const trackCoords = (e: MouseEvent) => {
       mouseRef.current.x = e.clientX
       mouseRef.current.y = e.clientY
-      setClientPos({ x: e.clientX, y: e.clientY })
       
       const target = e.target as HTMLElement | null
       if (target) {
@@ -181,6 +190,106 @@ export function ArcaneCursor() {
 
       if (cursorRef.current) {
         cursorRef.current.style.transform = `translate3d(${smoothedMouseRef.current.x}px, ${smoothedMouseRef.current.y}px, 0) translate(-50%, -50%)`
+      }
+
+      // Directly update SVG DOM nodes in real time!
+      const val = evolutionValRef.current
+      const state = cursorStateRef.current
+      
+      let activePath = STAGE_PATHS.step1
+      let fillOpacity = 0.15
+      let strokeColor = "#FFB44A"
+      let strokeDash = "3, 3"
+      let isMagicStage = val < 0.5
+      
+      if (state === 'drag') {
+        activePath = STAGE_PATHS.drag
+        strokeColor = isDeepRef.current ? "#4AFFB4" : "#FFB44A"
+        fillOpacity = 0.4
+        strokeDash = "none"
+      } else if (state === 'unavailable') {
+        activePath = STAGE_PATHS.unavailable
+        strokeColor = "#FF4A6B"
+        fillOpacity = 0.2
+        strokeDash = "none"
+      } else {
+        if (val < 0.16) {
+          activePath = STAGE_PATHS.step1
+          strokeColor = "#FFB44A"
+          fillOpacity = 0.15
+          strokeDash = "3, 3"
+        } else if (val < 0.33) {
+          activePath = STAGE_PATHS.step2
+          strokeColor = "#FFB44A"
+          fillOpacity = 0.3
+          strokeDash = "none"
+        } else if (val < 0.50) {
+          activePath = STAGE_PATHS.step3
+          strokeColor = "#FFFBEB"
+          fillOpacity = 0.5
+          strokeDash = "none"
+        } else if (val < 0.66) {
+          activePath = STAGE_PATHS.step4
+          strokeColor = "#FFB44A"
+          fillOpacity = 0.6
+          strokeDash = "none"
+        } else if (val < 0.83) {
+          activePath = STAGE_PATHS.step5
+          strokeColor = "#4AFFB4"
+          fillOpacity = 0.7
+          strokeDash = "none"
+        } else {
+          activePath = STAGE_PATHS.step6
+          strokeColor = "#4AFFB4"
+          fillOpacity = 0.8
+          strokeDash = "none"
+        }
+      }
+
+      if (pathRef.current) {
+        pathRef.current.setAttribute('d', activePath)
+        pathRef.current.setAttribute('fill', isMagicStage ? `rgba(255, 180, 74, ${fillOpacity})` : "#C5A059")
+        pathRef.current.setAttribute('stroke', strokeColor)
+        pathRef.current.setAttribute('stroke-width', state === 'hover' ? "2" : "1.5")
+        if (strokeDash !== 'none') {
+          pathRef.current.setAttribute('stroke-dasharray', strokeDash)
+        } else {
+          pathRef.current.removeAttribute('stroke-dasharray')
+        }
+      }
+      
+      if (steelRef.current) {
+        if (!isMagicStage && state !== 'unavailable') {
+          steelRef.current.setAttribute('fill', "#4F5D6B")
+          steelRef.current.setAttribute('stroke', state === 'hover' ? "#4AFFB4" : "rgba(255,255,255,0.2)")
+          steelRef.current.setAttribute('stroke-width', "1")
+          steelRef.current.style.display = 'block'
+        } else {
+          steelRef.current.style.display = 'none'
+        }
+      }
+      
+      if (crystalRef.current) {
+        if (state !== 'unavailable') {
+          crystalRef.current.setAttribute('fill', isMagicStage ? "#FFB44A" : "#4AFFB4")
+          crystalRef.current.setAttribute('r', activePath === STAGE_PATHS.step6 ? "3" : "2.5")
+          crystalRef.current.style.filter = isMagicStage ? 'drop-shadow(0 0 3px #FFB44A)' : 'drop-shadow(0 0 4px #4AFFB4)'
+          crystalRef.current.style.display = 'block'
+        } else {
+          crystalRef.current.style.display = 'none'
+        }
+      }
+
+      if (concentricRef.current) {
+        concentricRef.current.style.display = state === 'hover' ? 'block' : 'none'
+        if (state === 'hover') {
+          concentricRef.current.style.borderColor = isDeepRef.current ? 'rgba(74, 255, 180, 0.6)' : 'rgba(255, 180, 74, 0.6)'
+          concentricRef.current.style.boxShadow = isDeepRef.current ? '0 0 10px rgba(74, 255, 180, 0.3)' : '0 0 10px rgba(255, 180, 74, 0.3)'
+        }
+      }
+
+      if (crossbarRef.current) {
+        crossbarRef.current.style.display = state === 'unavailable' ? 'block' : 'none'
       }
 
       // Velocity calculation
@@ -590,17 +699,17 @@ export function ArcaneCursor() {
           }}
         >
           {/* Concentric diagnostics target brackets (shown on hover or tech state) */}
-          {cursorState === 'hover' && (
-            <div 
-              className="absolute w-[46px] h-[46px] border rounded-full animate-spin transition-all duration-300"
-              style={{
-                borderColor: isDeep ? 'rgba(74, 255, 180, 0.6)' : 'rgba(255, 180, 74, 0.6)',
-                borderStyle: 'dashed',
-                animationDuration: '6s',
-                boxShadow: isDeep ? '0 0 10px rgba(74, 255, 180, 0.3)' : '0 0 10px rgba(255, 180, 74, 0.3)'
-              }}
-            />
-          )}
+          <div 
+            ref={concentricRef}
+            className="absolute w-[46px] h-[46px] border rounded-full animate-spin transition-all duration-300"
+            style={{
+              borderColor: isDeep ? 'rgba(74, 255, 180, 0.6)' : 'rgba(255, 180, 74, 0.6)',
+              borderStyle: 'dashed',
+              animationDuration: '6s',
+              boxShadow: isDeep ? '0 0 10px rgba(74, 255, 180, 0.3)' : '0 0 10px rgba(255, 180, 74, 0.3)',
+              display: cursorState === 'hover' ? 'block' : 'none'
+            }}
+          />
 
           <svg 
             width="40" 
@@ -615,6 +724,7 @@ export function ArcaneCursor() {
           >
             {/* Outer Casing / Outer Plate */}
             <path 
+              ref={pathRef}
               d={activePath} 
               fill={isMagicStage ? `rgba(255, 180, 74, ${fillOpacity})` : "#C5A059"} 
               stroke={strokeColor} 
@@ -624,38 +734,41 @@ export function ArcaneCursor() {
             />
             
             {/* Sliding Steel Core Plate (Stages 4-6) */}
-            {!isMagicStage && cursorState !== 'unavailable' && (
-              <path 
-                d="M20 7 L31 21 L23 19 L20 22 L17 19 L9 21 Z" 
-                fill="#4F5D6B" 
-                stroke={cursorState === 'hover' ? "#4AFFB4" : "rgba(255,255,255,0.2)"}
-                strokeWidth="1"
-                style={{ transition: 'fill 0.3s, stroke 0.3s' }}
-              />
-            )}
+            <path 
+              ref={steelRef}
+              d="M20 7 L31 21 L23 19 L20 22 L17 19 L9 21 Z" 
+              fill="#4F5D6B" 
+              stroke={cursorState === 'hover' ? "#4AFFB4" : "rgba(255,255,255,0.2)"}
+              strokeWidth="1"
+              style={{ 
+                transition: 'fill 0.3s, stroke 0.3s',
+                display: (!isMagicStage && cursorState !== 'unavailable') ? 'block' : 'none'
+              }}
+            />
 
             {/* Glowing Core Crystal */}
-            {cursorState !== 'unavailable' && (
-              <circle 
-                cx="20" 
-                cy="14" 
-                r={activePath === STAGE_PATHS.step6 ? "3" : "2.5"} 
-                fill={isMagicStage ? "#FFB44A" : "#4AFFB4"} 
-                className="animate-pulse"
-                style={{ 
-                  filter: isMagicStage ? 'drop-shadow(0 0 3px #FFB44A)' : 'drop-shadow(0 0 4px #4AFFB4)',
-                  transition: 'fill 0.3s'
-                }}
-              />
-            )}
+            <circle 
+              ref={crystalRef}
+              cx="20" 
+              cy="14" 
+              r={activePath === STAGE_PATHS.step6 ? "3" : "2.5"} 
+              fill={isMagicStage ? "#FFB44A" : "#4AFFB4"} 
+              className="animate-pulse"
+              style={{ 
+                filter: isMagicStage ? 'drop-shadow(0 0 3px #FFB44A)' : 'drop-shadow(0 0 4px #4AFFB4)',
+                transition: 'fill 0.3s',
+                display: cursorState !== 'unavailable' ? 'block' : 'none'
+              }}
+            />
 
             {/* Unavailable lock cross bars */}
-            {cursorState === 'unavailable' && (
-              <>
-                <line x1="12" y1="20" x2="28" y2="20" stroke="#FF4A6B" strokeWidth="2" />
-                <line x1="20" y1="12" x2="20" y2="28" stroke="#FF4A6B" strokeWidth="2" />
-              </>
-            )}
+            <g 
+              ref={crossbarRef}
+              style={{ display: cursorState === 'unavailable' ? 'block' : 'none' }}
+            >
+              <line x1="12" y1="20" x2="28" y2="20" stroke="#FF4A6B" strokeWidth="2" />
+              <line x1="20" y1="12" x2="20" y2="28" stroke="#FF4A6B" strokeWidth="2" />
+            </g>
           </svg>
         </div>
         
