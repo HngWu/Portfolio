@@ -178,6 +178,32 @@
   .lume-glow-amber {
     @apply hover:shadow-[0_0_40px_rgba(255,180,74,0.15),inset_0_0_20px_rgba(255,180,74,0.15)] hover:border-[rgba(255,180,74,0.4)];
   }
+
+  /* Custom Thin Scrollbar */
+  .scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background: var(--lume-primary);
+    box-shadow: 0 0 8px var(--lume-primary);
+  }
 }
 
 @keyframes scanline {
