@@ -21,6 +21,22 @@ export function CommandPalette() {
   const [isOpen, setIsOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [selectedIndex, setSelectedIndex] = React.useState(0)
+  const [isMacOrLinux, setIsMacOrLinux] = React.useState(false)
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const ua = navigator.userAgent.toLowerCase()
+      setIsMacOrLinux(ua.includes("mac") || ua.includes("linux"))
+    }
+  }, [])
+
+  React.useEffect(() => {
+    const handleOpenPalette = () => {
+      setIsOpen(true)
+    }
+    window.addEventListener("open-command-palette", handleOpenPalette)
+    return () => window.removeEventListener("open-command-palette", handleOpenPalette)
+  }, [])
   
   const { navigateWithTransition } = usePageTransition()
   const toggleTheme = useThemeStore((state) => state.togglePrimaryColor)
@@ -103,26 +119,29 @@ export function CommandPalette() {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-[15vh]">
-      <div className="w-full max-w-2xl bg-[#141414]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col mx-4">
-        <div className="flex items-center px-4 border-b border-white/10">
-          <Search className="w-5 h-5 text-white/50" />
+    <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-md flex items-start justify-center pt-[15vh] transition-all duration-300">
+      <div className="w-full max-w-2xl bg-[#0f0f0f]/85 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.85),0_0_30px_rgba(74,255,180,0.02)] overflow-hidden flex flex-col mx-4 animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center px-4 border-b border-white/5 bg-white/[0.01]">
+          <Search className="w-4 h-4 text-white/30 shrink-0" />
           <input
             autoFocus
-            className="w-full bg-transparent border-none focus:outline-none text-white p-4 placeholder:text-white/30"
+            className="w-full bg-transparent border-none focus:outline-none text-white font-mono p-4 placeholder:text-white/20 text-sm"
             placeholder="Search or type a command..."
             value={search}
             onChange={handleSearchChange}
           />
-          <div className="text-xs font-mono text-white/30 bg-white/5 px-2 py-1 rounded">ESC</div>
+          <span className="w-1.5 h-4 bg-lume-primary animate-pulse rounded shrink-0 mr-3 shadow-[0_0_8px_var(--lume-primary)]" />
+          <kbd className="bg-white/[0.05] border border-white/10 text-white/40 px-2 py-0.5 rounded text-[10px] font-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_1.5px_0_rgba(0,0,0,0.4)] shrink-0">
+            ESC
+          </kbd>
         </div>
 
-        <div className="p-2 overflow-y-auto max-h-[60vh]">
+        <div className="p-2 overflow-y-auto max-h-[60vh] scrollbar-custom">
           {filteredCommands.length > 0 ? (
             <div className="flex flex-col gap-1">
               {Array.from(new Set(filteredCommands.map(c => c.category))).map(category => (
                 <React.Fragment key={category}>
-                  <div className="px-3 py-2 text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] mt-2">{category}</div>
+                  <div className="px-4 py-2 text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] mt-2 font-mono">{category}</div>
                   {filteredCommands.filter(c => c.category === category).map((cmd) => {
                     const globalIndex = filteredCommands.indexOf(cmd)
                     return (
@@ -130,21 +149,37 @@ export function CommandPalette() {
                         key={cmd.id}
                         onClick={() => handleAction(cmd)}
                         className={cn(
-                          "w-full text-left px-3 py-3 text-sm rounded-lg transition-colors flex items-center justify-between group",
+                          "w-full text-left pl-7 pr-4 py-3 text-sm rounded-xl transition-all duration-200 flex items-center justify-between group border border-transparent relative overflow-hidden",
                           globalIndex === selectedIndex 
-                            ? "bg-white/10 text-white" 
-                            : "text-white/70 hover:bg-white/5 hover:text-white"
+                            ? "bg-white/[0.03] border-white/5 text-white shadow-[inset_0_0_12px_rgba(255,255,255,0.01)]" 
+                            : "text-white/60 hover:bg-white/[0.01] hover:text-white"
                         )}
                       >
+                        {globalIndex === selectedIndex && (
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 w-[3px] h-[16px] rounded-full bg-lume-primary shadow-[0_0_10px_var(--lume-primary)] animate-in fade-in zoom-in duration-200" />
+                        )}
                         <div className="flex items-center gap-3">
                           {cmd.icon && (
-                            <span className="w-4 h-4 text-white/30 flex items-center justify-center">
+                            <span className={cn(
+                              "w-5 h-5 flex items-center justify-center rounded-lg transition-colors",
+                              globalIndex === selectedIndex ? "text-lume-primary" : "text-white/30"
+                            )}>
                               {React.createElement(cmd.icon, { size: 16 })}
                             </span>
                           )}
-                          <span>{cmd.label}</span>
+                          <span className="font-mono text-sm tracking-tight">{cmd.label}</span>
                         </div>
-                        <span className="text-[10px] font-mono text-white/10 opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+                        
+                        <div className="flex items-center gap-2">
+                          {globalIndex === selectedIndex && (
+                            <span className="text-[10px] font-mono text-lume-primary bg-lume-primary/10 border border-lume-primary/20 px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(var(--lume-primary),0.1)]">
+                              ENTER
+                            </span>
+                          )}
+                          <span className="text-[10px] font-mono text-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Select
+                          </span>
+                        </div>
                       </button>
                     )
                   })}
@@ -152,8 +187,8 @@ export function CommandPalette() {
               ))}
             </div>
           ) : (
-            <div className="px-3 py-12 text-center">
-              <p className="text-sm text-white/30">No results found for &quot;{search}&quot;</p>
+            <div className="px-4 py-12 text-center">
+              <p className="text-sm text-white/30 font-mono">No results found for &quot;{search}&quot;</p>
             </div>
           )}
         </div>
