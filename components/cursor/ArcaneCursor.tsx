@@ -31,6 +31,13 @@ export function ArcaneCursor() {
   const [isHovered, setIsHovered] = useState(false)
   const [hasWebGLFailed, setHasWebGLFailed] = useState(false)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
+  const [cursorState, setCursorState] = useState<'default' | 'hover' | 'select' | 'drag' | 'unavailable'>('default')
+
+  // Ref tracking variables for high-performance scroll and mode values
+  const scrollProgressRef = useRef(0)
+  const smoothScrollRef = useRef(0)
+  const smoothModeRef = useRef(isDeep ? 1 : 0)
+  const evolutionValRef = useRef(isDeep ? 1 : 0)
 
   useEffect(() => {
     const checkTouch = () => {
@@ -38,6 +45,19 @@ export function ArcaneCursor() {
       setIsTouchDevice(isTouch)
     }
     checkTouch()
+  }, [])
+
+  // Track page scroll percentage with passive listener for performance
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
+      if (scrollHeight > 0) {
+        scrollProgressRef.current = window.scrollY / scrollHeight
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll()
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   // Refs for tracking mouse position and velocity
@@ -125,6 +145,14 @@ export function ArcaneCursor() {
 
       smoothedMouseRef.current.x += (mouseRef.current.x - smoothedMouseRef.current.x) * lerpFactor
       smoothedMouseRef.current.y += (mouseRef.current.y - smoothedMouseRef.current.y) * lerpFactor
+
+      // Smoothly interpolate scroll progress and mode values with visual spring-inertia
+      smoothScrollRef.current += (scrollProgressRef.current - smoothScrollRef.current) * 0.1
+      const targetModeVal = isDeep ? 1.0 : 0.0
+      smoothModeRef.current += (targetModeVal - smoothModeRef.current) * 0.12
+
+      // u_evolution is the maximum of scroll and deep mode toggle progress
+      evolutionValRef.current = Math.max(smoothScrollRef.current, smoothModeRef.current)
 
       setSmoothedPos({ x: smoothedMouseRef.current.x, y: smoothedMouseRef.current.y })
 
