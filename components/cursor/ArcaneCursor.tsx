@@ -32,6 +32,32 @@ const STAGE_PATHS = {
   unavailable: "M20 4 L34 22 L34 22 L20 18 L20 18 L6 22 L6 22 Z" // Locked Warning Frame (Padded)
 }
 
+const getStateForTarget = (
+  target: HTMLElement | null,
+  isDeep: boolean
+): { state: 'default' | 'hover' | 'drag' | 'unavailable'; isHovered: boolean } => {
+  if (!target) return { state: 'default', isHovered: false }
+
+  // 1. Check for locked / disabled items (Unavailable State)
+  const isLocked = target.closest('disabled, [disabled], .cursor-not-allowed, [data-locked="true"]') !== null
+  if (isLocked) {
+    return { state: 'unavailable', isHovered: false }
+  }
+
+  // 2. Check for drag triggers (Drag State)
+  const isDraggable = target.closest('[draggable="true"], .draggable, [data-drag="true"]') !== null
+  if (isDraggable) {
+    return { state: 'drag', isHovered: false }
+  }
+
+  // 3. Check for standard clickable items (Hover State)
+  const isInteractive = target.closest('a, button, [role="button"], [data-hover-glow], [data-interactive], .cursor-pointer') !== null
+  return { 
+    state: isInteractive ? 'hover' : 'default', 
+    isHovered: isInteractive 
+  }
+}
+
 export function ArcaneCursor() {
   const mode = useViewModeStore((state) => state.mode)
   const isDeep = mode === 'deep'
@@ -160,28 +186,9 @@ export function ArcaneCursor() {
       mouseRef.current.y = e.clientY
       
       const target = e.target as HTMLElement | null
-      if (target) {
-        // 1. Check for locked / disabled items (Unavailable State)
-        const isLocked = target.closest('disabled, [disabled], .cursor-not-allowed, [data-locked="true"]') !== null
-        if (isLocked) {
-          setCursorState('unavailable')
-          setIsHovered(false)
-          return
-        }
-
-        // 2. Check for drag triggers (Drag State)
-        const isDraggable = target.closest('[draggable="true"], .draggable, [data-drag="true"]') !== null
-        if (isDraggable) {
-          setCursorState('drag')
-          setIsHovered(false)
-          return
-        }
-
-        // 3. Check for standard clickable items (Hover State)
-        const isInteractive = target.closest('a, button, [role="button"], [data-hover-glow], [data-interactive], .cursor-pointer') !== null
-        setIsHovered(isInteractive)
-        setCursorState(isInteractive ? 'hover' : 'default')
-      }
+      const { state, isHovered } = getStateForTarget(target, isDeepRef.current)
+      setIsHovered(isHovered)
+      setCursorState(state)
     }
 
     const handleMouseDown = () => {
@@ -194,13 +201,9 @@ export function ArcaneCursor() {
       
       // Re-evaluate current state
       const target = e.target as HTMLElement | null
-      if (target) {
-        const isInteractive = target.closest('a, button, [role="button"], [data-hover-glow], [data-interactive]') !== null
-        setIsHovered(isInteractive)
-        setCursorState(isInteractive ? 'hover' : 'default')
-      } else {
-        setCursorState('default')
-      }
+      const { state, isHovered } = getStateForTarget(target, isDeepRef.current)
+      setIsHovered(isHovered)
+      setCursorState(state)
     }
 
     window.addEventListener('mousemove', trackCoords)
@@ -396,10 +399,16 @@ export function ArcaneCursor() {
           }
 
           // Set emissive glows (Royal Blue/Cyan for Tech; Golden/Amber for Magic)
-          ctx.shadowBlur = p.size * 1.5
+          let drawingSize = p.size
+          if (p.char === "◯") {
+            // Expands the shockwave circle from 15px to 55px over its 0.35s age
+            drawingSize = 15 + (p.age / p.maxAge) * 40
+          }
+
+          ctx.shadowBlur = drawingSize * 1.5
           ctx.shadowColor = isMagicStage ? '#FBBF24' : '#4AFFB4'
 
-          ctx.font = `${p.size}px ${isMagicStage ? 'NotoSansRunic-Regular, monospace' : 'monospace'}`
+          ctx.font = `${drawingSize}px ${isMagicStage ? 'NotoSansRunic-Regular, monospace' : 'monospace'}`
           ctx.fillStyle = isMagicStage 
             ? `rgba(245, 158, 11, ${p.opacity})` // Golden-amber runes
             : `rgba(74, 255, 180, ${p.opacity})` // Cyan-mint binary
