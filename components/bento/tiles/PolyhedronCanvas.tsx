@@ -1846,6 +1846,27 @@ export default function PolyhedronCanvas({
       return "EMP lockdown released. Core systems rebooting."
     }
 
+    if (t === "eject" || t === "eject_rune") {
+      if (sharedSpellState.lockdown) return "Error: Cannot eject rune during lockdown."
+      sharedSpellState.lightning = true
+      gsap.killTweensOf(sharedSpellState)
+      gsap.fromTo(sharedSpellState,
+        { pulseScale: 1.0, shatterProgress: 0.0 },
+        {
+          pulseScale: 1.45,
+          shatterProgress: 0.38,
+          duration: 0.4,
+          yoyo: true,
+          repeat: 1,
+          ease: "expo.out",
+          onComplete: () => {
+            sharedSpellState.lightning = false
+          }
+        }
+      )
+      return "Hexcore rune VEX ejected successfully."
+    }
+
     if (t === "reset") {
       sharedSpellState.lockdown = false
       useIgniteStore.getState().reset() // Reset heat core

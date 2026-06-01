@@ -68,6 +68,9 @@ export function ArcaneCursor() {
   const [isTouchDevice, setIsTouchDevice] = useState(false)
   const [cursorState, setCursorState] = useState<'default' | 'hover' | 'select' | 'drag' | 'unavailable'>('default')
 
+  const hasEjectedRef = useRef(false)
+  const isLightningActiveRef = useRef(false)
+
   // Ref tracking variables for high-performance scroll and mode values
   const scrollProgressRef = useRef(0)
   const smoothScrollRef = useRef(0)
@@ -113,7 +116,18 @@ export function ArcaneCursor() {
     const handleScroll = () => {
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
       if (scrollHeight > 0) {
-        scrollProgressRef.current = window.scrollY / scrollHeight
+        const currentProgress = window.scrollY / scrollHeight
+        scrollProgressRef.current = currentProgress
+        
+        // Trigger ejection threshold command at 15% scroll progress
+        if (currentProgress > 0.15 && !hasEjectedRef.current) {
+          hasEjectedRef.current = true
+          if (typeof window !== 'undefined' && (window as any).__hexcore_cmd) {
+            (window as any).__hexcore_cmd('eject') // eject command
+          }
+        } else if (currentProgress < 0.08) {
+          hasEjectedRef.current = false // reset on scroll back to top
+        }
       }
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -245,6 +259,39 @@ export function ArcaneCursor() {
 
       smoothedMouseRef.current.x += (mouseRef.current.x - smoothedMouseRef.current.x) * lerpFactor
       smoothedMouseRef.current.y += (mouseRef.current.y - smoothedMouseRef.current.y) * lerpFactor
+
+      // Proximity check to 3D HexCore R3F Canvas
+      if (typeof window !== 'undefined') {
+        const canvases = document.querySelectorAll('canvas')
+        let canvas: HTMLCanvasElement | null = null
+        for (let i = 0; i < canvases.length; i++) {
+          const c = canvases[i] as HTMLCanvasElement
+          if (c !== canvasTrailRef.current && c !== canvasWebGLRef.current) {
+            canvas = c
+            break
+          }
+        }
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect()
+          const centerX = rect.left + rect.width / 2
+          const centerY = rect.top + rect.height / 2
+          const dx = smoothedMouseRef.current.x - centerX
+          const dy = smoothedMouseRef.current.y - centerY
+          const dist = Math.hypot(dx, dy)
+          
+          if (dist < 150 && !isLightningActiveRef.current) {
+            isLightningActiveRef.current = true
+            if ((window as any).__hexcore_cmd) {
+              (window as any).__hexcore_cmd('lightning on')
+            }
+          } else if (dist > 180 && isLightningActiveRef.current) {
+            isLightningActiveRef.current = false
+            if ((window as any).__hexcore_cmd) {
+              (window as any).__hexcore_cmd('lightning off')
+            }
+          }
+        }
+      }
 
       // Smoothly interpolate scroll progress and mode values with visual spring-inertia
       smoothScrollRef.current += (scrollProgressRef.current - smoothScrollRef.current) * 0.1
