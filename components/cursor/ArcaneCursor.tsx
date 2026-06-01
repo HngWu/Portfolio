@@ -113,7 +113,6 @@ export function ArcaneCursor() {
   const animationWebGLRef = useRef<number | null>(null)
   const startTimeRef = useRef<number>(Date.now())
   const hoverValRef = useRef<number>(0)
-  const transitionValRef = useRef<number>(isDeep ? 1 : 0)
 
   // 1. Activate custom cursor on mouse movement
   useEffect(() => {
@@ -561,9 +560,6 @@ export function ArcaneCursor() {
       // Smoothly interpolate custom state variables (eliminates GSAP refs issues)
       const targetHover = isHoveredRef.current ? 1.0 : 0.0
       hoverValRef.current += (targetHover - hoverValRef.current) * 0.15
-
-      const targetTransition = isDeepRef.current ? 1.0 : 0.0
-      transitionValRef.current += (targetTransition - transitionValRef.current) * 0.12
 
       gl.clear(gl.COLOR_BUFFER_BIT)
 
