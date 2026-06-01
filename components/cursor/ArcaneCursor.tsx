@@ -436,7 +436,7 @@ export function ArcaneCursor() {
       varying vec2 vUv;
       uniform float u_time;
       uniform float u_hover;
-      uniform float u_transition;
+      uniform float u_evolution;
 
       void main() {
         vec2 uv = vUv - 0.5;
@@ -445,8 +445,7 @@ export function ArcaneCursor() {
         // Output soft master circle mask
         float mask = smoothstep(0.5, 0.35, dist);
         
-        // --- 1. MAGIC SHADER (Quick Pitch Golden Halo) ---
-        // Elegant glowing golden-amber tones
+        // --- 1. MAGIC SHADER (Quick Pitch Amber Glow) ---
         vec3 magicCore = vec3(1.0, 0.95, 0.78);   // Glowing light gold #FEF3C7
         vec3 magicMid = vec3(0.98, 0.75, 0.14);    // Warm gold #FBBF24
         vec3 magicOuter = vec3(0.96, 0.62, 0.04);  // Amber #F59E0B
@@ -454,46 +453,33 @@ export function ArcaneCursor() {
         vec3 magicColor = mix(magicOuter, magicMid, dist * 2.0);
         magicColor = mix(magicColor, magicCore, pow(1.0 - dist * 2.0, 2.0));
         
-        // Circular soft golden back-halo (stable, zero unstable purple blobs!)
         float magicGlow = 0.10 / (dist + 0.035) * (1.0 + 0.15 * sin(u_time * 3.5));
         magicColor += magicMid * magicGlow;
         
-        // Clean stable radial mask
-        float magicAlpha = smoothstep(0.45, 0.1, dist) * 0.45 * (0.8 + 0.2 * u_hover);
+        float magicAlpha = smoothstep(0.45, 0.1, dist) * 0.45;
         vec4 magicFinal = vec4(magicColor, magicAlpha);
         
-        // --- 2. TECH SHADER (Deep Dive Dark Blue HUD Scanlines) ---
+        // --- 2. TECH SHADER (Deep Dive Royal Blue HUD Scanlines) ---
         vec3 techColor = vec3(0.0, 0.2, 0.85);  // Deep Dark Blue #0033DD
         vec3 techCore = vec3(0.0, 0.55, 1.0);    // Glowing Royal Blue #0088FF
         
         float hoverSpeed = 1.0 + u_hover * 2.0;
         float tTime = u_time * 2.5 * hoverSpeed;
         
-        // Rotating concentric scanline circles
         float ring1 = abs(sin(dist * 25.0 - tTime)) * 0.8;
-        float ring2 = abs(sin(dist * 45.0 + tTime * 1.5)) * 0.5;
+        float ring2 = smoothstep(0.40, 0.38, dist) * smoothstep(0.36, 0.38, dist);
         
-        // Intermittent dash rings
-        float angle = atan(uv.y, uv.x);
-        float segmentCount = 4.0;
-        float tAngle = angle + u_time * 0.8 * (1.0 + u_hover);
-        float segments = step(0.15, sin(tAngle * segmentCount));
-        
-        float ring3 = smoothstep(0.24, 0.22, dist) * smoothstep(0.18, 0.20, dist) * segments;
-        float ring4 = smoothstep(0.40, 0.38, dist) * smoothstep(0.36, 0.38, dist) * step(0.4, sin(tAngle * 12.0));
-        
-        // High-tech target-locking dot
         float coreIntensity = 0.04 / (dist + 0.015);
-        vec3 techFinalColor = mix(techColor, techCore, ring1 * 0.5 + ring3 * 0.5 + ring4 * 0.8);
+        vec3 techFinalColor = mix(techColor, techCore, ring1 * 0.5 + ring2 * 0.8);
         techFinalColor += techCore * coreIntensity;
         
-        float techAlpha = (ring1 * 0.25 + ring2 * 0.15 + ring3 * 0.7 + ring4 * 0.6 + coreIntensity * 0.4) * mask;
-        vec4 techFinal = vec4(techFinalColor, techAlpha * (0.8 + 0.2 * u_hover));
+        float techAlpha = (ring1 * 0.25 + ring2 * 0.6 + coreIntensity * 0.4) * mask;
+        vec4 techFinal = vec4(techFinalColor, techAlpha);
         
-        // --- 3. CINEMATIC INTERPOLATED TRANSITION ---
-        vec4 finalColor = mix(magicFinal, techFinal, u_transition);
+        // --- 3. CINEMATIC EVOLUTIONARY INTERPOLATED TRANSITION ---
+        vec4 finalColor = mix(magicFinal, techFinal, u_evolution);
         
-        gl_FragColor = finalColor * mask;
+        gl_FragColor = finalColor * mask * (0.8 + 0.2 * u_hover);
       }
     `;
 
@@ -559,7 +545,7 @@ export function ArcaneCursor() {
     // Retrieve uniform references
     const timeLoc = gl.getUniformLocation(program, 'u_time')
     const hoverLoc = gl.getUniformLocation(program, 'u_hover')
-    const transitionLoc = gl.getUniformLocation(program, 'u_transition')
+    const evolutionLoc = gl.getUniformLocation(program, 'u_evolution')
 
     // Initial setup
     const pixelRatio = window.devicePixelRatio || 1
@@ -584,7 +570,7 @@ export function ArcaneCursor() {
       const elapsedSeconds = (Date.now() - startTimeRef.current) / 1000.0
       gl.uniform1f(timeLoc, elapsedSeconds)
       gl.uniform1f(hoverLoc, hoverValRef.current)
-      gl.uniform1f(transitionLoc, transitionValRef.current)
+      gl.uniform1f(evolutionLoc, evolutionValRef.current)
 
       gl.drawArrays(gl.TRIANGLES, 0, 6)
 
