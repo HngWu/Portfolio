@@ -27,7 +27,6 @@ export function ArcaneCursor() {
 
   const [isActive, setIsActive] = useState(false)
   const [clientPos, setClientPos] = useState({ x: 0, y: 0 })
-  const [smoothedPos, setSmoothedPos] = useState({ x: 0, y: 0 })
   const [isHovered, setIsHovered] = useState(false)
   const [hasWebGLFailed, setHasWebGLFailed] = useState(false)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
@@ -38,6 +37,21 @@ export function ArcaneCursor() {
   const smoothScrollRef = useRef(0)
   const smoothModeRef = useRef(isDeep ? 1 : 0)
   const evolutionValRef = useRef(isDeep ? 1 : 0)
+
+  // Outer cursor DOM ref for high-performance direct transform manipulation
+  const cursorRef = useRef<HTMLDivElement | null>(null)
+
+  // Tracking refs to eliminate React re-render trigger dependencies in loops
+  const isHoveredRef = useRef(isHovered)
+  const isDeepRef = useRef(isDeep)
+
+  useEffect(() => {
+    isHoveredRef.current = isHovered
+  }, [isHovered])
+
+  useEffect(() => {
+    isDeepRef.current = isDeep
+  }, [isDeep])
 
   useEffect(() => {
     const checkTouch = () => {
@@ -139,7 +153,7 @@ export function ArcaneCursor() {
 
     const renderLoop = (time: number) => {
       // Visual inertia: smoother LERP on hover for precise feel
-      const lerpFactor = isHovered ? 0.28 : 0.18
+      const lerpFactor = isHoveredRef.current ? 0.28 : 0.18
       const lastX = smoothedMouseRef.current.x
       const lastY = smoothedMouseRef.current.y
 
@@ -148,13 +162,15 @@ export function ArcaneCursor() {
 
       // Smoothly interpolate scroll progress and mode values with visual spring-inertia
       smoothScrollRef.current += (scrollProgressRef.current - smoothScrollRef.current) * 0.1
-      const targetModeVal = isDeep ? 1.0 : 0.0
+      const targetModeVal = isDeepRef.current ? 1.0 : 0.0
       smoothModeRef.current += (targetModeVal - smoothModeRef.current) * 0.12
 
       // u_evolution is the maximum of scroll and deep mode toggle progress
       evolutionValRef.current = Math.max(smoothScrollRef.current, smoothModeRef.current)
 
-      setSmoothedPos({ x: smoothedMouseRef.current.x, y: smoothedMouseRef.current.y })
+      if (cursorRef.current) {
+        cursorRef.current.style.transform = `translate3d(${smoothedMouseRef.current.x}px, ${smoothedMouseRef.current.y}px, 0) translate(-50%, -50%)`
+      }
 
       // Velocity calculation
       velocityRef.current.x = smoothedMouseRef.current.x - lastX
@@ -176,7 +192,7 @@ export function ArcaneCursor() {
           p.vx *= 0.95
           p.vy *= 0.95
 
-          if (!isDeep) {
+          if (!isDeepRef.current) {
             // Magic: undulating sine-wave drifts (runic floating feel)
             p.x += p.vx + Math.sin(time * 0.008 + p.id) * 0.4
             p.y += p.vy + Math.cos(time * 0.008 + p.id) * 0.4
@@ -190,16 +206,16 @@ export function ArcaneCursor() {
           // Draw the glowing trail particle
           ctx.save()
           ctx.translate(p.x, p.y)
-          if (!isDeep) {
+          if (!isDeepRef.current) {
             ctx.rotate(p.rotation)
           }
 
           // Set emissive drop shadow glows (Dark Blue for Tech; Golden/Amber for Magic)
           ctx.shadowBlur = p.size * 1.5
-          ctx.shadowColor = isDeep ? '#0044FF' : '#FBBF24' 
+          ctx.shadowColor = isDeepRef.current ? '#0044FF' : '#FBBF24' 
 
-          ctx.font = `${p.size}px ${isDeep ? 'monospace' : 'NotoSansRunic-Regular, monospace'}`
-          ctx.fillStyle = isDeep 
+          ctx.font = `${p.size}px ${isDeepRef.current ? 'monospace' : 'NotoSansRunic-Regular, monospace'}`
+          ctx.fillStyle = isDeepRef.current 
             ? `rgba(0, 68, 255, ${p.opacity})` // Dark blue binary coordinates
             : `rgba(245, 158, 11, ${p.opacity})` // Golden-amber runes
           
@@ -219,7 +235,7 @@ export function ArcaneCursor() {
 
         if (dist > 8 && particlesRef.current.length < 45) {
           particleIdCounter.current += 1
-          const charPool = isDeep ? BINARY : RUNES
+          const charPool = isDeepRef.current ? BINARY : RUNES
           const randomChar = charPool[Math.floor(Math.random() * charPool.length)]
 
           const newParticle: Particle = {
@@ -230,10 +246,10 @@ export function ArcaneCursor() {
             vy: -velocityRef.current.y * 0.2 + (Math.random() - 0.5) * 1.2,
             rotation: Math.random() * Math.PI * 2,
             rotationSpeed: (Math.random() - 0.5) * 2.5,
-            size: isDeep ? 7 + Math.random() * 4 : 9 + Math.random() * 5,
+            size: isDeepRef.current ? 7 + Math.random() * 4 : 9 + Math.random() * 5,
             opacity: 1.0,
             age: 0,
-            maxAge: isDeep ? 0.5 + Math.random() * 0.4 : 0.8 + Math.random() * 0.5,
+            maxAge: isDeepRef.current ? 0.5 + Math.random() * 0.4 : 0.8 + Math.random() * 0.5,
             char: randomChar
           }
 
@@ -247,7 +263,7 @@ export function ArcaneCursor() {
 
     animationFrameId = requestAnimationFrame(renderLoop)
     return () => cancelAnimationFrame(animationFrameId)
-  }, [isActive, isDeep, isHovered])
+  }, [isActive])
 
   // 5. Vanilla WebGL custom shaders setup (Architecture 2)
   useEffect(() => {
@@ -437,10 +453,10 @@ export function ArcaneCursor() {
       if (!gl || !program) return
 
       // Smoothly interpolate custom state variables (eliminates GSAP refs issues)
-      const targetHover = isHovered ? 1.0 : 0.0
+      const targetHover = isHoveredRef.current ? 1.0 : 0.0
       hoverValRef.current += (targetHover - hoverValRef.current) * 0.15
 
-      const targetTransition = isDeep ? 1.0 : 0.0
+      const targetTransition = isDeepRef.current ? 1.0 : 0.0
       transitionValRef.current += (targetTransition - transitionValRef.current) * 0.12
 
       gl.clear(gl.COLOR_BUFFER_BIT)
@@ -467,7 +483,7 @@ export function ArcaneCursor() {
         gl.deleteBuffer(positionBuffer)
       }
     }
-  }, [isActive, isDeep, isHovered, hasWebGLFailed])
+  }, [isActive])
 
   if (isTouchDevice) return null
 
@@ -483,11 +499,10 @@ export function ArcaneCursor() {
 
       {/* 2. Unified Custom Interactive Cursor Core (Aligned & mathematically exact tip hotspot) */}
       <div 
+        ref={cursorRef}
         className="fixed pointer-events-none z-[99999] w-[120px] h-[120px]"
         style={{
-          left: `${smoothedPos.x}px`,
-          top: `${smoothedPos.y}px`,
-          transform: 'translate(-50%, -50%)',
+          transform: 'translate3d(0px, 0px, 0px) translate(-50%, -50%)',
         }}
       >
         {/* WebGL Shader Layer (Renders glowing holographic plasma/rings behind the pointer) */}
