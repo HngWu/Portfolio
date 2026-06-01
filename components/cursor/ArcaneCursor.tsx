@@ -114,6 +114,26 @@ export function ArcaneCursor() {
   const startTimeRef = useRef<number>(Date.now())
   const hoverValRef = useRef<number>(0)
 
+  const triggerShockwave = (x: number, y: number) => {
+    const isMagicStage = evolutionValRef.current < 0.5
+    particleIdCounter.current += 1
+    const shockwaveParticle: Particle = {
+      id: particleIdCounter.current,
+      x: x,
+      y: y,
+      vx: 0,
+      vy: 0,
+      rotation: 0,
+      rotationSpeed: 0,
+      size: 15, // represents initial radius
+      opacity: 1.0,
+      age: 0,
+      maxAge: 0.35, // short lifespan
+      char: "◯" // circular shockwave
+    }
+    particlesRef.current.push(shockwaveParticle)
+  }
+
   // 1. Activate custom cursor on mouse movement
   useEffect(() => {
     const activateCustomCursor = () => {
@@ -141,13 +161,57 @@ export function ArcaneCursor() {
       
       const target = e.target as HTMLElement | null
       if (target) {
+        // 1. Check for locked / disabled items (Unavailable State)
+        const isLocked = target.closest('disabled, [disabled], .cursor-not-allowed, [data-locked="true"]') !== null
+        if (isLocked) {
+          setCursorState('unavailable')
+          setIsHovered(false)
+          return
+        }
+
+        // 2. Check for drag triggers (Drag State)
+        const isDraggable = target.closest('[draggable="true"], .draggable, [data-drag="true"]') !== null
+        if (isDraggable) {
+          setCursorState('drag')
+          setIsHovered(false)
+          return
+        }
+
+        // 3. Check for standard clickable items (Hover State)
+        const isInteractive = target.closest('a, button, [role="button"], [data-hover-glow], [data-interactive], .cursor-pointer') !== null
+        setIsHovered(isInteractive)
+        setCursorState(isInteractive ? 'hover' : 'default')
+      }
+    }
+
+    const handleMouseDown = () => {
+      setCursorState('select')
+    }
+
+    const handleMouseUp = (e: MouseEvent) => {
+      // Trigger Canvas shockwave spawn
+      triggerShockwave(e.clientX, e.clientY)
+      
+      // Re-evaluate current state
+      const target = e.target as HTMLElement | null
+      if (target) {
         const isInteractive = target.closest('a, button, [role="button"], [data-hover-glow], [data-interactive]') !== null
         setIsHovered(isInteractive)
+        setCursorState(isInteractive ? 'hover' : 'default')
+      } else {
+        setCursorState('default')
       }
     }
 
     window.addEventListener('mousemove', trackCoords)
-    return () => window.removeEventListener('mousemove', trackCoords)
+    window.addEventListener('mousedown', handleMouseDown)
+    window.addEventListener('mouseup', handleMouseUp)
+    
+    return () => {
+      window.removeEventListener('mousemove', trackCoords)
+      window.removeEventListener('mousedown', handleMouseDown)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
   }, [])
 
   // 3. Keep full-screen 2D particle trail canvas sized correctly
