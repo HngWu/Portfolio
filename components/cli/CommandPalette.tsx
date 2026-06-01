@@ -21,14 +21,6 @@ export function CommandPalette() {
   const [isOpen, setIsOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [selectedIndex, setSelectedIndex] = React.useState(0)
-  const [isMacOrLinux, setIsMacOrLinux] = React.useState(false)
-
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const ua = navigator.userAgent.toLowerCase()
-      setIsMacOrLinux(ua.includes("mac") || ua.includes("linux"))
-    }
-  }, [])
 
   React.useEffect(() => {
     const handleOpenPalette = () => {
@@ -172,7 +164,7 @@ export function CommandPalette() {
                         
                         <div className="flex items-center gap-2">
                           {globalIndex === selectedIndex && (
-                            <span className="text-[10px] font-mono text-lume-primary bg-lume-primary/10 border border-lume-primary/20 px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(var(--lume-primary),0.1)]">
+                            <span className="text-[10px] font-mono text-lume-primary bg-lume-primary/10 border border-lume-primary/20 px-1.5 py-0.5 rounded shadow-lume-primary/10">
                               ENTER
                             </span>
                           )}
