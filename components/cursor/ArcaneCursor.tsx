@@ -21,87 +21,16 @@ interface Particle {
 const RUNES = ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ", "ᛇ", "ᛈ", "ᛉ", "ᛊ"]
 const BINARY = ["0", "1"]
 
-const STAGE_PATHS = {
-  step1: "M20 5 L35 25 L25 22 L23 35 L20 35 L17 35 L15 22 L5 25 Z", // 1. Runic Origin (Padded)
-  step2: "M20 5 L35 25 L25 22 L23 32 L20 32 L17 32 L15 22 L5 25 Z", // 2. Awakening (Padded)
-  step3: "M20 4 L35 25 L25 22 L27 28 L20 25 L13 28 L15 22 L5 25 Z", // 3. Conduit (8 points)
-  step4: "M20 4 L35 25 L25 22 L20 26 L20 26 L15 22 L5 25 L5 25 Z", // 4. Harmonization (Padded)
-  step5: "M20 4 L35 25 L25 22 L20 26 L20 26 L15 22 L5 25 L5 25 Z", // 5. Transition (Padded)
-  step6: "M20 3 L36 26 L26 23 L20 27 L20 27 L14 23 L4 26 L4 26 Z", // 6. Tech Form (Padded)
-  drag: "M20 2 L38 28 L28 24 L20 34 L20 34 L12 24 L2 28 L2 28 Z", // Drag Delta Shape (Padded)
-  unavailable: "M20 4 L34 22 L34 22 L20 18 L20 18 L6 22 L6 22 Z" // Locked Warning Frame (Padded)
-}
-
-const getStateForTarget = (
-  target: HTMLElement | null,
-  isDeep: boolean
-): { state: 'default' | 'hover' | 'drag' | 'unavailable'; isHovered: boolean } => {
-  if (!target) return { state: 'default', isHovered: false }
-
-  // 1. Check for locked / disabled items (Unavailable State)
-  const isLocked = target.closest('disabled, [disabled], .cursor-not-allowed, [data-locked="true"]') !== null
-  if (isLocked) {
-    return { state: 'unavailable', isHovered: false }
-  }
-
-  // 2. Check for drag triggers (Drag State)
-  const isDraggable = target.closest('[draggable="true"], .draggable, [data-drag="true"]') !== null
-  if (isDraggable) {
-    return { state: 'drag', isHovered: false }
-  }
-
-  // 3. Check for standard clickable items (Hover State)
-  const isInteractive = target.closest('a, button, [role="button"], [data-hover-glow], [data-interactive], .cursor-pointer') !== null
-  return { 
-    state: isInteractive ? 'hover' : 'default', 
-    isHovered: isInteractive 
-  }
-}
-
 export function ArcaneCursor() {
   const mode = useViewModeStore((state) => state.mode)
   const isDeep = mode === 'deep'
 
   const [isActive, setIsActive] = useState(false)
+  const [clientPos, setClientPos] = useState({ x: 0, y: 0 })
+  const [smoothedPos, setSmoothedPos] = useState({ x: 0, y: 0 })
   const [isHovered, setIsHovered] = useState(false)
   const [hasWebGLFailed, setHasWebGLFailed] = useState(false)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
-  const [cursorState, setCursorState] = useState<'default' | 'hover' | 'select' | 'drag' | 'unavailable'>('default')
-
-  const hasEjectedRef = useRef(false)
-  const isLightningActiveRef = useRef(false)
-
-  // Ref tracking variables for high-performance scroll and mode values
-  const scrollProgressRef = useRef(0)
-  const smoothScrollRef = useRef(0)
-  const smoothModeRef = useRef(isDeep ? 1 : 0)
-  const evolutionValRef = useRef(isDeep ? 1 : 0)
-
-  // Outer cursor DOM ref for high-performance direct transform manipulation
-  const cursorRef = useRef<HTMLDivElement | null>(null)
-
-  const cursorStateRef = useRef(cursorState)
-  useEffect(() => {
-    cursorStateRef.current = cursorState
-  }, [cursorState])
-
-  const pathRef = useRef<SVGPathElement | null>(null)
-  const steelRef = useRef<SVGPathElement | null>(null)
-  const crystalRef = useRef<SVGCircleElement | null>(null)
-  const concentricRef = useRef<HTMLDivElement | null>(null)
-  const crossbarRef = useRef<SVGGElement | null>(null)
-
-  // Tracking refs to eliminate React re-render trigger dependencies in loops
-  const isHoveredRef = useRef(isHovered)
-  const isDeepRef = useRef(isDeep)
-
-  useEffect(() => {
-    isHoveredRef.current = isHovered
-  }, [isHovered])
-
-  useEffect(() => {
-    isDeepRef.current = isDeep
-  }, [isDeep])
 
   useEffect(() => {
     const checkTouch = () => {
@@ -109,30 +38,6 @@ export function ArcaneCursor() {
       setIsTouchDevice(isTouch)
     }
     checkTouch()
-  }, [])
-
-  // Track page scroll percentage with passive listener for performance
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
-      if (scrollHeight > 0) {
-        const currentProgress = window.scrollY / scrollHeight
-        scrollProgressRef.current = currentProgress
-        
-        // Trigger ejection threshold command at 15% scroll progress
-        if (currentProgress > 0.15 && !hasEjectedRef.current) {
-          hasEjectedRef.current = true
-          if (typeof window !== 'undefined' && (window as any).__hexcore_cmd) {
-            (window as any).__hexcore_cmd('eject') // eject command
-          }
-        } else if (currentProgress < 0.08) {
-          hasEjectedRef.current = false // reset on scroll back to top
-        }
-      }
-    }
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    handleScroll()
-    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   // Refs for tracking mouse position and velocity
@@ -153,26 +58,7 @@ export function ArcaneCursor() {
   const animationWebGLRef = useRef<number | null>(null)
   const startTimeRef = useRef<number>(Date.now())
   const hoverValRef = useRef<number>(0)
-
-  const triggerShockwave = (x: number, y: number) => {
-    const isMagicStage = evolutionValRef.current < 0.5
-    particleIdCounter.current += 1
-    const shockwaveParticle: Particle = {
-      id: particleIdCounter.current,
-      x: x,
-      y: y,
-      vx: 0,
-      vy: 0,
-      rotation: 0,
-      rotationSpeed: 0,
-      size: 15, // represents initial radius
-      opacity: 1.0,
-      age: 0,
-      maxAge: 0.35, // short lifespan
-      char: "◯" // circular shockwave
-    }
-    particlesRef.current.push(shockwaveParticle)
-  }
+  const transitionValRef = useRef<number>(isDeep ? 1 : 0)
 
   // 1. Activate custom cursor on mouse movement
   useEffect(() => {
@@ -198,37 +84,17 @@ export function ArcaneCursor() {
     const trackCoords = (e: MouseEvent) => {
       mouseRef.current.x = e.clientX
       mouseRef.current.y = e.clientY
+      setClientPos({ x: e.clientX, y: e.clientY })
       
       const target = e.target as HTMLElement | null
-      const { state, isHovered } = getStateForTarget(target, isDeepRef.current)
-      setIsHovered(isHovered)
-      setCursorState(state)
-    }
-
-    const handleMouseDown = () => {
-      setCursorState('select')
-    }
-
-    const handleMouseUp = (e: MouseEvent) => {
-      // Trigger Canvas shockwave spawn
-      triggerShockwave(e.clientX, e.clientY)
-      
-      // Re-evaluate current state
-      const target = e.target as HTMLElement | null
-      const { state, isHovered } = getStateForTarget(target, isDeepRef.current)
-      setIsHovered(isHovered)
-      setCursorState(state)
+      if (target) {
+        const isInteractive = target.closest('a, button, [role="button"], [data-hover-glow], [data-interactive]') !== null
+        setIsHovered(isInteractive)
+      }
     }
 
     window.addEventListener('mousemove', trackCoords)
-    window.addEventListener('mousedown', handleMouseDown)
-    window.addEventListener('mouseup', handleMouseUp)
-    
-    return () => {
-      window.removeEventListener('mousemove', trackCoords)
-      window.removeEventListener('mousedown', handleMouseDown)
-      window.removeEventListener('mouseup', handleMouseUp)
-    }
+    return () => window.removeEventListener('mousemove', trackCoords)
   }, [])
 
   // 3. Keep full-screen 2D particle trail canvas sized correctly
@@ -253,157 +119,14 @@ export function ArcaneCursor() {
 
     const renderLoop = (time: number) => {
       // Visual inertia: smoother LERP on hover for precise feel
-      const lerpFactor = isHoveredRef.current ? 0.28 : 0.18
+      const lerpFactor = isHovered ? 0.28 : 0.18
       const lastX = smoothedMouseRef.current.x
       const lastY = smoothedMouseRef.current.y
 
       smoothedMouseRef.current.x += (mouseRef.current.x - smoothedMouseRef.current.x) * lerpFactor
       smoothedMouseRef.current.y += (mouseRef.current.y - smoothedMouseRef.current.y) * lerpFactor
 
-      // Proximity check to 3D HexCore R3F Canvas
-      if (typeof window !== 'undefined') {
-        const canvases = document.querySelectorAll('canvas')
-        let canvas: HTMLCanvasElement | null = null
-        for (let i = 0; i < canvases.length; i++) {
-          const c = canvases[i] as HTMLCanvasElement
-          if (c !== canvasTrailRef.current && c !== canvasWebGLRef.current) {
-            canvas = c
-            break
-          }
-        }
-        if (canvas) {
-          const rect = canvas.getBoundingClientRect()
-          const centerX = rect.left + rect.width / 2
-          const centerY = rect.top + rect.height / 2
-          const dx = smoothedMouseRef.current.x - centerX
-          const dy = smoothedMouseRef.current.y - centerY
-          const dist = Math.hypot(dx, dy)
-          
-          if (dist < 150 && !isLightningActiveRef.current) {
-            isLightningActiveRef.current = true
-            if ((window as any).__hexcore_cmd) {
-              (window as any).__hexcore_cmd('lightning on')
-            }
-          } else if (dist > 180 && isLightningActiveRef.current) {
-            isLightningActiveRef.current = false
-            if ((window as any).__hexcore_cmd) {
-              (window as any).__hexcore_cmd('lightning off')
-            }
-          }
-        }
-      }
-
-      // Smoothly interpolate scroll progress and mode values with visual spring-inertia
-      smoothScrollRef.current += (scrollProgressRef.current - smoothScrollRef.current) * 0.1
-      const targetModeVal = isDeepRef.current ? 1.0 : 0.0
-      smoothModeRef.current += (targetModeVal - smoothModeRef.current) * 0.12
-
-      // u_evolution is the maximum of scroll and deep mode toggle progress
-      evolutionValRef.current = Math.max(smoothScrollRef.current, smoothModeRef.current)
-
-      if (cursorRef.current) {
-        cursorRef.current.style.transform = `translate3d(${smoothedMouseRef.current.x}px, ${smoothedMouseRef.current.y}px, 0) translate(-50%, -50%)`
-      }
-
-      // Directly update SVG DOM nodes in real time!
-      const val = evolutionValRef.current
-      const state = cursorStateRef.current
-      
-      let activePath = STAGE_PATHS.step1
-      let fillOpacity = 0.15
-      let strokeColor = "#FFB44A"
-      let strokeDash = "3, 3"
-      let isMagicStage = val < 0.5
-      
-      if (state === 'drag') {
-        activePath = STAGE_PATHS.drag
-        strokeColor = isDeepRef.current ? "#4AFFB4" : "#FFB44A"
-        fillOpacity = 0.4
-        strokeDash = "none"
-      } else if (state === 'unavailable') {
-        activePath = STAGE_PATHS.unavailable
-        strokeColor = "#FF4A6B"
-        fillOpacity = 0.2
-        strokeDash = "none"
-      } else {
-        if (val < 0.16) {
-          activePath = STAGE_PATHS.step1
-          strokeColor = "#FFB44A"
-          fillOpacity = 0.15
-          strokeDash = "3, 3"
-        } else if (val < 0.33) {
-          activePath = STAGE_PATHS.step2
-          strokeColor = "#FFB44A"
-          fillOpacity = 0.3
-          strokeDash = "none"
-        } else if (val < 0.50) {
-          activePath = STAGE_PATHS.step3
-          strokeColor = "#FFFBEB"
-          fillOpacity = 0.5
-          strokeDash = "none"
-        } else if (val < 0.66) {
-          activePath = STAGE_PATHS.step4
-          strokeColor = "#FFB44A"
-          fillOpacity = 0.6
-          strokeDash = "none"
-        } else if (val < 0.83) {
-          activePath = STAGE_PATHS.step5
-          strokeColor = "#4AFFB4"
-          fillOpacity = 0.7
-          strokeDash = "none"
-        } else {
-          activePath = STAGE_PATHS.step6
-          strokeColor = "#4AFFB4"
-          fillOpacity = 0.8
-          strokeDash = "none"
-        }
-      }
-
-      if (pathRef.current) {
-        pathRef.current.setAttribute('d', activePath)
-        pathRef.current.setAttribute('fill', isMagicStage ? `rgba(255, 180, 74, ${fillOpacity})` : "#C5A059")
-        pathRef.current.setAttribute('stroke', strokeColor)
-        pathRef.current.setAttribute('stroke-width', state === 'hover' ? "2" : "1.5")
-        if (strokeDash !== 'none') {
-          pathRef.current.setAttribute('stroke-dasharray', strokeDash)
-        } else {
-          pathRef.current.removeAttribute('stroke-dasharray')
-        }
-      }
-      
-      if (steelRef.current) {
-        if (!isMagicStage && state !== 'unavailable') {
-          steelRef.current.setAttribute('fill', "#4F5D6B")
-          steelRef.current.setAttribute('stroke', state === 'hover' ? "#4AFFB4" : "rgba(255,255,255,0.2)")
-          steelRef.current.setAttribute('stroke-width', "1")
-          steelRef.current.style.display = 'block'
-        } else {
-          steelRef.current.style.display = 'none'
-        }
-      }
-      
-      if (crystalRef.current) {
-        if (state !== 'unavailable') {
-          crystalRef.current.setAttribute('fill', isMagicStage ? "#FFB44A" : "#4AFFB4")
-          crystalRef.current.setAttribute('r', activePath === STAGE_PATHS.step6 ? "3" : "2.5")
-          crystalRef.current.style.filter = isMagicStage ? 'drop-shadow(0 0 3px #FFB44A)' : 'drop-shadow(0 0 4px #4AFFB4)'
-          crystalRef.current.style.display = 'block'
-        } else {
-          crystalRef.current.style.display = 'none'
-        }
-      }
-
-      if (concentricRef.current) {
-        concentricRef.current.style.display = state === 'hover' ? 'block' : 'none'
-        if (state === 'hover') {
-          concentricRef.current.style.borderColor = isDeepRef.current ? 'rgba(74, 255, 180, 0.6)' : 'rgba(255, 180, 74, 0.6)'
-          concentricRef.current.style.boxShadow = isDeepRef.current ? '0 0 10px rgba(74, 255, 180, 0.3)' : '0 0 10px rgba(255, 180, 74, 0.3)'
-        }
-      }
-
-      if (crossbarRef.current) {
-        crossbarRef.current.style.display = state === 'unavailable' ? 'block' : 'none'
-      }
+      setSmoothedPos({ x: smoothedMouseRef.current.x, y: smoothedMouseRef.current.y })
 
       // Velocity calculation
       velocityRef.current.x = smoothedMouseRef.current.x - lastX
@@ -425,15 +148,13 @@ export function ArcaneCursor() {
           p.vx *= 0.95
           p.vy *= 0.95
 
-          const isMagicStage = evolutionValRef.current < 0.5
-          
-          if (isMagicStage) {
+          if (!isDeep) {
             // Magic: undulating sine-wave drifts (runic floating feel)
             p.x += p.vx + Math.sin(time * 0.008 + p.id) * 0.4
             p.y += p.vy + Math.cos(time * 0.008 + p.id) * 0.4
             p.rotation += p.rotationSpeed * 0.016
           } else {
-            // Tech: linear velocity decay following rigid horizontal/vertical traces
+            // Tech: linear velocity decay
             p.x += p.vx
             p.y += p.vy
           }
@@ -441,24 +162,18 @@ export function ArcaneCursor() {
           // Draw the glowing trail particle
           ctx.save()
           ctx.translate(p.x, p.y)
-          if (isMagicStage) {
+          if (!isDeep) {
             ctx.rotate(p.rotation)
           }
 
-          // Set emissive glows (Royal Blue/Cyan for Tech; Golden/Amber for Magic)
-          let drawingSize = p.size
-          if (p.char === "◯") {
-            // Expands the shockwave circle from 15px to 55px over its 0.35s age
-            drawingSize = 15 + (p.age / p.maxAge) * 40
-          }
+          // Set emissive drop shadow glows (Dark Blue for Tech; Golden/Amber for Magic)
+          ctx.shadowBlur = p.size * 1.5
+          ctx.shadowColor = isDeep ? '#0044FF' : '#FBBF24' 
 
-          ctx.shadowBlur = drawingSize * 1.5
-          ctx.shadowColor = isMagicStage ? '#FBBF24' : '#4AFFB4'
-
-          ctx.font = `${drawingSize}px ${isMagicStage ? 'NotoSansRunic-Regular, monospace' : 'monospace'}`
-          ctx.fillStyle = isMagicStage 
-            ? `rgba(245, 158, 11, ${p.opacity})` // Golden-amber runes
-            : `rgba(74, 255, 180, ${p.opacity})` // Cyan-mint binary
+          ctx.font = `${p.size}px ${isDeep ? 'monospace' : 'NotoSansRunic-Regular, monospace'}`
+          ctx.fillStyle = isDeep 
+            ? `rgba(0, 68, 255, ${p.opacity})` // Dark blue binary coordinates
+            : `rgba(245, 158, 11, ${p.opacity})` // Golden-amber runes
           
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
@@ -476,22 +191,21 @@ export function ArcaneCursor() {
 
         if (dist > 8 && particlesRef.current.length < 45) {
           particleIdCounter.current += 1
-          const isMagicStage = evolutionValRef.current < 0.5
-          const charPool = isMagicStage ? RUNES : BINARY
+          const charPool = isDeep ? BINARY : RUNES
           const randomChar = charPool[Math.floor(Math.random() * charPool.length)]
 
           const newParticle: Particle = {
             id: particleIdCounter.current,
             x: smoothedMouseRef.current.x,
             y: smoothedMouseRef.current.y,
-            vx: -velocityRef.current.x * 0.25 + (Math.random() - 0.5) * 1.5,
-            vy: -velocityRef.current.y * 0.25 + (Math.random() - 0.5) * 1.5,
+            vx: -velocityRef.current.x * 0.2 + (Math.random() - 0.5) * 1.2,
+            vy: -velocityRef.current.y * 0.2 + (Math.random() - 0.5) * 1.2,
             rotation: Math.random() * Math.PI * 2,
             rotationSpeed: (Math.random() - 0.5) * 2.5,
-            size: isMagicStage ? 9 + Math.random() * 5 : 7 + Math.random() * 4,
+            size: isDeep ? 7 + Math.random() * 4 : 9 + Math.random() * 5,
             opacity: 1.0,
             age: 0,
-            maxAge: isMagicStage ? 0.8 + Math.random() * 0.5 : 0.5 + Math.random() * 0.4,
+            maxAge: isDeep ? 0.5 + Math.random() * 0.4 : 0.8 + Math.random() * 0.5,
             char: randomChar
           }
 
@@ -505,7 +219,7 @@ export function ArcaneCursor() {
 
     animationFrameId = requestAnimationFrame(renderLoop)
     return () => cancelAnimationFrame(animationFrameId)
-  }, [isActive])
+  }, [isActive, isDeep, isHovered])
 
   // 5. Vanilla WebGL custom shaders setup (Architecture 2)
   useEffect(() => {
@@ -558,7 +272,7 @@ export function ArcaneCursor() {
       varying vec2 vUv;
       uniform float u_time;
       uniform float u_hover;
-      uniform float u_evolution;
+      uniform float u_transition;
 
       void main() {
         vec2 uv = vUv - 0.5;
@@ -567,7 +281,8 @@ export function ArcaneCursor() {
         // Output soft master circle mask
         float mask = smoothstep(0.5, 0.35, dist);
         
-        // --- 1. MAGIC SHADER (Quick Pitch Amber Glow) ---
+        // --- 1. MAGIC SHADER (Quick Pitch Golden Halo) ---
+        // Elegant glowing golden-amber tones
         vec3 magicCore = vec3(1.0, 0.95, 0.78);   // Glowing light gold #FEF3C7
         vec3 magicMid = vec3(0.98, 0.75, 0.14);    // Warm gold #FBBF24
         vec3 magicOuter = vec3(0.96, 0.62, 0.04);  // Amber #F59E0B
@@ -575,33 +290,46 @@ export function ArcaneCursor() {
         vec3 magicColor = mix(magicOuter, magicMid, dist * 2.0);
         magicColor = mix(magicColor, magicCore, pow(1.0 - dist * 2.0, 2.0));
         
+        // Circular soft golden back-halo (stable, zero unstable purple blobs!)
         float magicGlow = 0.10 / (dist + 0.035) * (1.0 + 0.15 * sin(u_time * 3.5));
         magicColor += magicMid * magicGlow;
         
-        float magicAlpha = smoothstep(0.45, 0.1, dist) * 0.45;
+        // Clean stable radial mask
+        float magicAlpha = smoothstep(0.45, 0.1, dist) * 0.45 * (0.8 + 0.2 * u_hover);
         vec4 magicFinal = vec4(magicColor, magicAlpha);
         
-        // --- 2. TECH SHADER (Deep Dive Royal Blue HUD Scanlines) ---
+        // --- 2. TECH SHADER (Deep Dive Dark Blue HUD Scanlines) ---
         vec3 techColor = vec3(0.0, 0.2, 0.85);  // Deep Dark Blue #0033DD
         vec3 techCore = vec3(0.0, 0.55, 1.0);    // Glowing Royal Blue #0088FF
         
         float hoverSpeed = 1.0 + u_hover * 2.0;
         float tTime = u_time * 2.5 * hoverSpeed;
         
+        // Rotating concentric scanline circles
         float ring1 = abs(sin(dist * 25.0 - tTime)) * 0.8;
-        float ring2 = smoothstep(0.40, 0.38, dist) * smoothstep(0.36, 0.38, dist);
+        float ring2 = abs(sin(dist * 45.0 + tTime * 1.5)) * 0.5;
         
+        // Intermittent dash rings
+        float angle = atan(uv.y, uv.x);
+        float segmentCount = 4.0;
+        float tAngle = angle + u_time * 0.8 * (1.0 + u_hover);
+        float segments = step(0.15, sin(tAngle * segmentCount));
+        
+        float ring3 = smoothstep(0.24, 0.22, dist) * smoothstep(0.18, 0.20, dist) * segments;
+        float ring4 = smoothstep(0.40, 0.38, dist) * smoothstep(0.36, 0.38, dist) * step(0.4, sin(tAngle * 12.0));
+        
+        // High-tech target-locking dot
         float coreIntensity = 0.04 / (dist + 0.015);
-        vec3 techFinalColor = mix(techColor, techCore, ring1 * 0.5 + ring2 * 0.8);
+        vec3 techFinalColor = mix(techColor, techCore, ring1 * 0.5 + ring3 * 0.5 + ring4 * 0.8);
         techFinalColor += techCore * coreIntensity;
         
-        float techAlpha = (ring1 * 0.25 + ring2 * 0.6 + coreIntensity * 0.4) * mask;
-        vec4 techFinal = vec4(techFinalColor, techAlpha);
+        float techAlpha = (ring1 * 0.25 + ring2 * 0.15 + ring3 * 0.7 + ring4 * 0.6 + coreIntensity * 0.4) * mask;
+        vec4 techFinal = vec4(techFinalColor, techAlpha * (0.8 + 0.2 * u_hover));
         
-        // --- 3. CINEMATIC EVOLUTIONARY INTERPOLATED TRANSITION ---
-        vec4 finalColor = mix(magicFinal, techFinal, u_evolution);
+        // --- 3. CINEMATIC INTERPOLATED TRANSITION ---
+        vec4 finalColor = mix(magicFinal, techFinal, u_transition);
         
-        gl_FragColor = finalColor * mask * (0.8 + 0.2 * u_hover);
+        gl_FragColor = finalColor * mask;
       }
     `;
 
@@ -667,7 +395,7 @@ export function ArcaneCursor() {
     // Retrieve uniform references
     const timeLoc = gl.getUniformLocation(program, 'u_time')
     const hoverLoc = gl.getUniformLocation(program, 'u_hover')
-    const evolutionLoc = gl.getUniformLocation(program, 'u_evolution')
+    const transitionLoc = gl.getUniformLocation(program, 'u_transition')
 
     // Initial setup
     const pixelRatio = window.devicePixelRatio || 1
@@ -681,15 +409,18 @@ export function ArcaneCursor() {
       if (!gl || !program) return
 
       // Smoothly interpolate custom state variables (eliminates GSAP refs issues)
-      const targetHover = isHoveredRef.current ? 1.0 : 0.0
+      const targetHover = isHovered ? 1.0 : 0.0
       hoverValRef.current += (targetHover - hoverValRef.current) * 0.15
+
+      const targetTransition = isDeep ? 1.0 : 0.0
+      transitionValRef.current += (targetTransition - transitionValRef.current) * 0.12
 
       gl.clear(gl.COLOR_BUFFER_BIT)
 
       const elapsedSeconds = (Date.now() - startTimeRef.current) / 1000.0
       gl.uniform1f(timeLoc, elapsedSeconds)
       gl.uniform1f(hoverLoc, hoverValRef.current)
-      gl.uniform1f(evolutionLoc, evolutionValRef.current)
+      gl.uniform1f(transitionLoc, transitionValRef.current)
 
       gl.drawArrays(gl.TRIANGLES, 0, 6)
 
@@ -708,63 +439,11 @@ export function ArcaneCursor() {
         gl.deleteBuffer(positionBuffer)
       }
     }
-  }, [isActive])
+  }, [isActive, isDeep, isHovered, hasWebGLFailed])
 
   if (isTouchDevice) return null
 
   if (!isActive) return null
-
-  // Determine active visual stage based on evolution progress
-  const val = evolutionValRef.current
-  let activePath = STAGE_PATHS.step1
-  let fillOpacity = 0.15
-  let strokeColor = "#FFB44A"
-  let strokeDash = "3, 3"
-  let isMagicStage = val < 0.5
-  
-  if (cursorState === 'drag') {
-    activePath = STAGE_PATHS.drag
-    strokeColor = isDeep ? "#4AFFB4" : "#FFB44A"
-    fillOpacity = 0.4
-    strokeDash = "none"
-  } else if (cursorState === 'unavailable') {
-    activePath = STAGE_PATHS.unavailable
-    strokeColor = "#FF4A6B"
-    fillOpacity = 0.2
-    strokeDash = "none"
-  } else {
-    if (val < 0.16) {
-      activePath = STAGE_PATHS.step1
-      strokeColor = "#FFB44A"
-      fillOpacity = 0.15
-      strokeDash = "3, 3"
-    } else if (val < 0.33) {
-      activePath = STAGE_PATHS.step2
-      strokeColor = "#FFB44A"
-      fillOpacity = 0.3
-      strokeDash = "none"
-    } else if (val < 0.50) {
-      activePath = STAGE_PATHS.step3
-      strokeColor = "#FFFBEB"
-      fillOpacity = 0.5
-      strokeDash = "none"
-    } else if (val < 0.66) {
-      activePath = STAGE_PATHS.step4
-      strokeColor = "#FFB44A"
-      fillOpacity = 0.6
-      strokeDash = "none"
-    } else if (val < 0.83) {
-      activePath = STAGE_PATHS.step5
-      strokeColor = "#4AFFB4"
-      fillOpacity = 0.7
-      strokeDash = "none"
-    } else {
-      activePath = STAGE_PATHS.step6
-      strokeColor = "#4AFFB4"
-      fillOpacity = 0.8
-      strokeDash = "none"
-    }
-  }
 
   return (
     <>
@@ -774,12 +453,13 @@ export function ArcaneCursor() {
         className="fixed inset-0 pointer-events-none z-[99998] w-screen h-screen"
       />
 
-      {/* 2. Unified Custom Interactive Cursor Core */}
+      {/* 2. Unified Custom Interactive Cursor Core (Aligned & mathematically exact tip hotspot) */}
       <div 
-        ref={cursorRef}
         className="fixed pointer-events-none z-[99999] w-[120px] h-[120px]"
         style={{
-          transform: 'translate3d(0, 0, 0) translate(-50%, -50%)',
+          left: `${smoothedPos.x}px`,
+          top: `${smoothedPos.y}px`,
+          transform: 'translate(-50%, -50%)',
         }}
       >
         {/* WebGL Shader Layer (Renders glowing holographic plasma/rings behind the pointer) */}
@@ -791,93 +471,132 @@ export function ArcaneCursor() {
           />
         )}
 
-        {/* SVG Arrowhead Core Layer */}
-        <div 
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          style={{
-            transform: cursorState === 'hover' 
-              ? 'scale(1.25)' 
-              : cursorState === 'select' 
-                ? 'scale(0.85)' 
-                : 'scale(1.0)',
-            transition: 'transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-          }}
-        >
-          {/* Concentric diagnostics target brackets (shown on hover or tech state) */}
-          <div 
-            ref={concentricRef}
-            className="absolute w-[46px] h-[46px] border rounded-full animate-spin transition-all duration-300"
-            style={{
-              borderColor: isDeep ? 'rgba(74, 255, 180, 0.6)' : 'rgba(255, 180, 74, 0.6)',
-              borderStyle: 'dashed',
-              animationDuration: '6s',
-              boxShadow: isDeep ? '0 0 10px rgba(74, 255, 180, 0.3)' : '0 0 10px rgba(255, 180, 74, 0.3)',
-              display: cursorState === 'hover' ? 'block' : 'none'
-            }}
-          />
-
-          <svg 
-            width="40" 
-            height="40" 
-            viewBox="0 0 40 40" 
-            fill="none" 
-            className="drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] transition-transform duration-200"
-            style={{ 
-              transform: cursorState === 'drag' ? 'rotate(0deg)' : 'rotate(-22.5deg)',
-              transformOrigin: '50% 50%' 
-            }}
-          >
-            {/* Outer Casing / Outer Plate */}
-            <path 
-              ref={pathRef}
-              d={activePath} 
-              fill={isMagicStage ? `rgba(255, 180, 74, ${fillOpacity})` : "#C5A059"} 
-              stroke={strokeColor} 
-              strokeWidth={cursorState === 'hover' ? "2" : "1.5"}
-              strokeDasharray={strokeDash}
-              style={{ transition: 'd 0.3s ease-out, fill 0.3s, stroke 0.3s' }}
-            />
-            
-            {/* Sliding Steel Core Plate (Stages 4-6) */}
-            <path 
-              ref={steelRef}
-              d="M20 7 L31 21 L23 19 L20 22 L17 19 L9 21 Z" 
-              fill="#4F5D6B" 
-              stroke={cursorState === 'hover' ? "#4AFFB4" : "rgba(255,255,255,0.2)"}
-              strokeWidth="1"
-              style={{ 
-                transition: 'fill 0.3s, stroke 0.3s',
-                display: (!isMagicStage && cursorState !== 'unavailable') ? 'block' : 'none'
+        {isDeep ? (
+          // TECH MODE: Sleek deep/dark blue custom tilted pointer (with Hextech Brass casing)
+          <>
+            {/* Concentric diagnostics target brackets (snaps, grows and glows on interactive hover) */}
+            <div 
+              className="absolute w-[48px] h-[48px] border-2 rounded transition-all duration-300 ease-out"
+              style={{
+                left: '36px',
+                top: '36px',
+                transform: isHovered ? 'scale(0.85) rotate(-45deg)' : 'scale(1.0) rotate(0deg)',
+                borderColor: isHovered ? 'rgba(0, 85, 255, 0.9)' : 'rgba(0, 51, 204, 0.35)', // Glowing dark blue
+                boxShadow: isHovered ? '0 0 12px rgba(0, 85, 255, 0.55)' : 'none'
               }}
             />
-
-            {/* Glowing Core Crystal */}
-            <circle 
-              ref={crystalRef}
-              cx="20" 
-              cy="14" 
-              r={activePath === STAGE_PATHS.step6 ? "3" : "2.5"} 
-              fill={isMagicStage ? "#FFB44A" : "#4AFFB4"} 
-              className="animate-pulse"
+            {/* Tilted mechanical arrowhead pointer (exact tip centered at parent coordinates 60px, 60px) */}
+            <svg 
+              width="24" 
+              height="24" 
+              viewBox="0 0 20 20" 
+              fill="none" 
+              className="absolute drop-shadow-[0_0_8px_#0033CC] transition-transform duration-200"
               style={{ 
-                filter: isMagicStage ? 'drop-shadow(0 0 3px #FFB44A)' : 'drop-shadow(0 0 4px #4AFFB4)',
-                transition: 'fill 0.3s',
-                display: cursorState !== 'unavailable' ? 'block' : 'none'
+                left: '48px', 
+                top: '58.8px', // tip d=(10,1) matches (60px, 60px) exactly!
+                transform: 'rotate(-22.5deg)', 
+                transformOrigin: '50% 5%' 
               }}
-            />
-
-            {/* Unavailable lock cross bars */}
-            <g 
-              ref={crossbarRef}
-              style={{ display: cursorState === 'unavailable' ? 'block' : 'none' }}
             >
-              <line x1="12" y1="20" x2="28" y2="20" stroke="#FF4A6B" strokeWidth="2" />
-              <line x1="20" y1="12" x2="20" y2="28" stroke="#FF4A6B" strokeWidth="2" />
-            </g>
-          </svg>
-        </div>
-        
-        {/* Preload fonts */}
+              {/* Hextech Brass mechanical casing */}
+              <path d="M10 1L18 14L13 12L10 16L7 12L2 14L10 1Z" fill="#C5A059" stroke="#0044FF" strokeWidth="1.5" />
+              {/* Sleek internal steel shell plating */}
+              <path d="M10 5L15 12L12 10.5L10 13L8 10.5L5 12L10 5Z" fill="#4F5D6B" />
+              {/* Concentrated glowing dark blue crystal core */}
+              <circle cx="10" cy="9.5" r="2.2" fill="#0055FF" className="animate-pulse" />
+            </svg>
+          </>
+        ) : (
+          // MAGIC MODE: Glowing golden-amber detailed custom tilted pointer (Concentric Runic Array)
+          <>
+            {/* 1. Concentric Astrological Spell Array (Interlocking glowing golden-amber geometric lines) */}
+            <svg
+              width="80"
+              height="80"
+              viewBox="0 0 80 80"
+              className="absolute animate-[spin_28s_linear_infinite] transition-all duration-300 ease-out"
+              style={{
+                left: '20px',
+                top: '20px',
+                transform: isHovered ? 'scale(1.22)' : 'scale(1.0)',
+                opacity: isHovered ? 0.8 : 0.45,
+                filter: isHovered ? 'drop-shadow(0 0 4px rgba(251, 191, 36, 0.65))' : 'none',
+              }}
+            >
+              {/* Outer boundary ring */}
+              <circle cx="40" cy="40" r="38" stroke="rgba(245, 158, 11, 0.3)" strokeWidth="0.8" fill="none" />
+              {/* Dashed secondary boundary */}
+              <circle cx="40" cy="40" r="32" stroke="rgba(251, 191, 36, 0.2)" strokeWidth="0.8" fill="none" strokeDasharray="3, 3" />
+              {/* Inner focus ring */}
+              <circle cx="40" cy="40" r="19" stroke="rgba(251, 191, 36, 0.4)" strokeWidth="0.8" fill="none" />
+              
+              {/* Solomon's Star (Intersecting concentric triangles creating a stunning Hexagram spell grid) */}
+              <polygon points="40,3 72,58 8,58" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="0.8" fill="none" />
+              <polygon points="40,77 72,22 8,22" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="0.8" fill="none" />
+              
+              {/* Cardinal axis crosshair markers */}
+              <line x1="40" y1="2" x2="40" y2="7" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+              <line x1="40" y1="73" x2="40" y2="78" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+              <line x1="2" y1="40" x2="7" y2="40" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+              <line x1="73" y1="40" x2="78" y2="40" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+            </svg>
+
+            {/* 2. Concentric Counter-Rotating Runic Ring (Actual Norse runes) */}
+            <div 
+              className="absolute w-[60px] h-[60px] animate-[spin_12s_linear_infinite_reverse] transition-all duration-300 ease-out" 
+              style={{
+                left: '30px',
+                top: '30px',
+                transform: isHovered ? 'scale(1.22)' : 'scale(1.0)',
+              }}
+            >
+              {/* Actual Norse Runes mapped around the circle */}
+              {["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ"].map((rune, idx, arr) => {
+                const angle = (idx / arr.length) * 360
+                const radius = isHovered ? 34 : 27 // expands concentric with the background SVG!
+                return (
+                  <span
+                    key={idx}
+                    className="absolute text-[8.5px] transition-all duration-300 select-none pointer-events-none"
+                    style={{
+                      fontFamily: 'NotoSansRunic-Regular, monospace',
+                      left: '50%',
+                      top: '50%',
+                      transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`,
+                      textShadow: isHovered ? '0 0 5px rgba(251, 191, 36, 0.8)' : '0 0 3px rgba(245, 158, 11, 0.4)',
+                      color: isHovered ? '#FFFBEB' : 'rgba(251, 191, 36, 0.85)',
+                    }}
+                  >
+                    {rune}
+                  </span>
+                )
+              })}
+            </div>
+
+            {/* Tilted serrated arcane arrowhead pointer (exact tip centered at parent coordinates 60px, 60px) */}
+            <svg 
+              width="24" 
+              height="24" 
+              viewBox="0 0 20 20" 
+              fill="none" 
+              className="absolute drop-shadow-[0_0_8px_#FBBF24] transition-transform duration-200"
+              style={{ 
+                left: '48px', 
+                top: '58.8px', // tip d=(10,1) matches (60px, 60px) exactly!
+                transform: 'rotate(-22.5deg)', 
+                transformOrigin: '50% 5%' 
+              }}
+            >
+              {/* Organic serrated warm-golden base plates */}
+              <path d="M 10,1 L 16,13 L 13,11.5 L 14.5,15.5 L 10,13.5 L 5.5,15.5 L 7,11.5 L 4,13 L 10,1 Z" fill="#F59E0B" stroke="#FBBF24" strokeWidth="1.5" />
+              {/* Bright glowing amber core insertion */}
+              <path d="M10 4L13.5 10.5L12 9.7L10 12.2L8 9.7L6.5 10.5L10 4Z" fill="#FEF3C7" opacity="0.88" />
+            </svg>
+          </>
+        )}
+
+        {/* Preload Runic Font Eagerly to Force Browser Download for Canvas Rendering */}
         <div 
           className="absolute opacity-0 pointer-events-none -z-50 select-none"
           style={{ fontFamily: 'NotoSansRunic-Regular' }}
