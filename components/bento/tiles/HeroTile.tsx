@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { BentoTile } from "../BentoTile"
-import { Search, Download } from "lucide-react"
+import { Download } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useViewModeStore } from "@/store/useViewModeStore"
 
@@ -24,10 +24,8 @@ interface HeroTileProps {
 
 export function HeroTile({ id, size, role, mark, description, typo, isDragging, sortableProps }: HeroTileProps) {
   const markRef = React.useRef<HTMLHeadingElement>(null)
-  const roleRef = React.useRef<HTMLDivElement>(null)
   
   const deepMarkRef = React.useRef<HTMLHeadingElement>(null)
-  const deepRoleRef = React.useRef<HTMLDivElement>(null)
 
   const mode = useViewModeStore((state) => state.mode)
   
@@ -96,27 +94,23 @@ export function HeroTile({ id, size, role, mark, description, typo, isDragging, 
     // When mode switches, trigger scramble on the visible elements safely
     if (mode === "quick") {
       if (markRef.current) scramble("mark", markRef.current, mark, runes)
-      if (roleRef.current && role) scramble("role", roleRef.current, role, runes)
     } else {
       if (deepMarkRef.current) scramble("deepMark", deepMarkRef.current, mark, chars.split(""))
-      if (deepRoleRef.current && role) scramble("deepRole", deepRoleRef.current, role, chars.split(""))
     }
-  }, [mode, mark, role])
+  }, [mode, mark])
 
   React.useEffect(() => {
-    // Periodic scramble on the active face's mark and role together safely
+    // Periodic scramble on the active face's mark together safely
     const timer = setInterval(() => {
       if (mode === "quick") {
         if (markRef.current) scramble("mark", markRef.current, mark, runes)
-        if (roleRef.current && role) scramble("role", roleRef.current, role, runes)
       } else {
         if (deepMarkRef.current) scramble("deepMark", deepMarkRef.current, mark, chars.split(""))
-        if (deepRoleRef.current && role) scramble("deepRole", deepRoleRef.current, role, chars.split(""))
       }
     }, 5000)
 
     return () => clearInterval(timer)
-  }, [mode, mark, role])
+  }, [mode, mark])
 
   React.useEffect(() => {
     // Cleanup on unmount
