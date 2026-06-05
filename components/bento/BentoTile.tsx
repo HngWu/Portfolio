@@ -97,7 +97,7 @@ export function BentoTile({
 
   return (
     <motion.div
-      layout={layout}
+      layout={isMobile ? false : layout}
       whileHover={!sortableProps ? { scale: 1.01, translateY: -4 } : undefined}
       transition={{ 
         layout: { duration: 0.6, ease: [0.4, 0, 0.2, 1] },

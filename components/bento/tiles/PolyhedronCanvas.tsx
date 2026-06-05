@@ -724,6 +724,23 @@ function PolyhedronScene({
   const ring1TextRefs = useRef<(THREE.Mesh | null)[]>([])
   const ring2TextRefs = useRef<(THREE.Mesh | null)[]>([])
   const smoothScroll = useRef(0)
+  const scrollPercentRef = useRef(0)
+
+  useEffect(() => {
+    const handleScrollOrResize = () => {
+      const docH = document.documentElement.scrollHeight
+      const winH = window.innerHeight
+      const maxScroll = docH - winH
+      scrollPercentRef.current = maxScroll > 0 ? THREE.MathUtils.clamp(window.scrollY / maxScroll, 0, 1) : 0
+    }
+    handleScrollOrResize()
+    window.addEventListener("scroll", handleScrollOrResize, { passive: true })
+    window.addEventListener("resize", handleScrollOrResize)
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize)
+      window.removeEventListener("resize", handleScrollOrResize)
+    }
+  }, [])
 
   const [assemblyProgress, setAssemblyProgress] = useState(0)
   const isIgnited = useIgniteStore((state) => state.isIgnited)
@@ -1058,11 +1075,8 @@ function PolyhedronScene({
       }
     }
 
-    // Query scroll progress exactly once per frame at scene root (prevents 54x DOM query layout thrashing)
-    const docH = typeof document !== 'undefined' ? document.documentElement.scrollHeight : 1000
-    const winH = typeof window !== 'undefined' ? window.innerHeight : 800
-    const maxScroll = docH - winH
-    const scrollPercent = maxScroll > 0 && typeof window !== 'undefined' ? THREE.MathUtils.clamp(window.scrollY / maxScroll, 0, 1) : 0
+    // Query scroll progress from our optimized ref instead of thrashing the DOM layout
+    const scrollPercent = scrollPercentRef.current
 
     smoothScroll.current = THREE.MathUtils.lerp(smoothScroll.current, scrollPercent, delta * 4.0)
     sharedSpellState.scrollProgress = smoothScroll.current
