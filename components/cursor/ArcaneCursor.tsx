@@ -34,10 +34,13 @@ export function ArcaneCursor() {
 
   useEffect(() => {
     const checkTouch = () => {
-      const isTouch = window.matchMedia("(pointer: coarse)").matches || 'ontouchstart' in window
-      setIsTouchDevice(isTouch)
+      // Only disable custom cursor on small mobile/tablet screens (< 768px)
+      // This prevents hybrid touchscreen laptops from losing their cursor
+      setIsTouchDevice(window.innerWidth < 768)
     }
     checkTouch()
+    window.addEventListener('resize', checkTouch)
+    return () => window.removeEventListener('resize', checkTouch)
   }, [])
 
   // Refs for tracking mouse position and velocity
@@ -64,7 +67,6 @@ export function ArcaneCursor() {
   useEffect(() => {
     const activateCustomCursor = () => {
       setIsActive(true)
-      document.body.classList.add('custom-cursor-active')
       window.removeEventListener('mousemove', activateCustomCursor)
       window.removeEventListener('touchstart', activateCustomCursor)
     }
@@ -73,11 +75,22 @@ export function ArcaneCursor() {
     window.addEventListener('touchstart', activateCustomCursor)
 
     return () => {
-      document.body.classList.remove('custom-cursor-active')
       window.removeEventListener('mousemove', activateCustomCursor)
       window.removeEventListener('touchstart', activateCustomCursor)
     }
   }, [])
+
+  // 1.1 Manage body class based on active state and touch device settings
+  useEffect(() => {
+    if (isActive && !isTouchDevice) {
+      document.body.classList.add('custom-cursor-active')
+    } else {
+      document.body.classList.remove('custom-cursor-active')
+    }
+    return () => {
+      document.body.classList.remove('custom-cursor-active')
+    }
+  }, [isActive, isTouchDevice])
 
   // 2. Track real-time mouse coordinate and O(1) interactive hover state
   useEffect(() => {

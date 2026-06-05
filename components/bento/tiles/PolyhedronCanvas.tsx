@@ -1067,8 +1067,13 @@ function PolyhedronScene({
     smoothScroll.current = THREE.MathUtils.lerp(smoothScroll.current, scrollPercent, delta * 4.0)
     sharedSpellState.scrollProgress = smoothScroll.current
 
-    // Stable camera positioning to prevent visual motion friction
-    camera.position.z = 13
+    // Stable camera positioning with dynamic viewport-based zoom scaling to prevent horizontal clipping on narrow mobile devices
+    const aspect = state.size.width / state.size.height
+    if (aspect < 1.1) {
+      camera.position.z = (13 * 1.1) / aspect
+    } else {
+      camera.position.z = 13
+    }
 
     // Gyroscopic Motion Resonance: Precession, Cursor Slerp and Harmonic Local Spin
     const p1 = _gyroPrecess1.set(1.0, 0.2 * Math.sin(0.5 * t), 0.1 * Math.cos(0.3 * t)).normalize()
@@ -1750,9 +1755,19 @@ export default function PolyhedronCanvas({
     loreDesc: string | null
   }>({ rune: null, runeName: null, loreDesc: null })
 
+  const [isMobile, setIsMobile] = useState(false)
+
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
     const timer = setTimeout(() => setReady(true), 50)
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener("resize", checkMobile)
+    }
   }, [])
 
   // Window command executor sequence (called by our consolidated static TerminalTile)
@@ -1883,7 +1898,7 @@ export default function PolyhedronCanvas({
     <div ref={containerRef} className="w-full h-full relative">
       <Canvas 
         camera={{ position: [0, 0, 13], fov: 35 }}
-        dpr={[1, 2]}
+        dpr={isMobile ? Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 2, 1.5) : [1, 2]}
         gl={{ alpha: true }}
         style={{ pointerEvents: 'auto' }}
       >
@@ -1901,8 +1916,8 @@ export default function PolyhedronCanvas({
           />
         </Suspense>
 
-        {/* Volumetric Bloom Postprocessing */}
-        <EffectComposer>
+        {/* Volumetric Bloom Postprocessing - Enabled on both mobile and desktop, optimized for mobile to ensure zero lag */}
+        <EffectComposer multisampling={isMobile ? 4 : 8}>
           <Bloom 
             luminanceThreshold={0.01} 
             luminanceSmoothing={0.9} 
