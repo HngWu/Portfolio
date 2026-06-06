@@ -17,6 +17,7 @@ export interface Database {
           col_start: number | null
           row_start: number | null
           order_val: number
+          order_val_mobile: number
           is_hidden: boolean
           is_active: boolean
           content: Json
@@ -31,6 +32,7 @@ export interface Database {
           col_start?: number | null
           row_start?: number | null
           order_val?: number
+          order_val_mobile?: number
           is_hidden?: boolean
           is_active?: boolean
           content?: Json
@@ -45,6 +47,7 @@ export interface Database {
           col_start?: number | null
           row_start?: number | null
           order_val?: number
+          order_val_mobile?: number
           is_hidden?: boolean
           is_active?: boolean
           content?: Json

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS public.tiles (
   col_start   int DEFAULT NULL,
   row_start   int DEFAULT NULL,
   order_val   int DEFAULT 0,
+  order_val_mobile int DEFAULT 0,
   is_hidden   boolean DEFAULT false,
   is_active   boolean DEFAULT true,
   content     jsonb DEFAULT '{}'::jsonb,  -- flexible content payload
@@ -46,56 +47,56 @@ WITH CHECK (true);
 -- ==========================================
 
 -- GLOBAL CONFIG TILE
-INSERT INTO public.tiles (type, size, order_val, is_hidden, content)
-VALUES ('config', '0x0', 0, true, '{"theme": {"primary": "#4AFFB4", "secondary": "#4A8FFF"}, "identity": {"mark": "HW", "title": "Creative Developer"}}');
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile, is_hidden, content)
+VALUES ('config', '0x0', 0, 0, true, '{"theme": {"primary": "#4AFFB4", "secondary": "#4A8FFF"}, "identity": {"mark": "HW", "title": "Creative Developer"}}');
 
 -- HERO TILE
-INSERT INTO public.tiles (type, size, order_val, content)
-VALUES ('hero', '6x2', 1, '{"role": "Creative Developer", "mark": "HW", "description": "Bridging the gap between engineering and aesthetic design. Dark minimalist, cinematic UX."}');
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile, content)
+VALUES ('hero', '6x2', 1, 1, '{"role": "Creative Developer", "mark": "HW", "description": "Bridging the gap between engineering and aesthetic design. Dark minimalist, cinematic UX."}');
 
 -- 3D TILE
-INSERT INTO public.tiles (type, size, order_val)
-VALUES ('3d', '6x4', 2);
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile)
+VALUES ('3d', '6x4', 2, 5);
 
 -- PROJECTS
-INSERT INTO public.tiles (type, size, order_val, content, deep_dive)
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile, content, deep_dive)
 VALUES 
-  ('project', '4x3', 3, '{"name": "TriviaDuel", "description": "Real-time multiplayer trivia platform.", "tech_stack": ["Next.js", "Supabase", "WebSockets"], "github_url": "https://github.com", "featured": true}', '{"notes": "Architected for sub-100ms latency."}'),
-  ('project', '4x3', 4, '{"name": "SecureAsset", "description": "Blockchain asset tracking system.", "tech_stack": ["Solidity", "React", "Ethers.js"], "github_url": "https://github.com", "featured": true}', '{"notes": "Decentralized auditing for supply chains."}');
+  ('project', '4x3', 3, 6, '{"name": "TriviaDuel", "description": "Real-time multiplayer trivia platform.", "tech_stack": ["Next.js", "Supabase", "WebSockets"], "github_url": "https://github.com", "featured": true}', '{"notes": "Architected for sub-100ms latency."}'),
+  ('project', '4x3', 4, 7, '{"name": "SecureAsset", "description": "Blockchain asset tracking system.", "tech_stack": ["Solidity", "React", "Ethers.js"], "github_url": "https://github.com", "featured": true}', '{"notes": "Decentralized auditing for supply chains."}');
 
 -- EXPERIENCE
-INSERT INTO public.tiles (type, size, order_val, content)
-VALUES ('experience', '4x2', 5, '{"role": "Software Engineer Intern", "company": "DBS Bank", "date": "2024 - Present", "bullets": ["Engineered internal dashboard for transaction monitoring.", "Reduced load times by 40% using React Server Components.", "Collaborated directly with UX researchers for accessibility.", "Wrote comprehensive unit tests yielding 95% coverage."]}');
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile, content)
+VALUES ('experience', '4x2', 5, 9, '{"role": "Software Engineer Intern", "company": "DBS Bank", "date": "2024 - Present", "bullets": ["Engineered internal dashboard for transaction monitoring.", "Reduced load times by 40% using React Server Components.", "Collaborated directly with UX researchers for accessibility.", "Wrote comprehensive unit tests yielding 95% coverage."]}');
 
 -- EDUCATION
-INSERT INTO public.tiles (type, size, order_val, content)
-VALUES ('education', '2x2', 6, '{"institution": "Nanyang Polytechnic", "degree": "Diploma in Information Technology", "date": "Apr 2023 - Apr 2026", "gpa": "3.91"}');
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile, content)
+VALUES ('education', '2x2', 6, 10, '{"institution": "Nanyang Polytechnic", "degree": "Diploma in Information Technology", "date": "Apr 2023 - Apr 2026", "gpa": "3.91"}');
 
 -- TERMINAL
-INSERT INTO public.tiles (type, size, order_val)
-VALUES ('terminal', '4x2', 7);
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile)
+VALUES ('terminal', '4x2', 7, 14);
 
-INSERT INTO public.tiles (type, size, order_val, content)
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile, content)
 -- STATS
 VALUES 
-  ('stat', '1x1', 8, '{"value": "3.91", "label": "GPA"}'),
-  ('stat', '1x1', 9, '{"value": "1yr", "label": "Experience"}'),
-  ('stat', '1x1', 10, '{"value": "12+", "label": "Projects"}');
+  ('stat', '1x1', 8, 2, '{"value": "3.91", "label": "GPA"}'),
+  ('stat', '1x1', 9, 3, '{"value": "1yr", "label": "Experience"}'),
+  ('stat', '1x1', 10, 4, '{"value": "12+", "label": "Projects"}');
 
 -- SKILLS
-INSERT INTO public.tiles (type, size, order_val, content)
-VALUES ('skill', '2x4', 11, '{"tags": ["Next.js", "TypeScript", "React", "GSAP", "Three.js", "Supabase", "TailwindCSS"]}');
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile, content)
+VALUES ('skill', '2x4', 11, 8, '{"tags": ["Next.js", "TypeScript", "React", "GSAP", "Three.js", "Supabase", "TailwindCSS"]}');
 
 -- AWARDS
-INSERT INTO public.tiles (type, size, order_val, content)
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile, content)
 VALUES 
-  ('award', '3x2', 12, '{"name": "WorldSkills Singapore 2025", "issuer": "WorldSkills", "date": "2025", "desc": "Silver Medal in Web Technologies."}'),
-  ('award', '3x1', 13, '{"name": "Ngee Ann Kongsi Award", "issuer": "NYP", "date": "2024", "desc": "Academic excellence scholarship."}');
+  ('award', '3x2', 12, 11, '{"name": "WorldSkills Singapore 2025", "issuer": "WorldSkills", "date": "2025", "desc": "Silver Medal in Web Technologies."}'),
+  ('award', '3x1', 13, 12, '{"name": "Ngee Ann Kongsi Award", "issuer": "NYP", "date": "2024", "desc": "Academic excellence scholarship."}');
 
 -- CONTACT
-INSERT INTO public.tiles (type, size, order_val, content)
-VALUES ('contact', '2x2', 14, '{"email": "hello@portfolio.com", "github": "https://github.com", "linkedin": "https://linkedin.com"}');
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile, content)
+VALUES ('contact', '2x2', 14, 13, '{"email": "hello@portfolio.com", "github": "https://github.com", "linkedin": "https://linkedin.com"}');
 
 -- EASTER EGG
-INSERT INTO public.tiles (type, size, order_val, is_hidden)
-VALUES ('easter_egg', '3x2', 99, true);
+INSERT INTO public.tiles (type, size, order_val, order_val_mobile, is_hidden)
+VALUES ('easter_egg', '3x2', 99, 99, true);
