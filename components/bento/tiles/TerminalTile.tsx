@@ -132,18 +132,18 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
     }
   }, [])
 
-  const scrollToBottom = () => {
+  const scrollToBottom = React.useCallback(() => {
     if (tileScrollRef.current) {
       tileScrollRef.current.scrollTop = tileScrollRef.current.scrollHeight
     }
     if (maxScrollRef.current) {
       maxScrollRef.current.scrollTop = maxScrollRef.current.scrollHeight
     }
-  }
+  }, [])
 
   React.useEffect(() => {
     scrollToBottom()
-  }, [history])
+  }, [history, scrollToBottom])
 
   React.useEffect(() => {
     const activeInput = isMaximized ? maxInputRef.current : tileInputRef.current
@@ -151,7 +151,7 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
       activeInput.focus()
     }
     scrollToBottom()
-  }, [isMaximized])
+  }, [isMaximized, scrollToBottom])
 
   const renderHelp = () => {
     const commonCmds = [
@@ -257,7 +257,7 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
     } else if (trimmedCmd === "whoami") {
       setHistory([...newHistory, { type: "output", content: BIO }])
     } else if (trimmedCmd.startsWith("open ")) {
-      const url = cmd.replace("open ", "").trim()
+      const url = cmd.trim().replace(/^open\s+/i, "")
       let targetUrl = url
       if (!targetUrl.startsWith("http")) {
         if (targetUrl.startsWith("./")) {
@@ -342,6 +342,14 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
   const renderHeaderAndBody = (maximized: boolean) => {
     const activeInputRef = maximized ? maxInputRef : tileInputRef
     const activeScrollRef = maximized ? maxScrollRef : tileScrollRef
+
+    const handleBodyClick = () => {
+      const selection = window.getSelection()
+      if (!selection || selection.toString() === "") {
+        activeInputRef.current?.focus()
+      }
+    }
+
     return (
       <div className="flex flex-col h-full w-full relative">
         {/* Close Confirmation Overlay */}
@@ -476,7 +484,7 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
             "flex-1 p-5 overflow-y-auto flex flex-col gap-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full h-full font-mono text-base md:text-sm select-text cursor-text",
             os === "windows" ? "bg-black" : "bg-transparent"
           )}
-          onClick={() => activeInputRef.current?.focus()}
+          onClick={handleBodyClick}
         >
           {history.map((item, i) => (
             <div key={i} className="text-white/90 whitespace-pre-wrap font-mono text-base md:text-sm">
