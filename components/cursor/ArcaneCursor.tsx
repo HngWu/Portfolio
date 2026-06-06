@@ -18,6 +18,15 @@ interface Particle {
   char: string
 }
 
+interface ClickEffect {
+  id: number
+  x: number
+  y: number
+  age: number
+  maxAge: number
+  isDeep: boolean
+}
+
 const RUNES = ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ", "ᛇ", "ᛈ", "ᛉ", "ᛊ"]
 const BINARY = ["0", "1"]
 
@@ -52,6 +61,10 @@ export function ArcaneCursor() {
   const canvasTrailRef = useRef<HTMLCanvasElement | null>(null)
   const particlesRef = useRef<Particle[]>([])
   const particleIdCounter = useRef(0)
+
+  // Click Effect Refs
+  const clickEffectsRef = useRef<ClickEffect[]>([])
+  const clickIdCounter = useRef(0)
 
   // WebGL Shader Refs
   const canvasWebGLRef = useRef<HTMLCanvasElement | null>(null)
@@ -118,6 +131,49 @@ export function ArcaneCursor() {
     window.addEventListener('mousemove', trackCoords)
     return () => window.removeEventListener('mousemove', trackCoords)
   }, [])
+
+  // 2.1 Listen for click events to spawn interactive burst particles
+  useEffect(() => {
+    if (!isActive) return
+    const handleMouseDown = (e: MouseEvent) => {
+      clickIdCounter.current += 1
+      clickEffectsRef.current.push({
+        id: clickIdCounter.current,
+        x: e.clientX,
+        y: e.clientY,
+        age: 0,
+        maxAge: 0.5, // 500ms duration
+        isDeep: isDeep
+      })
+
+      // Spawn radial burst particles in the main trail loop
+      const particleCount = isDeep ? 8 : 12
+      const angleStep = (Math.PI * 2) / particleCount
+      const charPool = isDeep ? BINARY : RUNES
+
+      for (let i = 0; i < particleCount; i++) {
+        const angle = angleStep * i
+        const speed = isDeep ? 3 + Math.random() * 4 : 2 + Math.random() * 3
+        particlesRef.current.push({
+          id: ++particleIdCounter.current,
+          x: e.clientX,
+          y: e.clientY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: (Math.random() - 0.5) * 5,
+          size: isDeep ? 7 + Math.random() * 4 : 9 + Math.random() * 5,
+          opacity: 1.0,
+          age: 0,
+          maxAge: isDeep ? 0.3 + Math.random() * 0.3 : 0.4 + Math.random() * 0.4,
+          char: charPool[Math.floor(Math.random() * charPool.length)]
+        })
+      }
+    }
+
+    window.addEventListener('mousedown', handleMouseDown)
+    return () => window.removeEventListener('mousedown', handleMouseDown)
+  }, [isActive, isDeep])
 
   // 3. Keep full-screen 2D particle trail canvas sized correctly
   useEffect(() => {
