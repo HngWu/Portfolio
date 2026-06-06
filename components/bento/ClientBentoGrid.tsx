@@ -17,16 +17,15 @@ export default function ClientBentoGrid({
   initialTiles,
   showEasterEgg,
 }: ClientBentoGridProps) {
-  const [isMobile, setIsMobile] = React.useState(false)
-
-  React.useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 767px)")
-    setIsMobile(mediaQuery.matches)
-
-    const listener = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-    mediaQuery.addEventListener("change", listener)
-    return () => mediaQuery.removeEventListener("change", listener)
-  }, [])
+  const isMobile = React.useSyncExternalStore(
+    React.useCallback((callback: () => void) => {
+      const mediaQuery = window.matchMedia("(max-width: 767px)")
+      mediaQuery.addEventListener("change", callback)
+      return () => mediaQuery.removeEventListener("change", callback)
+    }, []),
+    () => window.matchMedia("(max-width: 767px)").matches,
+    () => false
+  )
 
   const sortedTiles = React.useMemo(() => {
     // Filter out config, hidden, and easter_egg tiles from the main bento layout loop
