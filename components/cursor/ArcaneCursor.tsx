@@ -26,7 +26,6 @@ export function ArcaneCursor() {
   const isDeep = mode === 'deep'
 
   const [isActive, setIsActive] = useState(false)
-  const [clientPos, setClientPos] = useState({ x: 0, y: 0 })
   const [smoothedPos, setSmoothedPos] = useState({ x: 0, y: 0 })
   const [isHovered, setIsHovered] = useState(false)
   const [hasWebGLFailed, setHasWebGLFailed] = useState(false)
@@ -63,6 +62,17 @@ export function ArcaneCursor() {
   const hoverValRef = useRef<number>(0)
   const transitionValRef = useRef<number>(isDeep ? 1 : 0)
 
+  const isHoveredRef = useRef(isHovered)
+  const isDeepRef = useRef(isDeep)
+
+  useEffect(() => {
+    isHoveredRef.current = isHovered
+  }, [isHovered])
+
+  useEffect(() => {
+    isDeepRef.current = isDeep
+  }, [isDeep])
+
   // 1. Activate custom cursor on mouse movement
   useEffect(() => {
     const activateCustomCursor = () => {
@@ -97,7 +107,6 @@ export function ArcaneCursor() {
     const trackCoords = (e: MouseEvent) => {
       mouseRef.current.x = e.clientX
       mouseRef.current.y = e.clientY
-      setClientPos({ x: e.clientX, y: e.clientY })
       
       const target = e.target as HTMLElement | null
       if (target) {
@@ -422,10 +431,10 @@ export function ArcaneCursor() {
       if (!gl || !program) return
 
       // Smoothly interpolate custom state variables (eliminates GSAP refs issues)
-      const targetHover = isHovered ? 1.0 : 0.0
+      const targetHover = isHoveredRef.current ? 1.0 : 0.0
       hoverValRef.current += (targetHover - hoverValRef.current) * 0.15
 
-      const targetTransition = isDeep ? 1.0 : 0.0
+      const targetTransition = isDeepRef.current ? 1.0 : 0.0
       transitionValRef.current += (targetTransition - transitionValRef.current) * 0.12
 
       gl.clear(gl.COLOR_BUFFER_BIT)
@@ -452,7 +461,7 @@ export function ArcaneCursor() {
         gl.deleteBuffer(positionBuffer)
       }
     }
-  }, [isActive, isDeep, isHovered, hasWebGLFailed])
+  }, [isActive, hasWebGLFailed])
 
   if (isTouchDevice) return null
 
@@ -498,27 +507,7 @@ export function ArcaneCursor() {
                 boxShadow: isHovered ? '0 0 12px rgba(0, 85, 255, 0.55)' : 'none'
               }}
             />
-            {/* Tilted mechanical arrowhead pointer (exact tip centered at parent coordinates 60px, 60px) */}
-            <svg 
-              width="24" 
-              height="24" 
-              viewBox="0 0 20 20" 
-              fill="none" 
-              className="absolute drop-shadow-[0_0_8px_#0033CC] transition-transform duration-200"
-              style={{ 
-                left: '48px', 
-                top: '58.8px', // tip d=(10,1) matches (60px, 60px) exactly!
-                transform: 'rotate(-22.5deg)', 
-                transformOrigin: '50% 5%' 
-              }}
-            >
-              {/* Hextech Brass mechanical casing */}
-              <path d="M10 1L18 14L13 12L10 16L7 12L2 14L10 1Z" fill="#C5A059" stroke="#0044FF" strokeWidth="1.5" />
-              {/* Sleek internal steel shell plating */}
-              <path d="M10 5L15 12L12 10.5L10 13L8 10.5L5 12L10 5Z" fill="#4F5D6B" />
-              {/* Concentrated glowing dark blue crystal core */}
-              <circle cx="10" cy="9.5" r="2.2" fill="#0055FF" className="animate-pulse" />
-            </svg>
+
           </>
         ) : (
           // MAGIC MODE: Glowing golden-amber detailed custom tilted pointer (Concentric Runic Array)
@@ -587,25 +576,7 @@ export function ArcaneCursor() {
               })}
             </div>
 
-            {/* Tilted serrated arcane arrowhead pointer (exact tip centered at parent coordinates 60px, 60px) */}
-            <svg 
-              width="24" 
-              height="24" 
-              viewBox="0 0 20 20" 
-              fill="none" 
-              className="absolute drop-shadow-[0_0_8px_#FBBF24] transition-transform duration-200"
-              style={{ 
-                left: '48px', 
-                top: '58.8px', // tip d=(10,1) matches (60px, 60px) exactly!
-                transform: 'rotate(-22.5deg)', 
-                transformOrigin: '50% 5%' 
-              }}
-            >
-              {/* Organic serrated warm-golden base plates */}
-              <path d="M 10,1 L 16,13 L 13,11.5 L 14.5,15.5 L 10,13.5 L 5.5,15.5 L 7,11.5 L 4,13 L 10,1 Z" fill="#F59E0B" stroke="#FBBF24" strokeWidth="1.5" />
-              {/* Bright glowing amber core insertion */}
-              <path d="M10 4L13.5 10.5L12 9.7L10 12.2L8 9.7L6.5 10.5L10 4Z" fill="#FEF3C7" opacity="0.88" />
-            </svg>
+
           </>
         )}
 
