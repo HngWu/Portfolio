@@ -46,16 +46,10 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
   const [isHidden, setIsHidden] = React.useState(false)
   const [showCloseConfirm, setShowCloseConfirm] = React.useState(false)
   
-  const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
+  const tileScrollRef = React.useRef<HTMLDivElement | null>(null)
+  const maxScrollRef = React.useRef<HTMLDivElement | null>(null)
   const tileInputRef = React.useRef<HTMLInputElement>(null)
   const maxInputRef = React.useRef<HTMLInputElement>(null)
-  
-  const setScrollRef = (node: HTMLDivElement | null) => {
-    scrollContainerRef.current = node
-    if (node) {
-      node.scrollTop = node.scrollHeight
-    }
-  }
   
   const handleMinimize = (e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -102,48 +96,62 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
 
   React.useEffect(() => {
     // Detect OS
-    const ua = window.navigator.userAgent
-    const timer = setTimeout(() => {
-      if (ua.includes("Win")) setOS("windows")
-      else if (ua.includes("Mac")) setOS("mac")
-      else setOS("linux")
+    const detectOS = (): OSType => {
+      const ua = (window.navigator.userAgent || "").toLowerCase()
+      const platform = (window.navigator.platform || "").toLowerCase()
+      const userAgentDataPlatform = (
+        (window.navigator as any).userAgentData?.platform || ""
+      ).toLowerCase()
 
-      // Welcome Message
-      setHistory([
-        { 
-          type: "output", 
-          content: ua.includes("Win")
-            ? "Microsoft Windows [Version 10.0.22631.3447]\n(c) Microsoft Corporation. All rights reserved." 
-            : `Welcome to HW OS v1.0.0 (${ua.includes("Mac") ? "Darwin" : "Linux"} kernel)` 
-        },
-        { type: "output", content: `Type 'help' to see available commands.` }
-      ])
-    }, 0)
-    return () => clearTimeout(timer)
+      const isWin = ua.includes("win") || platform.includes("win") || userAgentDataPlatform.includes("win")
+      const isMac = ua.includes("mac") || platform.includes("mac") || userAgentDataPlatform.includes("mac") || platform.includes("ipad") || platform.includes("iphone")
+      
+      if (isWin) return "windows"
+      if (isMac) return "mac"
+      return "linux"
+    }
+
+    const detected = detectOS()
+    setOS(detected)
+
+    // Welcome Message
+    setHistory([
+      { 
+        type: "output", 
+        content: detected === "windows"
+          ? "Microsoft Windows [Version 10.0.22631.3447]\n(c) Microsoft Corporation. All rights reserved." 
+          : `Welcome to HW OS v1.0.0 (${detected === "mac" ? "Darwin" : "Linux"} kernel)` 
+      },
+      { type: "output", content: `Type 'help' to see available commands.` }
+    ])
   }, [])
 
   React.useEffect(() => {
-    // Autofocus input only on desktop screens (width >= 1024px and not touch device)
-    const isDesktop = window.matchMedia("(min-width: 1024px)").matches && !window.matchMedia("(pointer: coarse)").matches
-    if (isDesktop) {
-      const timer = setTimeout(() => {
-        if (tileInputRef.current) {
-          tileInputRef.current.focus()
-        }
-      }, 150)
-      return () => clearTimeout(timer)
+    if (tileInputRef.current) {
+      tileInputRef.current.focus()
     }
   }, [])
 
   const scrollToBottom = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+    if (tileScrollRef.current) {
+      tileScrollRef.current.scrollTop = tileScrollRef.current.scrollHeight
+    }
+    if (maxScrollRef.current) {
+      maxScrollRef.current.scrollTop = maxScrollRef.current.scrollHeight
     }
   }
 
   React.useEffect(() => {
     scrollToBottom()
   }, [history])
+
+  React.useEffect(() => {
+    const activeInput = isMaximized ? maxInputRef.current : tileInputRef.current
+    if (activeInput) {
+      activeInput.focus()
+    }
+    scrollToBottom()
+  }, [isMaximized])
 
   const renderHelp = () => {
     const commonCmds = [
@@ -250,11 +258,20 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
       setHistory([...newHistory, { type: "output", content: BIO }])
     } else if (trimmedCmd.startsWith("open ")) {
       const url = cmd.replace("open ", "").trim()
-      setHistory([...newHistory, { type: "output", content: `Opening ${url}...` }])
-      if (url.startsWith("http")) {
-        window.open(url, "_blank")
+      let targetUrl = url
+      if (!targetUrl.startsWith("http")) {
+        if (targetUrl.startsWith("./")) {
+          targetUrl = targetUrl.slice(2)
+        }
+        if (!targetUrl.startsWith("/")) {
+          targetUrl = "/" + targetUrl
+        }
+      }
+      setHistory([...newHistory, { type: "output", content: `Opening ${targetUrl}...` }])
+      if (targetUrl.startsWith("http")) {
+        window.open(targetUrl, "_blank")
       } else {
-        navigateWithTransition(url)
+        navigateWithTransition(targetUrl)
       }
     } else if (trimmedCmd === "back") {
       if (pathname === "/") {
@@ -324,6 +341,7 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
 
   const renderHeaderAndBody = (maximized: boolean) => {
     const activeInputRef = maximized ? maxInputRef : tileInputRef
+    const activeScrollRef = maximized ? maxScrollRef : tileScrollRef
     return (
       <div className="flex flex-col h-full w-full relative">
         {/* Close Confirmation Overlay */}
@@ -453,9 +471,9 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
         
         {/* Terminal Body */}
         <div 
-          ref={setScrollRef}
+          ref={activeScrollRef}
           className={cn(
-            "flex-1 p-5 overflow-y-auto flex flex-col gap-1 [&::-webkit-scrollbar]:hidden w-full h-full font-mono text-base md:text-sm select-text cursor-text",
+            "flex-1 p-5 overflow-y-auto flex flex-col gap-1 scrollbar-none [&::-webkit-scrollbar]:hidden w-full h-full font-mono text-base md:text-sm select-text cursor-text",
             os === "windows" ? "bg-black" : "bg-transparent"
           )}
           onClick={() => activeInputRef.current?.focus()}
@@ -505,6 +523,9 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
         .animate-terminal-blink {
           animation: terminal-blink 1s step-end infinite;
         }
+        .scrollbar-none {
+          scrollbar-width: none;
+        }
       `}</style>
       <BentoTile 
         id={id} 
@@ -514,6 +535,7 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
         sortableProps={sortableProps}
         canDeepDive={false}
         layout={false}
+        noPadding={true}
       >
         {renderHeaderAndBody(false)}
       </BentoTile>

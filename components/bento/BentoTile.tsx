@@ -50,16 +50,7 @@ export function BentoTile({
   const backRef = React.useRef<HTMLDivElement>(null)
   const [isMobile, setIsMobile] = React.useState(false)
 
-  React.useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
-  }, [])
-
-  React.useLayoutEffect(() => {
+  const recalculateRows = React.useCallback(() => {
     if (isDeepDive && canExpand && canMorph && backRef.current) {
       // Base row height (60px) and gaps (8/12/16px) matching BentoGrid.tsx
       const rowHeight = 60
@@ -80,7 +71,21 @@ export function BentoTile({
     } else {
       setDynamicRows(null)
     }
-  }, [isDeepDive, canExpand, canMorph, deepContent, size])
+  }, [isDeepDive, canExpand, canMorph, size])
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+      recalculateRows()
+    }
+    handleResize()
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [recalculateRows])
+
+  React.useLayoutEffect(() => {
+    recalculateRows()
+  }, [recalculateRows, deepContent])
 
   const spanClass = getSizeClasses(size, canExpand && isDeepDive && !dynamicRows)
   const isClickable = !!href && !sortableProps && !isDragging
