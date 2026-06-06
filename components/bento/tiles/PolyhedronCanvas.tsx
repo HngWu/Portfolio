@@ -513,7 +513,8 @@ function GravityParticles() {
     return [pos, vel]
   }, [])
 
-  useFrame((_state, delta) => {
+  useFrame((_state, rawDelta) => {
+    const delta = Math.min(rawDelta, 0.1)
     const active = sharedSpellState.antigravity
     if (pointsRef.current) {
       pointsRef.current.visible = active
@@ -942,7 +943,8 @@ function PolyhedronScene({
 
   const currentMagneticTilt = useRef(new THREE.Euler(0, 0, 0))
 
-  useFrame((state, delta) => {
+  useFrame((state, rawDelta) => {
+    const delta = Math.min(rawDelta, 0.1)
     const t = state.clock.getElapsedTime()
     if (assemblyProgress < 1) setAssemblyProgress(prev => Math.min(1, prev + 0.01))
 
@@ -1478,9 +1480,10 @@ function PyramidFragment({
     return { geometry: geo, edgeGeo: new THREE.EdgesGeometry(geo), runeData }
   }, [data])
 
-  const currentRuneColor = useRef(new THREE.Color("#ffe875"))
+  const currentRuneColor = useRef(new THREE.Color("#ffb44a"))
 
-  useFrame((state, delta) => {
+  useFrame((state, rawDelta) => {
+    const delta = Math.min(rawDelta, 0.1)
     // Proximity swell calculation based on pointer raycast (100% Zero-Allocation)
     let proximityFactor = 0.0
     if (sharedSpellState.isHit && !sharedSpellState.antigravity) {
@@ -1734,7 +1737,6 @@ function PyramidFragment({
           ref={(el) => { textRefs.current[i] = el }}
           position={rd.pos}
           fontSize={0.28}
-          color="#ffb44a" // Matches golden Quick Pitch default
           // @ts-expect-error: Drei Text component might not expose toneMapped in some type definitions
           toneMapped={false}
           font="/fonts/NotoSansRunic-Regular.ttf"
@@ -1742,6 +1744,7 @@ function PyramidFragment({
           anchorY="middle"
           rotation={rd.rot}
         >
+          <meshBasicMaterial color="#ffb44a" toneMapped={false} />
           {rd.rune}
         </Text>
       ))}

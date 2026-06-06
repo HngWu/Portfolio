@@ -153,7 +153,8 @@ export const RunicDustStreams = ({ mode, count = 1500 }: { mode: 'quick-pitch' |
     return { positions: pos, randoms: rand, sizeMultipliers: sizes };
   }, [count]);
 
-  useFrame((state, delta) => {
+  useFrame((state, rawDelta) => {
+    const delta = Math.min(rawDelta, 0.1);
     runicDustUniforms.uTime.value = state.clock.getElapsedTime();
     
     let targetBlend = mode === 'quick-pitch' ? 0.0 : 1.0;

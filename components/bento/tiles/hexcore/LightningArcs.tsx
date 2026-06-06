@@ -63,7 +63,8 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
     return { posAttr, alpAttr };
   };
 
-  useFrame((state, delta) => {
+  useFrame((state, rawDelta) => {
+    const delta = Math.min(rawDelta, 0.1);
     // Immediate grid lockdown deactivation check
     if (sharedSpellState.lockdown) {
       if (active) {
