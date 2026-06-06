@@ -1779,11 +1779,9 @@ export default function PolyhedronCanvas({
       setIsMobile(window.innerWidth < 768)
     }
     checkMobile()
-    window.addEventListener("resize", checkMobile)
     const timer = setTimeout(() => setReady(true), 50)
     return () => {
       clearTimeout(timer)
-      window.removeEventListener("resize", checkMobile)
     }
   }, [])
 

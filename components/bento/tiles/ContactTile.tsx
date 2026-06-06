@@ -3,6 +3,7 @@
 import * as React from "react"
 import { BentoTile } from "../BentoTile"
 import { cn, getTypographyClasses } from "@/lib/utils"
+import { ForceMobileContext } from "../ForceMobileContext"
 import { Mail, Github, Linkedin, ExternalLink, Check, Copy, Key, Calendar, Clock } from "lucide-react"
 
 interface ContactTileProps {
@@ -185,8 +186,9 @@ export function ContactTile({
   isDragging,
   sortableProps
 }: ContactTileProps) {
-  const typo = getTypographyClasses(size, false)
-  const deepTypo = getTypographyClasses(size, true)
+  const forceMobile = React.useContext(ForceMobileContext)
+  const typo = getTypographyClasses(size, false, forceMobile)
+  const deepTypo = getTypographyClasses(size, true, forceMobile)
 
   const [copied, setCopied] = React.useState(false)
   

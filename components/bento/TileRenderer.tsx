@@ -3,6 +3,7 @@
 import * as React from "react"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { BentoTile } from "@/components/bento/BentoTile"
+import { ForceMobileContext } from "./ForceMobileContext"
 import { HeroTile } from "@/components/bento/tiles/HeroTile"
 import { ProjectTile } from "@/components/bento/tiles/ProjectTile"
 import { ExperienceTile } from "@/components/bento/tiles/ExperienceTile"
@@ -38,10 +39,11 @@ interface TileRendererProps {
 }
 
 export function TileRenderer({ tile, isDragging, sortableProps }: TileRendererProps) {
+  const forceMobile = React.useContext(ForceMobileContext)
   const content = tile.content as Record<string, unknown>
   const mode = useViewModeStore((state) => state.mode)
   const isDeepDive = mode === "deep"
-  const typo = getTypographyClasses(tile.size, isDeepDive)
+  const typo = getTypographyClasses(tile.size, isDeepDive, forceMobile)
   
   switch (tile.type) {
     case "hero":

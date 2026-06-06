@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function getSizeClasses(sizeKey: string, isDeepDive: boolean = false) {
+export function getSizeClasses(sizeKey: string, isDeepDive: boolean = false, forceMobile: boolean = false) {
   // If not deep dive, we return the strict mapping for the database size
   // If it is deep dive, we allow tiles to 'morph' by expanding their row-span
   
@@ -41,37 +41,51 @@ export function getSizeClasses(sizeKey: string, isDeepDive: boolean = false) {
     // Specials
     "2x4": isDeepDive ? "col-span-2 row-span-6 md:col-span-3 xl:col-span-2" : "col-span-2 row-span-4 md:col-span-3 xl:col-span-2",
   }
-  return base[sizeKey] || "col-span-2 row-span-2"
+  const classes = base[sizeKey] || "col-span-2 row-span-2"
+  if (forceMobile) {
+    return classes.split(' ').filter(c => !c.startsWith('md:') && !c.startsWith('xl:')).join(' ')
+  }
+  return classes
 }
 
-export function getTypographyClasses(sizeKey: string, isDeepDive: boolean = false) {
+export function getTypographyClasses(sizeKey: string, isDeepDive: boolean = false, forceMobile: boolean = false) {
   // Returns classes for [heading, body, metadata]
   const isSmall = ["1x1", "2x1"].includes(sizeKey)
   const isMedium = ["2x2", "3x2", "4x2"].includes(sizeKey)
 
+  let classesObj;
   if (isSmall) {
-    return {
+    classesObj = {
       heading: isDeepDive ? "text-base md:text-lg font-display" : "text-base md:text-lg font-display",
       body: "text-[10px] md:text-xs leading-relaxed",
       meta: "text-[9px] font-mono",
       icon: "size-3.5"
     }
-  }
-
-  if (isMedium) {
-    return {
+  } else if (isMedium) {
+    classesObj = {
       heading: isDeepDive ? "text-lg md:text-xl font-display" : "text-xl md:text-2xl font-display",
       body: "text-xs md:text-sm leading-relaxed",
       meta: "text-[10px] font-mono",
       icon: "size-4.5"
     }
+  } else {
+    // Large or default
+    classesObj = {
+      heading: isDeepDive ? "text-xl md:text-2xl font-display" : "text-2xl md:text-3xl font-display",
+      body: "text-sm md:text-base leading-relaxed",
+      meta: "text-xs font-mono",
+      icon: "size-5"
+    }
   }
 
-  // Large or default
-  return {
-    heading: isDeepDive ? "text-xl md:text-2xl font-display" : "text-2xl md:text-3xl font-display",
-    body: "text-sm md:text-base leading-relaxed",
-    meta: "text-xs font-mono",
-    icon: "size-5"
+  if (forceMobile) {
+    const strip = (s: string) => s.split(' ').filter(c => !c.startsWith('md:') && !c.startsWith('xl:')).join(' ')
+    return {
+      heading: strip(classesObj.heading),
+      body: strip(classesObj.body),
+      meta: strip(classesObj.meta),
+      icon: strip(classesObj.icon)
+    }
   }
+  return classesObj;
 }

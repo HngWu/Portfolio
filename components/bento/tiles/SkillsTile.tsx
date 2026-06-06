@@ -3,6 +3,7 @@
 import * as React from "react"
 import { BentoTile } from "../BentoTile"
 import { cn, getTypographyClasses } from "@/lib/utils"
+import { ForceMobileContext } from "../ForceMobileContext"
 import { Cpu, Terminal, Braces, Brain, Code2 } from "lucide-react"
 
 interface SkillsTileProps {
@@ -235,8 +236,9 @@ function getTechTagInfo(tag: string): TechTagInfo {
 }
 
 export function SkillsTile({ id, size, tags, isDragging, sortableProps }: SkillsTileProps) {
-  const typo = getTypographyClasses(size, false)
-  const deepTypo = getTypographyClasses(size, true)
+  const forceMobile = React.useContext(ForceMobileContext)
+  const typo = getTypographyClasses(size, false, forceMobile)
+  const deepTypo = getTypographyClasses(size, true, forceMobile)
 
   const categorizedSkills = [
     {

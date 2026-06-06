@@ -10,7 +10,9 @@ import {
   Database as DbIcon, 
   Layout
 } from "lucide-react"
+import * as React from "react"
 import { cn, getTypographyClasses } from "@/lib/utils"
+import { ForceMobileContext } from "../ForceMobileContext"
 import { Json } from "@/types/supabase"
 
 interface ExperienceTileProps {
@@ -28,7 +30,8 @@ interface ExperienceTileProps {
 export function ExperienceTile({ id, size, role, company, date, highlights = [], deepDive, isDragging, sortableProps }: ExperienceTileProps) {
   const mode = useViewModeStore((state) => state.mode)
   const isDeepDive = mode === "deep"
-  const typo = getTypographyClasses(size, isDeepDive)
+  const forceMobile = React.useContext(ForceMobileContext)
+  const typo = getTypographyClasses(size, isDeepDive, forceMobile)
 
   // Mapping for category icons
   const getHighlightIcon = (title: string, className: string) => {

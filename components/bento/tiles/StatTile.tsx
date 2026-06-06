@@ -1,6 +1,8 @@
+import * as React from "react"
 import { BentoTile } from "../BentoTile"
 import { GraduationCap, Zap, LayoutGrid, BarChart3 } from "lucide-react"
 import { cn, getTypographyClasses } from "@/lib/utils"
+import { ForceMobileContext } from "../ForceMobileContext"
 
 export function StatTile({ 
   id, 
@@ -19,7 +21,8 @@ export function StatTile({
   isDragging?: boolean
   sortableProps?: Record<string, unknown> 
 }) {
-  const typo = getTypographyClasses(size, false)
+  const forceMobile = React.useContext(ForceMobileContext)
+  const typo = getTypographyClasses(size, false, forceMobile)
 
   const deep = deepDive as Record<string, unknown> | null
   const deepValue = deep?.value as string | number | undefined

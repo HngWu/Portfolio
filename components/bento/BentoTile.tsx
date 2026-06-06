@@ -3,6 +3,7 @@
 import * as React from "react"
 import { cn, getSizeClasses } from "@/lib/utils"
 import { GlassCard } from "@/components/ui/GlassCard"
+import { ForceMobileContext } from "./ForceMobileContext"
 import { usePageTransition } from "@/hooks/usePageTransition"
 import { useTilt } from "./useTilt"
 import { useViewModeStore } from "@/store/useViewModeStore"
@@ -45,10 +46,12 @@ export function BentoTile({
   const { ref, onMouseMove, onMouseLeave } = useTilt()
   const mode = useViewModeStore((state) => state.mode)
   const isDeepDive = mode === "deep" && canDeepDive
+  const forceMobile = React.useContext(ForceMobileContext)
   
   const [dynamicRows, setDynamicRows] = React.useState<number | null>(null)
   const backRef = React.useRef<HTMLDivElement>(null)
   const [isMobile, setIsMobile] = React.useState(false)
+  const isMobileOverride = forceMobile || isMobile
 
   const recalculateRows = React.useCallback(() => {
     if (isDeepDive && canExpand && canMorph && backRef.current) {
@@ -87,7 +90,7 @@ export function BentoTile({
     recalculateRows()
   }, [recalculateRows, deepContent])
 
-  const spanClass = getSizeClasses(size, canExpand && isDeepDive && !dynamicRows)
+  const spanClass = getSizeClasses(size, canExpand && isDeepDive && !dynamicRows, forceMobile)
   const isClickable = !!href && !sortableProps && !isDragging
 
   const handleClick = () => {
@@ -102,7 +105,7 @@ export function BentoTile({
 
   return (
     <motion.div
-      layout={isMobile ? false : layout}
+      layout={isMobileOverride ? false : layout}
       whileHover={!sortableProps ? { scale: 1.01, translateY: -4 } : undefined}
       transition={{ 
         layout: { duration: 0.6, ease: [0.4, 0, 0.2, 1] },
@@ -111,11 +114,11 @@ export function BentoTile({
       }}
       style={{
         ...(dynamicRows ? { gridRow: `span ${dynamicRows}` } : {}),
-        ...(isMobile ? { gridRow: "auto" } : {})
+        ...(isMobileOverride ? { gridRow: "auto" } : {})
       }}
       className={cn(
         spanClass, 
-        isMobile ? "h-auto" : "h-full",
+        isMobileOverride ? "h-auto" : "h-full",
         "perspective-[1500px]", 
         isDragging ? "touch-none opacity-30" : "touch-pan-y"
       )}
@@ -124,10 +127,10 @@ export function BentoTile({
       <motion.div
         animate={{ rotateY: isDeepDive ? 180 : 0 }}
         transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-        className={cn("relative w-full preserve-3d", isMobile ? "h-auto" : "h-full")}
+        className={cn("relative w-full preserve-3d", isMobileOverride ? "h-auto" : "h-full")}
       >
         {/* Front Face (Quick Pitch) */}
-        <div className={cn("backface-hidden z-10 w-full", isMobile ? (isDeepDive ? "absolute inset-0 h-0 overflow-hidden" : "relative h-auto") : "absolute inset-0 h-full")}>
+        <div className={cn("backface-hidden z-10 w-full", isMobileOverride ? (isDeepDive ? "absolute inset-0 h-0 overflow-hidden" : "relative h-auto") : "absolute inset-0 h-full")}>
           <GlassCard
             ref={ref}
             onMouseMove={onMouseMove}
@@ -139,7 +142,7 @@ export function BentoTile({
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
               "flex flex-col",
-              isMobile ? "h-auto" : "h-full",
+              isMobileOverride ? "h-auto" : "h-full",
               isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
               className
             )}
@@ -155,7 +158,7 @@ export function BentoTile({
         </div>
 
         {/* Back Face (Deep Dive) */}
-        <div className={cn("backface-hidden rotate-y-180 z-0 w-full", isMobile ? (isDeepDive ? "relative h-auto" : "absolute inset-0 h-0 overflow-hidden") : "absolute inset-0 h-full")}>
+        <div className={cn("backface-hidden rotate-y-180 z-0 w-full", isMobileOverride ? (isDeepDive ? "relative h-auto" : "absolute inset-0 h-0 overflow-hidden") : "absolute inset-0 h-full")}>
           <GlassCard
             glowColor={glowColor}
             onClick={handleClick}
@@ -163,7 +166,7 @@ export function BentoTile({
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
               "flex flex-col bg-lume-secondary/5 border-lume-secondary/20",
-              isMobile ? "h-auto" : "h-full",
+              isMobileOverride ? "h-auto" : "h-full",
               isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
               className
             )}

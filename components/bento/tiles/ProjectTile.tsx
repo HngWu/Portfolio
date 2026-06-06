@@ -4,7 +4,9 @@ import { BentoTile } from "../BentoTile"
 import { Badge } from "@/components/ui/Badge"
 import { useViewModeStore } from "@/store/useViewModeStore"
 import { FolderGit2 } from "lucide-react"
+import * as React from "react"
 import { cn, getTypographyClasses } from "@/lib/utils"
+import { ForceMobileContext } from "../ForceMobileContext"
 import { Json } from "@/types/supabase"
 
 interface ProjectTileProps {
@@ -21,7 +23,8 @@ interface ProjectTileProps {
 export function ProjectTile({ id, size, name, description, tags, deepDiveContent, isDragging, sortableProps }: ProjectTileProps) {
   const mode = useViewModeStore((state) => state.mode)
   const isDeepDive = mode === "deep"
-  const typo = getTypographyClasses(size, isDeepDive)
+  const forceMobile = React.useContext(ForceMobileContext)
+  const typo = getTypographyClasses(size, isDeepDive, forceMobile)
 
   // Safely extract deep dive notes
   const notes = typeof deepDiveContent === 'string' 

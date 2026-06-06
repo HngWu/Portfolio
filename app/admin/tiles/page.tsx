@@ -8,6 +8,7 @@ import { Plus, Save, RotateCcw, Check, Loader2, MousePointer2, Settings2, EyeOff
 import { Database } from "@/types/supabase"
 import { BentoGrid } from "@/components/bento/BentoGrid"
 import { TileRenderer } from "@/components/bento/TileRenderer"
+import { ForceMobileContext } from "@/components/bento/ForceMobileContext"
 
 import {
   DndContext,
@@ -247,21 +248,23 @@ export default function TilesPage() {
               "w-full h-fit transition-all duration-500",
               layoutMode === 'mobile' && "max-w-[500px] mx-auto border border-white/10 p-6 rounded-[40px] bg-black/40 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative ring-8 ring-white/5 transition-all duration-500"
             )}>
-              <SortableContext items={sortedTiles.map(t => t.id)} strategy={rectSortingStrategy}>
-                <BentoGrid className={cn(layoutMode === 'mobile' && "grid-cols-2 md:grid-cols-2 xl:grid-cols-2 max-w-[480px]")}>
-                  {sortedTiles.map((tile, index) => (
-                    <SortablePreviewTile 
-                      key={tile.id} 
-                      tile={{ 
-                        ...tile, 
-                        order_val: layoutMode === 'desktop' ? index + 1 : tile.order_val,
-                        order_val_mobile: layoutMode === 'mobile' ? index + 1 : tile.order_val_mobile
-                      }} 
-                      onClick={() => router.push(`/admin/tiles/${tile.id}`)}
-                    />
-                  ))}
-                </BentoGrid>
-              </SortableContext>
+              <ForceMobileContext.Provider value={layoutMode === 'mobile'}>
+                <SortableContext items={sortedTiles.map(t => t.id)} strategy={rectSortingStrategy}>
+                  <BentoGrid className={cn(layoutMode === 'mobile' && "grid-cols-2 md:grid-cols-2 xl:grid-cols-2 max-w-[480px]")}>
+                    {sortedTiles.map((tile, index) => (
+                      <SortablePreviewTile 
+                        key={tile.id} 
+                        tile={{ 
+                          ...tile, 
+                          order_val: layoutMode === 'desktop' ? index + 1 : tile.order_val,
+                          order_val_mobile: layoutMode === 'mobile' ? index + 1 : tile.order_val_mobile
+                        }} 
+                        onClick={() => router.push(`/admin/tiles/${tile.id}`)}
+                      />
+                    ))}
+                  </BentoGrid>
+                </SortableContext>
+              </ForceMobileContext.Provider>
             </div>
 
             <DragOverlay dropAnimation={{
@@ -270,7 +273,7 @@ export default function TilesPage() {
               }),
             }}>
               {activeTile ? (
-                <div className={cn("opacity-90 cursor-grabbing h-full w-full shadow-2xl", getSizeClasses(activeTile.size))}>
+                <div className={cn("opacity-90 cursor-grabbing h-full w-full shadow-2xl", getSizeClasses(activeTile.size, false, layoutMode === 'mobile'))}>
                   <TileRenderer tile={activeTile} isDragging={true} />
                 </div>
               ) : null}
@@ -340,6 +343,7 @@ interface SortablePreviewTileProps {
 }
 
 function SortablePreviewTile({ tile, onClick }: SortablePreviewTileProps) {
+  const forceMobile = React.useContext(ForceMobileContext)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tile.id })
   const sortableProps = {
     ref: setNodeRef, ...attributes, ...listeners,
@@ -355,7 +359,7 @@ function SortablePreviewTile({ tile, onClick }: SortablePreviewTileProps) {
   return (
     <div className={cn(
       "relative group/tile h-full cursor-pointer", 
-      getSizeClasses(tile.size),
+      getSizeClasses(tile.size, false, forceMobile),
       tile.is_hidden && "opacity-40 grayscale-[0.5]"
     )}>
       <TileRenderer tile={tile} isDragging={isDragging} sortableProps={sortableProps} />
