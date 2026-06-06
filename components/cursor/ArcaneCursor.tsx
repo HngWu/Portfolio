@@ -136,6 +136,7 @@ export function ArcaneCursor() {
   useEffect(() => {
     if (!isActive) return
     const handleMouseDown = (e: MouseEvent) => {
+      if (e.button !== 0) return
       clickIdCounter.current += 1
       clickEffectsRef.current.push({
         id: clickIdCounter.current,
@@ -261,6 +262,90 @@ export function ArcaneCursor() {
 
         // Remove expired particles
         particlesRef.current = particlesRef.current.filter(p => p.age < p.maxAge)
+
+        // Update and draw active click effects
+        clickEffectsRef.current.forEach((effect) => {
+          effect.age += 0.016
+          const p = Math.min(1.0, effect.age / effect.maxAge)
+          const opacity = 1.0 - p
+
+          ctx.save()
+          ctx.globalCompositeOperation = 'screen'
+
+          if (!effect.isDeep) {
+            // Magic Mode: Hexagram Fracture
+            const radius = 10 + p * 50 // expand outward
+            const angle = p * Math.PI // rotate as it expands
+            
+            ctx.strokeStyle = `rgba(251, 191, 36, ${opacity})`
+            ctx.lineWidth = 1.5
+            ctx.shadowBlur = 10 * opacity
+            ctx.shadowColor = '#FBBF24'
+
+            // Equilateral Triangle 1 (pointing up)
+            ctx.beginPath()
+            for (let i = 0; i < 3; i++) {
+              const theta = angle + (i * 2 * Math.PI / 3) - Math.PI / 2
+              const hx = effect.x + radius * Math.cos(theta)
+              const hy = effect.y + radius * Math.sin(theta)
+              if (i === 0) ctx.moveTo(hx, hy)
+              else ctx.lineTo(hx, hy)
+            }
+            ctx.closePath()
+            ctx.stroke()
+
+            // Equilateral Triangle 2 (pointing down)
+            ctx.beginPath()
+            for (let i = 0; i < 3; i++) {
+              const theta = angle + (i * 2 * Math.PI / 3) + Math.PI / 2
+              const hx = effect.x + radius * Math.cos(theta)
+              const hy = effect.y + radius * Math.sin(theta)
+              if (i === 0) ctx.moveTo(hx, hy)
+              else ctx.lineTo(hx, hy)
+            }
+            ctx.closePath()
+            ctx.stroke()
+
+          } else {
+            // Tech Mode: HUD Bracket Burst
+            const radius = 15 + p * 45 // expand outward
+            const len = 6 // length of bracket arms
+            
+            ctx.strokeStyle = `rgba(59, 130, 246, ${opacity})`
+            ctx.lineWidth = 1.5
+            ctx.shadowBlur = 8 * opacity
+            ctx.shadowColor = '#0055FF'
+
+            ctx.beginPath()
+            // Top-Left Corner
+            ctx.moveTo(effect.x - radius, effect.y - radius + len)
+            ctx.lineTo(effect.x - radius, effect.y - radius)
+            ctx.lineTo(effect.x - radius + len, effect.y - radius)
+
+            // Top-Right Corner
+            ctx.moveTo(effect.x + radius, effect.y - radius + len)
+            ctx.lineTo(effect.x + radius, effect.y - radius)
+            ctx.lineTo(effect.x + radius - len, effect.y - radius)
+
+            // Bottom-Left Corner
+            ctx.moveTo(effect.x - radius, effect.y + radius - len)
+            ctx.lineTo(effect.x - radius, effect.y + radius)
+            ctx.lineTo(effect.x - radius + len, effect.y + radius)
+
+            // Bottom-Right Corner
+            ctx.moveTo(effect.x + radius, effect.y + radius - len)
+            ctx.lineTo(effect.x + radius, effect.y + radius)
+            ctx.lineTo(effect.x + radius - len, effect.y + radius)
+            ctx.stroke()
+          }
+
+          ctx.restore()
+        })
+
+        // Remove expired click effects
+        if (clickEffectsRef.current.length > 0) {
+          clickEffectsRef.current = clickEffectsRef.current.filter((effect) => effect.age < effect.maxAge)
+        }
 
         // Spawn new particles based on distance traveled
         const dx = smoothedMouseRef.current.x - lastSpawnPos.current.x
