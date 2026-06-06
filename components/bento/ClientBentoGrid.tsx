@@ -20,14 +20,12 @@ export default function ClientBentoGrid({
   const [isMobile, setIsMobile] = React.useState(false)
 
   React.useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => {
-      window.removeEventListener("resize", checkMobile)
-    }
+    const mediaQuery = window.matchMedia("(max-width: 767px)")
+    setIsMobile(mediaQuery.matches)
+
+    const listener = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mediaQuery.addEventListener("change", listener)
+    return () => mediaQuery.removeEventListener("change", listener)
   }, [])
 
   const sortedTiles = React.useMemo(() => {
@@ -38,8 +36,8 @@ export default function ClientBentoGrid({
 
     return filtered.sort((a, b) => {
       if (isMobile) {
-        const valA = a.order_val_mobile || a.order_val
-        const valB = b.order_val_mobile || b.order_val
+        const valA = a.order_val_mobile ?? a.order_val
+        const valB = b.order_val_mobile ?? b.order_val
         if (valA === valB) {
           return a.order_val - b.order_val
         }
