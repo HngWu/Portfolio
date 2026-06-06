@@ -4,7 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { cn, getSizeClasses } from "@/lib/utils"
 import { getTiles, updateTiles } from "@/app/actions/tiles"
-import { Plus, Save, RotateCcw, Check, Loader2, MousePointer2, Settings2, EyeOff } from "lucide-react"
+import { Plus, Save, RotateCcw, Check, Loader2, MousePointer2, Settings2, EyeOff, Monitor, Smartphone } from "lucide-react"
 import { Database } from "@/types/supabase"
 import { BentoGrid } from "@/components/bento/BentoGrid"
 import { TileRenderer } from "@/components/bento/TileRenderer"
@@ -36,6 +36,7 @@ export default function TilesPage() {
   const router = useRouter()
   const [tiles, setTiles] = React.useState<TileRowType[]>([])
   const [initialTiles, setInitialTiles] = React.useState<TileRowType[]>([])
+  const [layoutMode, setLayoutMode] = React.useState<'desktop' | 'mobile'>('desktop')
   const [activeId, setActiveId] = React.useState<UniqueIdentifier | null>(null)
   const [isSaving, setIsSaving] = React.useState(false)
   const [saveStatus, setSaveStatus] = React.useState<'idle' | 'saving' | 'success'>('idle')
@@ -73,23 +74,59 @@ export default function TilesPage() {
     }
   }, [load])
 
+  const sortedTiles = React.useMemo(() => {
+    return [...tiles].sort((a, b) => {
+      if (layoutMode === 'mobile') {
+        const valA = a.order_val_mobile ?? a.order_val
+        const valB = b.order_val_mobile ?? b.order_val
+        if (valA === valB) {
+          return a.order_val - b.order_val
+        }
+        return valA - valB
+      } else {
+        return a.order_val - b.order_val
+      }
+    })
+  }, [tiles, layoutMode])
+
   const hasChanges = React.useMemo(() => {
     if (tiles.length !== initialTiles.length) return true
-    const orderChanged = tiles.some((t, i) => t.id !== initialTiles[i].id)
-    if (orderChanged) return true
-    const visibilityChanged = tiles.some((t, i) => t.is_hidden !== initialTiles[i].is_hidden)
-    if (visibilityChanged) return true
-    return false
+    const initialTilesMap = new Map(initialTiles.map(t => [t.id, t]))
+    
+    return tiles.some(tile => {
+      const initial = initialTilesMap.get(tile.id)
+      if (!initial) return true
+      return (
+        tile.order_val !== initial.order_val ||
+        tile.order_val_mobile !== initial.order_val_mobile ||
+        tile.is_hidden !== initial.is_hidden
+      )
+    })
   }, [tiles, initialTiles])
 
   const handleSaveLayout = async () => {
     setSaveStatus('saving')
     setIsSaving(true)
     try {
-      const updatedTiles = tiles.map((tile, index) => ({
+      const desktopSorted = [...tiles].sort((a, b) => a.order_val - b.order_val)
+      const desktopOrder = new Map(desktopSorted.map((t, idx) => [t.id, idx + 1]))
+
+      const mobileSorted = [...tiles].sort((a, b) => {
+        const valA = a.order_val_mobile ?? a.order_val
+        const valB = b.order_val_mobile ?? b.order_val
+        if (valA === valB) {
+          return a.order_val - b.order_val
+        }
+        return valA - valB
+      })
+      const mobileOrder = new Map(mobileSorted.map((t, idx) => [t.id, idx + 1]))
+
+      const updatedTiles = tiles.map(tile => ({
         ...tile,
-        order_val: index + 1
+        order_val: desktopOrder.get(tile.id)!,
+        order_val_mobile: mobileOrder.get(tile.id)!
       }))
+
       await updateTiles(updatedTiles)
       
       const refreshedTiles = await getTiles()
@@ -114,13 +151,28 @@ export default function TilesPage() {
   }
 
   const handleDragStart = (event: DragStartEvent) => setActiveId(event.active.id)
+  
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     setActiveId(null)
     if (over && active.id !== over.id) {
-      const oldIndex = tiles.findIndex((t) => t.id === active.id)
-      const newIndex = tiles.findIndex((t) => t.id === over.id)
-      setTiles(arrayMove(tiles, oldIndex, newIndex))
+      const oldIndex = sortedTiles.findIndex((t) => t.id === active.id)
+      const newIndex = sortedTiles.findIndex((t) => t.id === over.id)
+      
+      const newSorted = arrayMove(sortedTiles, oldIndex, newIndex)
+      
+      const updatedTiles = tiles.map(tile => {
+        const sortedIdx = newSorted.findIndex(t => t.id === tile.id)
+        if (sortedIdx !== -1) {
+          return {
+            ...tile,
+            order_val: layoutMode === 'desktop' ? sortedIdx + 1 : tile.order_val,
+            order_val_mobile: layoutMode === 'mobile' ? sortedIdx + 1 : tile.order_val_mobile
+          }
+        }
+        return tile
+      })
+      setTiles(updatedTiles)
     }
   }
 
@@ -143,13 +195,44 @@ export default function TilesPage() {
       </div>
 
       <section className="space-y-4">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-sm font-mono text-white/30 uppercase tracking-widest flex items-center gap-2">
-            Canvas Editor
-          </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-1">
+          <div className="flex items-center gap-4">
+            <h2 className="text-sm font-mono text-white/30 uppercase tracking-widest flex items-center gap-2">
+              Canvas Editor
+            </h2>
+            <div className="flex p-0.5 bg-white/5 border border-white/10 rounded-xl backdrop-blur-md">
+              <button
+                type="button"
+                onClick={() => setLayoutMode('desktop')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-1.5 text-xs font-mono font-bold uppercase tracking-wider rounded-lg transition-all duration-300",
+                  layoutMode === 'desktop'
+                    ? "bg-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/5"
+                    : "text-white/40 hover:text-white/80 border border-transparent"
+                )}
+              >
+                <Monitor className="w-3.5 h-3.5" />
+                Desktop Layout
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayoutMode('mobile')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-1.5 text-xs font-mono font-bold uppercase tracking-wider rounded-lg transition-all duration-300",
+                  layoutMode === 'mobile'
+                    ? "bg-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/5"
+                    : "text-white/40 hover:text-white/80 border border-transparent"
+                )}
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                Mobile Layout
+              </button>
+            </div>
+          </div>
+          
           <div className="flex items-center gap-2 text-[10px] text-white/20 font-mono italic">
             <MousePointer2 className="size-3" />
-            <span>Actual size (1:1 scale)</span>
+            <span>{layoutMode === 'mobile' ? 'Mobile Simulation (scrollable)' : 'Actual size (1:1 scale)'}</span>
           </div>
         </div>
         
@@ -160,13 +243,20 @@ export default function TilesPage() {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="w-full h-fit">
-              <SortableContext items={tiles.map(t => t.id)} strategy={rectSortingStrategy}>
-                <BentoGrid>
-                  {tiles.map((tile, index) => (
+            <div className={cn(
+              "w-full h-fit transition-all duration-500",
+              layoutMode === 'mobile' && "max-w-[500px] mx-auto border border-white/10 p-6 rounded-[40px] bg-black/40 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative ring-8 ring-white/5 transition-all duration-500"
+            )}>
+              <SortableContext items={sortedTiles.map(t => t.id)} strategy={rectSortingStrategy}>
+                <BentoGrid className={cn(layoutMode === 'mobile' && "grid-cols-2 md:grid-cols-2 xl:grid-cols-2 max-w-[480px]")}>
+                  {sortedTiles.map((tile, index) => (
                     <SortablePreviewTile 
                       key={tile.id} 
-                      tile={{ ...tile, order_val: index + 1 }} 
+                      tile={{ 
+                        ...tile, 
+                        order_val: layoutMode === 'desktop' ? index + 1 : tile.order_val,
+                        order_val_mobile: layoutMode === 'mobile' ? index + 1 : tile.order_val_mobile
+                      }} 
                       onClick={() => router.push(`/admin/tiles/${tile.id}`)}
                     />
                   ))}
