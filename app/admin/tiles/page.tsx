@@ -250,7 +250,7 @@ export default function TilesPage() {
             )}>
               <ForceMobileContext.Provider value={layoutMode === 'mobile'}>
                 <SortableContext items={sortedTiles.map(t => t.id)} strategy={rectSortingStrategy}>
-                  <BentoGrid className={cn(layoutMode === 'mobile' && "grid-cols-2 md:grid-cols-2 xl:grid-cols-2 max-w-[480px]")}>
+                  <BentoGrid className={cn(layoutMode === 'mobile' && "max-w-[480px]")}>
                     {sortedTiles.map((tile, index) => (
                       <SortablePreviewTile 
                         key={tile.id} 
