@@ -33,6 +33,7 @@ export function Hero3DTile({ id, size, isDragging, sortableProps }: { id: string
       canDeepDive={false}
       canMorph={false}
       noPadding={true}
+      forceFullHeight={true}
     >
       <div 
         className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none rounded-2xl overflow-hidden"
