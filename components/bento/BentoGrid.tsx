@@ -4,6 +4,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { useIgniteStore } from "@/store/useIgniteStore"
 import gsap from "gsap"
+import { ForceMobileContext } from "./ForceMobileContext"
 
 export function BentoGrid({
   className,
@@ -13,6 +14,7 @@ export function BentoGrid({
   children: React.ReactNode
 }) {
   const { isIgnited } = useIgniteStore()
+  const forceMobile = React.useContext(ForceMobileContext)
   const gridRef = React.useRef<HTMLDivElement>(null)
   const flashRef = React.useRef<HTMLDivElement>(null)
   const prevIgnited = React.useRef(isIgnited)
@@ -58,6 +60,16 @@ export function BentoGrid({
     prevIgnited.current = isIgnited
   }, [isIgnited])
 
+  const baseGridClasses =
+    "grid grid-cols-2 md:grid-cols-6 xl:grid-cols-12 auto-rows-[minmax(60px,auto)] grid-flow-dense gap-2 md:gap-3 xl:gap-4 max-w-[1440px] mx-auto w-full px-2"
+
+  const gridClasses = forceMobile
+    ? baseGridClasses
+        .split(" ")
+        .filter((c) => !c.startsWith("md:") && !c.startsWith("xl:"))
+        .join(" ")
+    : baseGridClasses
+
   return (
     <div className="relative">
       {/* Flash Overlay */}
@@ -69,7 +81,7 @@ export function BentoGrid({
       <div className="w-full relative" ref={gridRef}>
         <div
           className={cn(
-            "grid grid-cols-2 md:grid-cols-6 xl:grid-cols-12 auto-rows-[minmax(60px,auto)] grid-flow-dense gap-2 md:gap-3 xl:gap-4 max-w-[1440px] mx-auto w-full px-2",
+            gridClasses,
             className
           )}
         >
