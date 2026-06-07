@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import { useState } from "react"
 import { BentoTile } from "../BentoTile"
 import dynamic from "next/dynamic"
@@ -49,13 +48,6 @@ export function Hero3DTile({ id, size, isDragging, sortableProps }: { id: string
             <PolyhedronCanvas isHovered={isHovered} isDeepDive={isDeepDive} />
           </div>
         )}
-      </div>
-
-      <div className="absolute top-6 left-6 z-10 pointer-events-none select-none">
-        {/* <div className="text-[0.6875rem] font-mono tracking-[0.3em] text-lume-primary uppercase opacity-60 flex items-center gap-2">
-          <div className={cn("size-1.5 rounded-full bg-lume-primary", isHovered && "animate-ping")} />
-          Deconstructed Core
-        </div> */}
       </div>
     </BentoTile>
   )
