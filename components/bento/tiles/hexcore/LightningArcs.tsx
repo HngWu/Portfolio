@@ -34,7 +34,7 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
         const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
         const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
         const up = new THREE.Vector3(0, 1, 0);
-        let tangent = new THREE.Vector3().crossVectors(dir, up).normalize();
+        const tangent = new THREE.Vector3().crossVectors(dir, up).normalize();
         if (tangent.lengthSq() < 0.1) tangent.set(1, 0, 0);
         const angle = Math.random() * Math.PI * 2;
         tangent.applyAxisAngle(dir, angle);

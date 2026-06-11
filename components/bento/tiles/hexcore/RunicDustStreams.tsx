@@ -136,44 +136,51 @@ export const RunicDustStreams = ({ mode, count = 1500 }: { mode: 'quick-pitch' |
   }), []);
 
   const { positions, randoms, sizeMultipliers } = useMemo(() => {
+    let seed = 42;
+    function pseudoRandom() {
+      const x = Math.sin(seed++) * 10000;
+      return x - Math.floor(x);
+    }
     const pos = new Float32Array(count * 3);
     const rand = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
     const ringRadius = 1.6;
     for (let i = 0; i < count; i++) {
       const angle = (i / count) * Math.PI * 2;
-      pos[i * 3 + 0] = Math.cos(angle) * ringRadius + (Math.random() - 0.5) * 0.15;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 0.3;
-      pos[i * 3 + 2] = Math.sin(angle) * ringRadius + (Math.random() - 0.5) * 0.15;
-      rand[i * 3 + 0] = Math.random();
-      rand[i * 3 + 1] = Math.random();
-      rand[i * 3 + 2] = Math.random();
-      sizes[i] = 0.2 + Math.random() * 0.8;
+      pos[i * 3 + 0] = Math.cos(angle) * ringRadius + (pseudoRandom() - 0.5) * 0.15;
+      pos[i * 3 + 1] = (pseudoRandom() - 0.5) * 0.3;
+      pos[i * 3 + 2] = Math.sin(angle) * ringRadius + (pseudoRandom() - 0.5) * 0.15;
+      rand[i * 3 + 0] = pseudoRandom();
+      rand[i * 3 + 1] = pseudoRandom();
+      rand[i * 3 + 2] = pseudoRandom();
+      sizes[i] = 0.2 + pseudoRandom() * 0.8;
     }
     return { positions: pos, randoms: rand, sizeMultipliers: sizes };
   }, [count]);
 
   useFrame((state, rawDelta) => {
     const delta = Math.min(rawDelta, 0.1);
-    runicDustUniforms.uTime.value = state.clock.getElapsedTime();
-    
-    let targetBlend = mode === 'quick-pitch' ? 0.0 : 1.0;
-    if (sharedSpellState.ignite) targetBlend = 1.0;
+    if (materialRef.current) {
+      materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime();
+      
+      let targetBlend = mode === 'quick-pitch' ? 0.0 : 1.0;
+      if (sharedSpellState.ignite) targetBlend = 1.0;
 
-    runicDustUniforms.uModeBlend.value = THREE.MathUtils.lerp(
-      runicDustUniforms.uModeBlend.value,
-      targetBlend,
-      0.05
-    );
+      materialRef.current.uniforms.uModeBlend.value = THREE.MathUtils.lerp(
+        materialRef.current.uniforms.uModeBlend.value,
+        targetBlend,
+        0.05
+      );
 
-    let speedFactor = 0.3;
-    if (sharedSpellState.lockdown) speedFactor = 0.0;
-    else if (sharedSpellState.ignite) speedFactor = 1.2;
-    runicDustUniforms.uSpeed.value = THREE.MathUtils.lerp(
-      runicDustUniforms.uSpeed.value,
-      speedFactor,
-      delta * 6.0
-    );
+      let speedFactor = 0.3;
+      if (sharedSpellState.lockdown) speedFactor = 0.0;
+      else if (sharedSpellState.ignite) speedFactor = 1.2;
+      materialRef.current.uniforms.uSpeed.value = THREE.MathUtils.lerp(
+        materialRef.current.uniforms.uSpeed.value,
+        speedFactor,
+        delta * 6.0
+      );
+    }
   });
 
   return (
