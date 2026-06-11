@@ -71,7 +71,7 @@ export function ArcaneCursor() {
   const glRef = useRef<WebGLRenderingContext | null>(null)
   const programRef = useRef<WebGLProgram | null>(null)
   const animationWebGLRef = useRef<number | null>(null)
-  const startTimeRef = useRef<number>(Date.now())
+  const startTimeRef = useRef<number | null>(null)
   const hoverValRef = useRef<number>(0)
   const transitionValRef = useRef<number>(isDeep ? 1 : 0)
 
@@ -580,6 +580,9 @@ export function ArcaneCursor() {
 
       gl.clear(gl.COLOR_BUFFER_BIT)
 
+      if (!startTimeRef.current) {
+        startTimeRef.current = Date.now()
+      }
       const elapsedSeconds = (Date.now() - startTimeRef.current) / 1000.0
       gl.uniform1f(timeLoc, elapsedSeconds)
       gl.uniform1f(hoverLoc, hoverValRef.current)

@@ -1,5 +1,3 @@
-import * as THREE from 'three'
-
 /**
  * GLSL Shaders for the Arcane Custom Cursor System
  */
