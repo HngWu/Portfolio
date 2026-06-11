@@ -41,11 +41,9 @@ export function HeroTile({ id, size, role, mark, description, typo, isDragging, 
     setMounted(true)
     if (typeof window !== "undefined") {
       const ua = navigator.userAgent.toLowerCase()
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsMacOrLinux(ua.includes("mac") || ua.includes("linux"))
       
       const checkMobile = () => setIsMobile(window.innerWidth < 768)
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       checkMobile()
       window.addEventListener("resize", checkMobile)
       return () => window.removeEventListener("resize", checkMobile)

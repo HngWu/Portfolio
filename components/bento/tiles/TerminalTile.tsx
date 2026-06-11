@@ -116,7 +116,6 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
     setOS(detected)
 
     // Welcome Message
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHistory([
       { 
         type: "output", 
