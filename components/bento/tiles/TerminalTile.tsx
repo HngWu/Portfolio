@@ -100,7 +100,7 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
       const ua = (window.navigator.userAgent || "").toLowerCase()
       const platform = (window.navigator.platform || "").toLowerCase()
       const userAgentDataPlatform = (
-        (window.navigator as any).userAgentData?.platform || ""
+        ((window.navigator as unknown as { userAgentData?: { platform?: string } }).userAgentData?.platform || "")
       ).toLowerCase()
 
       const isWin = ua.includes("win") || platform.includes("win") || userAgentDataPlatform.includes("win")
@@ -112,9 +112,11 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
     }
 
     const detected = detectOS()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOS(detected)
 
     // Welcome Message
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHistory([
       { 
         type: "output", 
@@ -202,8 +204,8 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
     } else if (trimmedCmd === "sudo ignite") {
       setHistory([...newHistory, { type: "output", content: "🔥 Root access granted. Initializing neural bridge..." }])
       ignite()
-      if (typeof window !== "undefined" && (window as any).__hexcore_cmd) {
-        (window as any).__hexcore_cmd("ignite on")
+      if (typeof window !== "undefined" && (window as unknown as { __hexcore_cmd?: (cmd: string) => string }).__hexcore_cmd) {
+        (window as unknown as { __hexcore_cmd?: (cmd: string) => string }).__hexcore_cmd!("ignite on")
       }
     } else if (trimmedCmd === `${config.commands.list} projects`) {
       const projects = SEARCHABLE_CONTENT.filter(item => item.category === "Projects")
@@ -292,8 +294,8 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
       trimmedCmd.startsWith("lightning") ||
       trimmedCmd.startsWith("lockdown")
     ) {
-      if (typeof window !== "undefined" && (window as any).__hexcore_cmd) {
-        const hexRes = (window as any).__hexcore_cmd(trimmedCmd)
+      if (typeof window !== "undefined" && (window as unknown as { __hexcore_cmd?: (cmd: string) => string }).__hexcore_cmd) {
+        const hexRes = (window as unknown as { __hexcore_cmd?: (cmd: string) => string }).__hexcore_cmd!(trimmedCmd)
         setHistory([...newHistory, { type: "output", content: hexRes }])
 
         // Synchronize bento grid global overlay with Hexcore spell telemetry

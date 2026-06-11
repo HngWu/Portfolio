@@ -23,6 +23,7 @@ function SgtClockAnimation() {
   const [time, setTime] = React.useState<Date | null>(null)
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTime(new Date())
     const timer = setInterval(() => {
       setTime(new Date())
