@@ -245,8 +245,10 @@ export default function TilesPage() {
             onDragEnd={handleDragEnd}
           >
             <div className={cn(
-              "w-full h-fit transition-all duration-500",
-              layoutMode === 'mobile' && "max-w-[500px] mx-auto border border-white/10 p-6 rounded-[40px] bg-black/40 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative ring-8 ring-white/5 transition-all duration-500"
+              "w-full transition-all duration-500",
+              layoutMode === 'mobile' 
+                ? "max-w-[500px] mx-auto border border-white/10 p-6 rounded-[40px] bg-black/40 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative ring-8 ring-white/5 h-[800px] overflow-y-auto scrollbar-thin" 
+                : "h-fit"
             )}>
               <ForceMobileContext.Provider value={layoutMode === 'mobile'}>
                 <SortableContext items={sortedTiles.map(t => t.id)} strategy={rectSortingStrategy}>
