@@ -26,7 +26,7 @@ export function Hero3DTile({ id, size, isDragging, sortableProps }: { id: string
     <BentoTile 
       id={id} 
       size={size} 
-      className="p-0 bg-transparent overflow-hidden h-[320px] md:h-full" 
+      className="p-0 bg-transparent overflow-hidden h-full" 
       isDragging={isDragging} 
       sortableProps={sortableProps}
       canDeepDive={false}
