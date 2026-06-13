@@ -116,7 +116,7 @@ export function BentoTile({
       }}
       style={{
         ...(dynamicRows ? { gridRow: `span ${dynamicRows}` } : {}),
-        ...(isMobileOverride ? { gridRow: "auto" } : {})
+        ...(isMobileOverride && !forceFullHeight ? { gridRow: "auto" } : {})
       }}
       className={cn(
         spanClass, 
