@@ -1208,6 +1208,10 @@ function PolyhedronScene({
       groupRef.current.rotation.x = currentMagneticTilt.current.x
       groupRef.current.rotation.y = t * 0.1 + currentMagneticTilt.current.y
       groupRef.current.rotation.z = t * 0.05
+      
+      // Dynamically scale model based on viewport width to prevent clipping on small screens
+      const responsiveScale = Math.max(0.65, Math.min(1.0, state.viewport.width / 10))
+      groupRef.current.scale.setScalar(responsiveScale)
     }
 
     // Standard Rubik Move background rotations
@@ -1779,8 +1783,10 @@ export default function PolyhedronCanvas({
       setIsMobile(window.innerWidth < 768)
     }
     checkMobile()
+    window.addEventListener("resize", checkMobile)
     const timer = setTimeout(() => setReady(true), 50)
     return () => {
+      window.removeEventListener("resize", checkMobile)
       clearTimeout(timer)
     }
   }, [])
