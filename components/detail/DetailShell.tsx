@@ -3,6 +3,7 @@
 import * as React from "react"
 import { BackLink } from "./BackLink"
 import { PageHero } from "./PageHero"
+import { SearchButton } from "../nav/SearchButton"
 import { useGsap } from "@/hooks/useGsap"
 import gsap from "gsap"
 
@@ -26,6 +27,9 @@ export function DetailShell({ typeLabel, title, descriptor, children }: DetailSh
 
   return (
     <main className="min-h-screen pt-24 pb-24 px-4 md:px-8 max-w-4xl mx-auto">
+      <div className="fixed top-6 right-6 z-50">
+        <SearchButton />
+      </div>
       <BackLink />
       <PageHero typeLabel={typeLabel} title={title} descriptor={descriptor} />
       <div className="flex flex-col gap-6">

@@ -8,7 +8,7 @@ export function ViewModeToggle() {
   const { mode, setMode } = useViewModeStore()
 
   return (
-    <div className="flex items-center bg-white/[0.03] border border-white/10 rounded-full p-1 w-fit z-50 fixed top-6 right-6 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden">
+    <div className="flex items-center bg-white/[0.03] border border-white/10 rounded-full p-1 w-fit backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden">
       {/* Background Grain */}
       <div className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       
