@@ -3,7 +3,6 @@
 import * as React from "react"
 import { BentoTile } from "../BentoTile"
 import { Download } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { useViewModeStore } from "@/store/useViewModeStore"
 
 interface HeroTileProps {
@@ -127,7 +126,7 @@ export function HeroTile({ id, size, role, mark, description, typo, isDragging, 
           {/* Main Content */}
           <h1 
             ref={deepMarkRef}
-            className={cn("text-3xl md:text-4xl font-display leading-tight text-white/90 min-h-[1.2em] font-extrabold tracking-tight")}
+            className="text-3xl md:text-4xl font-display leading-tight text-white/90 min-h-[1.2em] font-extrabold tracking-tight"
           >
             {mark}
           </h1>
@@ -182,7 +181,7 @@ export function HeroTile({ id, size, role, mark, description, typo, isDragging, 
         {/* Main Content */}
         <h1 
           ref={markRef}
-          className={cn("text-3xl md:text-4xl font-display leading-tight text-white/90 min-h-[1.2em] font-extrabold tracking-tight")}
+          className="text-3xl md:text-4xl font-display leading-tight text-white/90 min-h-[1.2em] font-extrabold tracking-tight"
         >
           {mark}
         </h1>
