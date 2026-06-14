@@ -562,8 +562,8 @@ export function ArcaneCursor() {
 
     // Initial setup
     const pixelRatio = window.devicePixelRatio || 1
-    canvas.width = 120 * pixelRatio
-    canvas.height = 120 * pixelRatio
+    canvas.width = 90 * pixelRatio
+    canvas.height = 90 * pixelRatio
     gl.viewport(0, 0, canvas.width, canvas.height)
     gl.clearColor(0.0, 0.0, 0.0, 0.0)
 
@@ -621,7 +621,7 @@ export function ArcaneCursor() {
 
       {/* 2. Unified Custom Interactive Cursor Core (Aligned & mathematically exact tip hotspot) */}
       <div 
-        className="fixed pointer-events-none z-[99999] w-[120px] h-[120px]"
+        className="fixed pointer-events-none z-[99999] w-[90px] h-[90px]"
         style={{
           left: `${smoothedPos.x}px`,
           top: `${smoothedPos.y}px`,
@@ -633,7 +633,7 @@ export function ArcaneCursor() {
           <canvas
             ref={canvasWebGLRef}
             className="absolute inset-0 w-full h-full"
-            style={{ width: '120px', height: '120px' }}
+            style={{ width: '90px', height: '90px' }}
           />
         )}
 
@@ -642,32 +642,31 @@ export function ArcaneCursor() {
           <>
             {/* Concentric diagnostics target brackets (snaps, grows and glows on interactive hover) */}
             <div 
-              className="absolute w-[48px] h-[48px] border-2 rounded transition-all duration-300 ease-out"
+              className="absolute w-[36px] h-[36px] border-2 rounded transition-all duration-300 ease-out"
               style={{
-                left: '36px',
-                top: '36px',
+                left: '27px',
+                top: '27px',
                 transform: isHovered ? 'scale(0.85) rotate(-45deg)' : 'scale(1.0) rotate(0deg)',
                 borderColor: isHovered ? 'rgba(0, 85, 255, 0.9)' : 'rgba(0, 51, 204, 0.35)', // Glowing dark blue
                 boxShadow: isHovered ? '0 0 12px rgba(0, 85, 255, 0.55)' : 'none'
               }}
             />
-
           </>
         ) : (
           // MAGIC MODE: Glowing golden-amber detailed custom tilted pointer (Concentric Runic Array)
           <>
             {/* 1. Concentric Astrological Spell Array (Interlocking glowing golden-amber geometric lines) */}
             <svg
-              width="80"
-              height="80"
+              width="60"
+              height="60"
               viewBox="0 0 80 80"
               className="absolute animate-[spin_28s_linear_infinite] transition-all duration-300 ease-out"
               style={{
-                left: '20px',
-                top: '20px',
-                transform: isHovered ? 'scale(1.22)' : 'scale(1.0)',
+                left: '15px',
+                top: '15px',
+                transform: isHovered ? 'scale(0.92)' : 'scale(1.0)',
                 opacity: isHovered ? 0.8 : 0.45,
-                filter: isHovered ? 'drop-shadow(0 0 4px rgba(251, 191, 36, 0.65))' : 'none',
+                filter: isHovered ? 'drop-shadow(0 0 4px rgba(154, 123, 12, 0.75))' : 'none',
               }}
             >
               {/* Outer boundary ring */}
@@ -692,9 +691,9 @@ export function ArcaneCursor() {
             <div 
               className="absolute w-[60px] h-[60px] animate-[spin_12s_linear_infinite_reverse] transition-all duration-300 ease-out" 
               style={{
-                left: '30px',
-                top: '30px',
-                transform: isHovered ? 'scale(1.22)' : 'scale(1.0)',
+                left: '15px',
+                top: '15px',
+                transform: isHovered ? 'scale(0.92)' : 'scale(1.0)',
               }}
             >
               {/* Actual Norse Runes mapped around the circle */}
