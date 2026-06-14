@@ -75,6 +75,12 @@ export default function TilesPage() {
     }
   }, [load])
 
+  React.useEffect(() => {
+    if (layoutMode === 'mobile') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [layoutMode])
+
   const sortedTiles = React.useMemo(() => {
     return [...tiles].sort((a, b) => {
       if (layoutMode === 'mobile') {
