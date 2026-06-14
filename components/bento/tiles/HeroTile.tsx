@@ -157,7 +157,14 @@ export function HeroTile({ id, size, mark, description, isDragging, sortableProp
                 <div className="shimmer-pulse-bg group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse" />
                 
                 {/* Idle border-beam orbit container */}
-                <div className="border-beam-mask">
+                <div 
+                  className="absolute inset-0 z-0 rounded-[inherit] p-[1.5px] pointer-events-none"
+                  style={{
+                    WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                    WebkitMaskComposite: "xor",
+                    maskComposite: "exclude"
+                  }}
+                >
                   <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_60%,#4AFFB4_85%,transparent_100%)] animate-border-beam group-hover/cmd:animate-border-beam-fast" />
                 </div>
 
@@ -221,7 +228,14 @@ export function HeroTile({ id, size, mark, description, isDragging, sortableProp
               <div className="shimmer-pulse-bg group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse" />
               
               {/* Idle border-beam orbit container */}
-              <div className="border-beam-mask">
+              <div 
+                className="absolute inset-0 z-0 rounded-[inherit] p-[1.5px] pointer-events-none"
+                style={{
+                  WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                  WebkitMaskComposite: "xor",
+                  maskComposite: "exclude"
+                }}
+              >
                 <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_60%,#4AFFB4_85%,transparent_100%)] animate-border-beam group-hover/cmd:animate-border-beam-fast" />
               </div>
 
