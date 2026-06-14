@@ -314,7 +314,7 @@ body.custom-cursor-active * {
 }
 
 .animate-shimmer-pulse {
-  animation: shimmer-pulse-wave 1.5s linear infinite;
+  animation: shimmer 1.5s linear infinite;
 }
 
 .border-beam-mask {
@@ -334,7 +334,7 @@ body.custom-cursor-active * {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-image: linear-gradient(90deg, transparent, rgba(74, 255, 180, 0.1), transparent);
+  background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
   background-size: 200% 100%;
   background-repeat: no-repeat;
   opacity: 0;
