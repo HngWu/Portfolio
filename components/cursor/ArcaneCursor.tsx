@@ -699,7 +699,7 @@ export function ArcaneCursor() {
               {/* Actual Norse Runes mapped around the circle */}
               {["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ"].map((rune, idx, arr) => {
                 const angle = (idx / arr.length) * 360
-                const radius = isHovered ? 34 : 27 // expands concentric with the background SVG!
+                const radius = isHovered ? 14 : 20 // collapses inward concentrically
                 return (
                   <span
                     key={idx}
@@ -709,8 +709,8 @@ export function ArcaneCursor() {
                       left: '50%',
                       top: '50%',
                       transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`,
-                      textShadow: isHovered ? '0 0 5px rgba(251, 191, 36, 0.8)' : '0 0 3px rgba(245, 158, 11, 0.4)',
-                      color: isHovered ? '#FFFBEB' : 'rgba(251, 191, 36, 0.85)',
+                      textShadow: isHovered ? '0 0 5px rgba(154, 123, 12, 0.9)' : '0 0 3px rgba(154, 123, 12, 0.5)',
+                      color: isHovered ? '#FFFBEB' : 'rgba(170, 124, 17, 0.85)',
                     }}
                   >
                     {rune}
@@ -719,9 +719,21 @@ export function ArcaneCursor() {
               })}
             </div>
 
-
           </>
         )}
+
+        {/* 3. Center Point Click Area Indicator */}
+        <div 
+          className="absolute left-1/2 top-1/2 w-[3px] h-[3px] rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-150 ease-out z-[99999]"
+          style={{
+            backgroundColor: isDeep 
+              ? (isHovered ? '#E0F2FE' : '#0088FF') 
+              : (isHovered ? '#FFFBEB' : '#AA7C11'),
+            boxShadow: isHovered 
+              ? (isDeep ? '0 0 8px rgba(0, 88, 255, 0.95)' : '0 0 8px rgba(154, 123, 12, 0.95)') 
+              : 'none'
+          }}
+        />
 
         {/* Preload Runic Font Eagerly to Force Browser Download for Canvas Rendering */}
         <div 
