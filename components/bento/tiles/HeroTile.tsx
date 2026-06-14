@@ -151,13 +151,22 @@ export function HeroTile({ id, size, mark, description, isDragging, sortableProp
             {mounted ? (
               <button
                 onClick={handleBadgeClick}
-                className="flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-colors duration-300 rounded-lg px-2.5 py-1 bg-gradient-to-r from-transparent via-white/[0.18] to-transparent bg-[length:200%_100%] bg-no-repeat animate-shimmer"
+                className="relative flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-all duration-300 rounded-lg px-2.5 py-1 bg-white/[0.01] overflow-hidden"
               >
-                <span className="text-sm tracking-wide text-white/40 group-hover/cmd:text-[#4AFFB4] transition-colors pl-1">
+                {/* Hover-triggered background sheen (Pulse Wave) */}
+                <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-[#4AFFB4]/10 to-transparent bg-[length:200%_100%] bg-no-repeat opacity-0 group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse pointer-events-none transition-opacity duration-300" />
+                
+                {/* Idle border-beam orbit container */}
+                <div className="absolute inset-0 z-0 rounded-[inherit] padding-[1.5px] pointer-events-none [mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [mask-composite:exclude] [-webkit-mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [-webkit-mask-composite:xor]">
+                  <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_60%,#4AFFB4_85%,transparent_100%)] animate-border-beam group-hover/cmd:animate-border-beam-fast" />
+                </div>
+
+                {/* Button Contents */}
+                <span className="relative z-10 text-sm tracking-wide text-white/40 group-hover/cmd:text-[#4AFFB4] transition-colors pl-1">
                   Try the command menu
                 </span>
                 {!isMobile && (
-                  <div className="flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
+                  <div className="relative z-10 flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
                     <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                       {isMac ? "⌘" : "Ctrl"}
                     </kbd>
@@ -206,13 +215,22 @@ export function HeroTile({ id, size, mark, description, isDragging, sortableProp
           {mounted ? (
             <button
               onClick={handleBadgeClick}
-              className="flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-colors duration-300 rounded-lg px-2.5 py-1 bg-gradient-to-r from-transparent via-white/[0.18] to-transparent bg-[length:200%_100%] bg-no-repeat animate-shimmer"
+              className="relative flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-all duration-300 rounded-lg px-2.5 py-1 bg-white/[0.01] overflow-hidden"
             >
-              <span className="text-sm tracking-wide text-white/40 group-hover/cmd:text-[#4AFFB4] transition-colors pl-1">
+              {/* Hover-triggered background sheen (Pulse Wave) */}
+              <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-[#4AFFB4]/10 to-transparent bg-[length:200%_100%] bg-no-repeat opacity-0 group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse pointer-events-none transition-opacity duration-300" />
+              
+              {/* Idle border-beam orbit container */}
+              <div className="absolute inset-0 z-0 rounded-[inherit] padding-[1.5px] pointer-events-none [mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [mask-composite:exclude] [-webkit-mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [-webkit-mask-composite:xor]">
+                <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_60%,#4AFFB4_85%,transparent_100%)] animate-border-beam group-hover/cmd:animate-border-beam-fast" />
+              </div>
+
+              {/* Button Contents */}
+              <span className="relative z-10 text-sm tracking-wide text-white/40 group-hover/cmd:text-[#4AFFB4] transition-colors pl-1">
                 Try the command menu
               </span>
               {!isMobile && (
-                <div className="flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
+                <div className="relative z-10 flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
                   <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                     {isMac ? "⌘" : "Ctrl"}
                   </kbd>
