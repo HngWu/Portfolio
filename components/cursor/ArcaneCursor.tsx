@@ -245,14 +245,14 @@ export function ArcaneCursor() {
             ctx.rotate(p.rotation)
           }
 
-          // Set emissive drop shadow glows (Dark Blue for Tech; Burnished Gold for Magic)
+          // Set emissive drop shadow glows (Dark Blue for Tech; Dark Gold for Magic)
           ctx.shadowBlur = p.size * 1.5
-          ctx.shadowColor = isDeep ? '#0044FF' : '#9A7B0C' 
+          ctx.shadowColor = isDeep ? '#0044FF' : '#785600' 
 
           ctx.font = `${p.size}px ${isDeep ? 'monospace' : 'NotoSansRunic-Regular, monospace'}`
           ctx.fillStyle = isDeep 
             ? `rgba(0, 68, 255, ${p.opacity})` // Dark blue binary coordinates
-            : `rgba(154, 123, 12, ${p.opacity})` // Burnished gold runes
+            : `rgba(120, 86, 0, ${p.opacity})` // Dark gold runes
           
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
@@ -277,10 +277,10 @@ export function ArcaneCursor() {
             const radius = 10 + p * 50 // expand outward
             const angle = p * Math.PI // rotate as it expands
             
-            ctx.strokeStyle = `rgba(154, 123, 12, ${opacity})`
+            ctx.strokeStyle = `rgba(120, 86, 0, ${opacity})`
             ctx.lineWidth = 1.5
             ctx.shadowBlur = 10 * opacity
-            ctx.shadowColor = '#9A7B0C'
+            ctx.shadowColor = '#785600'
 
             // Equilateral Triangle 1 (pointing up)
             ctx.beginPath()
@@ -445,16 +445,16 @@ export function ArcaneCursor() {
         float mask = smoothstep(0.5, 0.35, dist);
         
         // --- 1. MAGIC SHADER (Quick Pitch Golden Halo) ---
-        // Elegant glowing burnished/antique gold tones
-        vec3 magicCore = vec3(0.85, 0.70, 0.30);   // Mellow light gold
-        vec3 magicMid = vec3(0.60, 0.48, 0.05);    // Burnished dark gold #9A7B0C
-        vec3 magicOuter = vec3(0.54, 0.40, 0.14);  // Antique bronze/gold #8A6623
+        // Elegant glowing dark antique gold tones
+        vec3 magicCore = vec3(0.70, 0.55, 0.15);   // Rich gold #B8860B
+        vec3 magicMid = vec3(0.50, 0.38, 0.02);    // Dark gold/bronze #8A6508
+        vec3 magicOuter = vec3(0.35, 0.25, 0.05);  // Very dark antique gold #5C4008
         
         vec3 magicColor = mix(magicOuter, magicMid, dist * 2.0);
         magicColor = mix(magicColor, magicCore, pow(1.0 - dist * 2.0, 2.0));
         
-        // Circular soft golden back-halo (stable, zero unstable purple blobs!)
-        float magicGlow = 0.10 / (dist + 0.035) * (1.0 + 0.15 * sin(u_time * 3.5));
+        // Clean stable golden back-halo (pulsing sin-wave removed)
+        float magicGlow = 0.10 / (dist + 0.035);
         magicColor += magicMid * magicGlow;
         
         // Clean stable radial mask
