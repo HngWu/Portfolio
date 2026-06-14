@@ -293,3 +293,27 @@ body.custom-cursor-active * {
   transition: all 0.2s ease;
   transform-origin: 22px 34px;
 }
+
+/* === Command Menu Button Shimmer Revamp === */
+@keyframes border-beam-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer-pulse-wave {
+  0% { background-position: -150% 0; }
+  100% { background-position: 150% 0; }
+}
+
+.animate-border-beam {
+  animation: border-beam-rotate 4s linear infinite;
+}
+
+.animate-border-beam-fast {
+  animation: border-beam-rotate 2s linear infinite;
+}
+
+.animate-shimmer-pulse {
+  animation: shimmer-pulse-wave 1.5s linear infinite;
+}
+
