@@ -21,7 +21,7 @@ interface HeroTileProps {
   sortableProps?: Record<string, unknown>
 }
 
-export function HeroTile({ id, size, role, mark, description, typo, isDragging, sortableProps }: HeroTileProps) {
+export function HeroTile({ id, size, mark, description, isDragging, sortableProps }: HeroTileProps) {
   const markRef = React.useRef<HTMLHeadingElement>(null)
   
   const deepMarkRef = React.useRef<HTMLHeadingElement>(null)
