@@ -155,7 +155,7 @@ export function HeroTile({ id, size, role, mark, description, typo, isDragging, 
             {mounted ? (
               <button
                 onClick={handleBadgeClick}
-                className="flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-colors duration-300 rounded-lg px-2.5 py-1 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent bg-[length:200%_100%] bg-no-repeat animate-shimmer"
+                className="flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-colors duration-300 rounded-lg px-2.5 py-1 bg-gradient-to-r from-transparent via-white/[0.18] to-transparent bg-[length:200%_100%] bg-no-repeat animate-shimmer"
               >
                 <span className="text-sm tracking-wide text-white/40 group-hover/cmd:text-[#4AFFB4] transition-colors pl-1">
                   Try the command menu
@@ -210,7 +210,7 @@ export function HeroTile({ id, size, role, mark, description, typo, isDragging, 
           {mounted ? (
             <button
               onClick={handleBadgeClick}
-              className="flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-colors duration-300 rounded-lg px-2.5 py-1 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent bg-[length:200%_100%] bg-no-repeat animate-shimmer"
+              className="flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-colors duration-300 rounded-lg px-2.5 py-1 bg-gradient-to-r from-transparent via-white/[0.18] to-transparent bg-[length:200%_100%] bg-no-repeat animate-shimmer"
             >
               <span className="text-sm tracking-wide text-white/40 group-hover/cmd:text-[#4AFFB4] transition-colors pl-1">
                 Try the command menu
