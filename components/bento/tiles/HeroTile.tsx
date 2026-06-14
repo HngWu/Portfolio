@@ -155,18 +155,17 @@ export function HeroTile({ id, size, role, mark, description, typo, isDragging, 
             {mounted ? (
               <button
                 onClick={handleBadgeClick}
-                className="flex items-center gap-2 cursor-pointer select-none bg-transparent border-none p-0 focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-colors duration-300"
+                className="flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-colors duration-300 rounded-lg px-2.5 py-1 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent bg-[length:200%_100%] bg-no-repeat animate-shimmer"
               >
                 <span className="text-sm tracking-wide text-white/40 group-hover/cmd:text-[#4AFFB4] transition-colors pl-1">
                   Try the command menu
-                  <span className="inline-block w-1 h-3.5 bg-[#4AFFB4] ml-1.5 animate-terminal-blink align-middle" />
                 </span>
                 {!isMobile && (
                   <div className="flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
-                    <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300 animate-keycap-glow">
+                    <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                       {isMacOrLinux ? "⌘" : "Ctrl"}
                     </kbd>
-                    <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300 animate-keycap-glow">
+                    <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                       K
                     </kbd>
                   </div>
@@ -211,18 +210,17 @@ export function HeroTile({ id, size, role, mark, description, typo, isDragging, 
           {mounted ? (
             <button
               onClick={handleBadgeClick}
-              className="flex items-center gap-2 cursor-pointer select-none bg-transparent border-none p-0 focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-colors duration-300"
+              className="flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-colors duration-300 rounded-lg px-2.5 py-1 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent bg-[length:200%_100%] bg-no-repeat animate-shimmer"
             >
               <span className="text-sm tracking-wide text-white/40 group-hover/cmd:text-[#4AFFB4] transition-colors pl-1">
                 Try the command menu
-                <span className="inline-block w-1 h-3.5 bg-[#4AFFB4] ml-1.5 animate-terminal-blink align-middle" />
               </span>
               {!isMobile && (
                 <div className="flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
-                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300 animate-keycap-glow">
+                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                     {isMacOrLinux ? "⌘" : "Ctrl"}
                   </kbd>
-                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300 animate-keycap-glow">
+                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                     K
                   </kbd>
                 </div>
