@@ -317,3 +317,28 @@ body.custom-cursor-active * {
   animation: shimmer-pulse-wave 1.5s linear infinite;
 }
 
+.border-beam-mask {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box exclude, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+
+.shimmer-pulse-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: linear-gradient(90deg, transparent, rgba(74, 255, 180, 0.1), transparent);
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+

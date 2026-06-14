@@ -154,10 +154,10 @@ export function HeroTile({ id, size, mark, description, isDragging, sortableProp
                 className="relative flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-all duration-300 rounded-lg px-2.5 py-1 bg-white/[0.01] overflow-hidden"
               >
                 {/* Hover-triggered background sheen (Pulse Wave) */}
-                <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-[#4AFFB4]/10 to-transparent bg-[length:200%_100%] bg-no-repeat opacity-0 group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse pointer-events-none transition-opacity duration-300" />
+                <div className="shimmer-pulse-bg group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse" />
                 
                 {/* Idle border-beam orbit container */}
-                <div className="absolute inset-0 z-0 rounded-[inherit] p-[1.5px] pointer-events-none [mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [mask-composite:exclude] [-webkit-mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [-webkit-mask-composite:xor]">
+                <div className="border-beam-mask">
                   <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_60%,#4AFFB4_85%,transparent_100%)] animate-border-beam group-hover/cmd:animate-border-beam-fast" />
                 </div>
 
@@ -218,10 +218,10 @@ export function HeroTile({ id, size, mark, description, isDragging, sortableProp
               className="relative flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-all duration-300 rounded-lg px-2.5 py-1 bg-white/[0.01] overflow-hidden"
             >
               {/* Hover-triggered background sheen (Pulse Wave) */}
-              <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-[#4AFFB4]/10 to-transparent bg-[length:200%_100%] bg-no-repeat opacity-0 group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse pointer-events-none transition-opacity duration-300" />
+              <div className="shimmer-pulse-bg group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse" />
               
               {/* Idle border-beam orbit container */}
-              <div className="absolute inset-0 z-0 rounded-[inherit] p-[1.5px] pointer-events-none [mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [mask-composite:exclude] [-webkit-mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [-webkit-mask-composite:xor]">
+              <div className="border-beam-mask">
                 <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_60%,#4AFFB4_85%,transparent_100%)] animate-border-beam group-hover/cmd:animate-border-beam-fast" />
               </div>
 
