@@ -123,7 +123,7 @@ export function ArcaneCursor() {
       
       const target = e.target as HTMLElement | null
       if (target) {
-        const isInteractive = target.closest('a, button, [role="button"], [data-hover-glow], [data-interactive]') !== null
+        const isInteractive = target.closest('a, button, [role="button"], [data-hover-glow], [data-interactive], [data-id], .cursor-pointer') !== null
         setIsHovered(isInteractive)
       }
     }
@@ -725,13 +725,13 @@ export function ArcaneCursor() {
 
         {/* 3. Center Point Click Area Indicator */}
         <div 
-          className="absolute left-1/2 top-1/2 w-[3px] h-[3px] rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-150 ease-out z-[99999]"
+          className="absolute left-1/2 top-1/2 w-[5px] h-[5px] rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-150 ease-out z-[99999]"
           style={{
             backgroundColor: isDeep 
               ? (isHovered ? '#E0F2FE' : '#0088FF') 
-              : (isHovered ? '#FFFBEB' : '#AA7C11'),
+              : (isHovered ? '#FFEAA7' : '#8A6508'),
             boxShadow: isHovered 
-              ? (isDeep ? '0 0 8px rgba(0, 88, 255, 0.95)' : '0 0 8px rgba(154, 123, 12, 0.95)') 
+              ? (isDeep ? '0 0 8px rgba(0, 88, 255, 0.95)' : '0 0 8px rgba(120, 86, 0, 0.95)') 
               : 'none'
           }}
         />

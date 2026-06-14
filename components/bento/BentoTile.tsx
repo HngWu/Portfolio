@@ -165,6 +165,7 @@ export function BentoTile({
             glowColor={glowColor}
             onClick={handleClick}
             interactive={!isDragging}
+            data-id={id}
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
               "flex flex-col bg-lume-secondary/5 border-lume-secondary/20",
