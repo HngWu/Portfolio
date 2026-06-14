@@ -3,7 +3,6 @@
 import * as React from "react"
 import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 
 export function SearchButton() {
   const [shortcut, setShortcut] = React.useState<string | null>(null)
@@ -29,11 +28,7 @@ export function SearchButton() {
     <Button
       onClick={handleClick}
       variant="outline"
-      className={cn(
-        "h-8 rounded-full cursor-pointer select-none gap-2 px-3.5 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300",
-        "bg-white/[0.03] border-white/10 text-white/50",
-        "hover:bg-[#4AFFB4]/10 hover:border-[#4AFFB4]/30 hover:text-[#4AFFB4]"
-      )}
+      className="h-8 rounded-full cursor-pointer select-none gap-2 px-3.5 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 bg-white/[0.03] border-white/10 text-white/50 hover:bg-[#4AFFB4]/10 hover:border-[#4AFFB4]/30 hover:text-[#4AFFB4]"
       title="Open Command Palette"
     >
       <Search className="size-3.5" />
