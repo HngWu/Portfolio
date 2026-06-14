@@ -664,9 +664,9 @@ export function ArcaneCursor() {
               style={{
                 left: '15px',
                 top: '15px',
-                transform: isHovered ? 'scale(0.92)' : 'scale(1.0)',
+                transform: 'scale(1.0)',
                 opacity: isHovered ? 0.8 : 0.45,
-                filter: isHovered ? 'drop-shadow(0 0 4px rgba(154, 123, 12, 0.75))' : 'none',
+                filter: isHovered ? 'drop-shadow(0 0 4px rgba(120, 86, 0, 0.85))' : 'none',
               }}
             >
               {/* Outer boundary ring */}
@@ -693,13 +693,14 @@ export function ArcaneCursor() {
               style={{
                 left: '15px',
                 top: '15px',
-                transform: isHovered ? 'scale(0.92)' : 'scale(1.0)',
+                transform: 'scale(1.0)',
+                animationDuration: isHovered ? '4s' : '15s' // Fast rotation on hover, slower at idle
               }}
             >
               {/* Actual Norse Runes mapped around the circle */}
               {["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ"].map((rune, idx, arr) => {
                 const angle = (idx / arr.length) * 360
-                const radius = isHovered ? 14 : 20 // collapses inward concentrically
+                const radius = 20 // stable radius
                 return (
                   <span
                     key={idx}
@@ -709,8 +710,8 @@ export function ArcaneCursor() {
                       left: '50%',
                       top: '50%',
                       transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`,
-                      textShadow: isHovered ? '0 0 5px rgba(154, 123, 12, 0.9)' : '0 0 3px rgba(154, 123, 12, 0.5)',
-                      color: isHovered ? '#FFFBEB' : 'rgba(170, 124, 17, 0.85)',
+                      textShadow: isHovered ? '0 0 5px rgba(120, 86, 0, 0.9)' : '0 0 3px rgba(120, 86, 0, 0.5)',
+                      color: isHovered ? '#FFEAA7' : 'rgba(184, 134, 11, 0.85)',
                     }}
                   >
                     {rune}
