@@ -8,13 +8,17 @@ This file contains the foundational mandates, architectural patterns, and develo
 
 ### 1.1 Technology Stack
 - **Framework**: Next.js 16 (App Router, Turbopack).
-- **Styling**: Tailwind CSS 3.4+.
+- **Styling**: Tailwind CSS 4.x+.
 - **Database**: Supabase (PostgreSQL + JSONB for flexible tile content).
 - **3D Engine**: React Three Fiber (R3F) + Drei.
 - **Animation**: GSAP 3.12+ (ScrollTrigger, Flip).
 - **State Management**: Zustand.
 
-### 1.2 Bento Grid System
+### 1.2 Custom Animations & CSS Masking
+- **Tailwind CSS v4 Integration**: All custom animations and keyframes (e.g., `--animate-border-beam`, `border-beam-rotate`) must be defined inside the `@theme` block in `app/globals.css`. This ensures the compiler generates the proper utility classes and supports interactive modifier prefixes (such as `group-hover/cmd:`).
+- **Cross-Browser CSS Masking**: For edge masks (like border beams), always specify standard CSS properties (`mask` and `mask-composite`) alongside browser-prefixed ones (`WebkitMask` and `WebkitMaskComposite`) with corresponding composite values (`exclude` / `xor`) to guarantee consistent rendering across Chrome, Safari, and Firefox.
+
+### 1.3 Bento Grid System
 - **Grid Layout**: 12-column dynamic CSS grid (`components/bento/BentoGrid.tsx`).
 - **Tile Component**: `BentoTile.tsx` is the universal wrapper. It handles:
     - 3D Hover Tilt effect.
@@ -22,7 +26,7 @@ This file contains the foundational mandates, architectural patterns, and develo
     - Page transition triggers.
 - **Sizes**: Use `getSizeClasses` in `lib/utils.ts`. Supported sizes include standard (1x1, 2x2) and specialized (4x5 Mega Tile).
 
-### 1.3 View Mode Logic
+### 1.4 View Mode Logic
 - **Quick-Pitch**: High-level, optimized for speed and scanning.
 - **Deep Dive**: Technical, data-rich, optimized for detail.
 - **State**: Managed via `useViewModeStore` and synchronized with the `?mode` URL parameter.

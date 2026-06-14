@@ -215,7 +215,17 @@ MOBILE  (<768px)   — 2 cols,  1fr each, gap: 8px
 .lume-card:hover {
   box-shadow: 0 0 40px var(--lume-color), inset 0 0 20px var(--lume-color);
 }
-```
+### 4.3 Border Beam Orbit (A+B3 Shimmer)
+
+- **Idle Orbit Animation**: A conic-gradient segment orbiting around the edge of glass cards/buttons continuously (`animate-border-beam` @ 4s duration).
+- **Interactive State**: Speeds up on hover (`animate-border-beam-fast` @ 2s duration) and triggers a background Pulse Wave gradient shift (`animate-shimmer-pulse`) with a subtle mint sheen.
+- **Cross-Browser CSS Masking**: Isolates the button's perimeter (hollowing out the center region) by applying standard and webkit-prefixed mask rules:
+  ```css
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  ```
 
 ---
 
@@ -231,7 +241,7 @@ Height:     56px (mobile) / 64px (desktop)
 
 Left:       Logo mark (animated SVG, single character or abstract mark)
 Center:     Navigation links — hidden on mobile, revealed on ≥768px
-Right:      [Mode Toggle] [Search ⌘K] [Menu (mobile)]
+Right:      [Mode Toggle] [Menu (mobile)] (Search Button removed to reduce layout clutter; global Ctrl+K / ⌘K command palette triggers remain active)
 ```
 
 ### 5.2 Hero Section

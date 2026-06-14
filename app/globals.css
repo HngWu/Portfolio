@@ -28,6 +28,9 @@
   --animate-liquid-1: liquid-1 20s infinite alternate;
   --animate-liquid-2: liquid-2 25s infinite alternate-reverse;
   --animate-shimmer: shimmer 1.2s ease-in-out 2 forwards;
+  --animate-border-beam: border-beam-rotate 4s linear infinite;
+  --animate-border-beam-fast: border-beam-rotate 2s linear infinite;
+  --animate-shimmer-pulse: shimmer-pulse-wave 1.5s linear infinite;
 
   @keyframes liquid-1 {
     0% { transform: translate(0, 0) scale(1); }
@@ -44,6 +47,16 @@
   }
 
   @keyframes shimmer {
+    0% { background-position: -150% 0; }
+    100% { background-position: 150% 0; }
+  }
+
+  @keyframes border-beam-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes shimmer-pulse-wave {
     0% { background-position: -150% 0; }
     100% { background-position: 150% 0; }
   }
@@ -295,28 +308,6 @@ body.custom-cursor-active * {
 }
 
 /* === Command Menu Button Shimmer Revamp === */
-@keyframes border-beam-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes shimmer-pulse-wave {
-  0% { background-position: -150% 0; }
-  100% { background-position: 150% 0; }
-}
-
-.animate-border-beam {
-  animation: border-beam-rotate 4s linear infinite;
-}
-
-.animate-border-beam-fast {
-  animation: border-beam-rotate 2s linear infinite;
-}
-
-.animate-shimmer-pulse {
-  animation: shimmer 1.5s linear infinite;
-}
-
 .shimmer-pulse-bg {
   position: absolute;
   inset: 0;

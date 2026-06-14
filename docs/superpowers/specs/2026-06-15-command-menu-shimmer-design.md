@@ -1,27 +1,28 @@
-# Design Spec: Command Menu Button Shimmer Revamp (A+B3)
+# Design Spec: Command Menu Button Shimmer & Layout Revamp
 
 **Author:** Antigravity AI
 **Date:** 2026-06-15
-**Status:** Approved
+**Status:** Approved & Implemented
 
 ---
 
 ## 1. Goal Description
 
-Revamp the command palette trigger button ("Try the command menu") inside the `HeroTile` component to replace the static two-loop shimmer with a highly dynamic, premium "Lume-Glass" cinematic style.
+Revamp the command palette trigger button ("Try the command menu") inside the `HeroTile` component to replace the static two-loop shimmer with a highly dynamic, premium "Lume-Glass" cinematic style, and optimize the header layout.
 
-The design is a hybrid combining:
-1. **Idle Border Beam Orbit (Concept B)**: A laser-sharp accent line tracing around the border of the button continuously on idle, speeding up on hover.
-2. **Hover Pulse Wave (Concept A)**: A subtle, green-tinted background sheen gradient that animates across the button when hovered.
+The design features:
+1. **Idle Border Beam Orbit**: A laser-sharp accent line tracing around the border of the button continuously on idle, speeding up on hover.
+2. **Hover Pulse Wave**: A subtle, green-tinted background sheen gradient that animates across the button when hovered.
+3. **Clean Header Layout**: The `SearchButton` is removed from beside the `ViewModeToggle` in the top-right header to reduce visual clutter, while retaining full global keybindings (Ctrl+K / ⌘K) and bento triggers.
 
 ---
 
-## 2. Architecture & Implementation Plan
+## 2. Architecture & Implementation
 
-### 2.1 CSS-Mask Border Beam
-To achieve a high-performance border beam animation that works reliably across all modern browsers without requiring `@property` CSS registrations or causing border-clipping/wobble artifacts:
+### 2.1 CSS-Mask Border Beam (Tailwind CSS v4 & Standard Mask properties)
+To achieve a high-performance border beam animation that works reliably across all modern browsers:
 - We use a outer wrapper `.border-beam-container` inside the button that is absolutely positioned to `inset: 0` with `border-radius: inherit`.
-- We apply a mask composition using standard CSS `mask` rules that exclude the center content box, exposing only a `1.5px` border region.
+- We apply a mask composition using standard CSS `mask` and `mask-composite` rules (along with `WebkitMask` and `WebkitMaskComposite`) that exclude the center content box, exposing only a `1.5px` border region.
 - Inside this masked wrapper, we place a rotating square child containing a `conic-gradient`. As this child rotates via GPU-accelerated `transform: rotate()`, the gradient orbits seamlessly around the border.
 
 ### 2.2 Pulse Wave Highlight
@@ -31,56 +32,41 @@ To achieve a high-performance border beam animation that works reliably across a
 
 ---
 
-## 3. Target Files & Code Changes
+## 3. Implemented File & Code Changes
 
-### 3.1 [MODIFY] [globals.css](file:///C:/Projects/Portfolio/app/globals.css)
+### 3.1 [globals.css](file:///C:/Projects/Portfolio/app/globals.css)
+Custom animation keyframes and animation utility definitions are registered directly inside the `@theme inline` block to comply with **Tailwind CSS v4** architecture, ensuring utility classes are correctly generated:
 
-Add new animation keyframes and classes:
 ```css
-  /* Border Beam Rotation */
+@theme inline {
+  /* ... other theme declarations ... */
+
+  --animate-border-beam: border-beam-rotate 4s linear infinite;
+  --animate-border-beam-fast: border-beam-rotate 2s linear infinite;
+  --animate-shimmer-pulse: shimmer-pulse-wave 1.5s linear infinite;
+
   @keyframes border-beam-rotate {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
 
-  /* Pulse Shimmer Wave */
   @keyframes shimmer-pulse-wave {
     0% { background-position: -150% 0; }
     100% { background-position: 150% 0; }
   }
-
-  /* Custom utility classes */
-  .animate-border-beam {
-    animation: border-beam-rotate 4s linear infinite;
-  }
-  .animate-border-beam-fast {
-    animation: border-beam-rotate 2s linear infinite;
-  }
-  .animate-shimmer-pulse {
-    animation: shimmer-pulse-wave 1.5s linear infinite;
-  }
+}
 ```
 
-### 3.2 [MODIFY] [HeroTile.tsx](file:///C:/Projects/Portfolio/components/bento/tiles/HeroTile.tsx)
+### 3.2 [HeroTile.tsx](file:///C:/Projects/Portfolio/components/bento/tiles/HeroTile.tsx)
+Updated both `<button>` elements (Quick-Pitch and Deep-Dive faces) to utilize standard mask properties alongside Webkit properties to ensure full cross-browser support:
+```tsx
+style={{
+  mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+  WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+  maskComposite: "exclude",
+  WebkitMaskComposite: "xor"
+}}
+```
 
-Update the `<button>` element inside both the standard view and the deep content view faces.
-Remove `animate-shimmer` and `bg-gradient-to-r` styles from the button element, and instead nest:
-- A `div` for the background pulse: `bg-gradient-to-r from-transparent via-[#4AFFB4]/10 to-transparent bg-[length:200%_100%] bg-no-repeat opacity-0 group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse transition-opacity duration-300`
-- A masked `div` container for the border beam containing a child `div` rotating `conic-gradient(from 0deg, transparent 60%, #4AFFB4 85%, transparent 100%)`.
-
----
-
-## 4. Verification & Testing Plan
-
-### 4.1 Visual Verification
-- Deploy/run the local Next.js server.
-- Inspect the button on the home page hero section:
-  - Verify that when the mouse is **not** hovering, the border beam is orbiting at a slow rate.
-  - Verify that when **hovering** over the button:
-    - The border beam speeds up.
-    - The background pulse wave sheen plays continuously.
-    - The button text and `Ctrl K` / `⌘ K` keys glow with `#4AFFB4`.
-  - Check responsiveness and corners at different scaling sizes.
-
-### 4.2 Cross-Browser Testing
-- Verify that standard mask properties work under Chrome, Edge, Safari, and Firefox.
+### 3.3 [page.tsx](file:///C:/Projects/Portfolio/app/page.tsx)
+Removed the `<SearchButton />` instance and import from the top-right header, leaving only the `<ViewModeToggle />` layout component active on the main dashboard.
