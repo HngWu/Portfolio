@@ -245,14 +245,14 @@ export function ArcaneCursor() {
             ctx.rotate(p.rotation)
           }
 
-          // Set emissive drop shadow glows (Dark Blue for Tech; Golden/Amber for Magic)
+          // Set emissive drop shadow glows (Dark Blue for Tech; Burnished Gold for Magic)
           ctx.shadowBlur = p.size * 1.5
-          ctx.shadowColor = isDeep ? '#0044FF' : '#FBBF24' 
+          ctx.shadowColor = isDeep ? '#0044FF' : '#9A7B0C' 
 
           ctx.font = `${p.size}px ${isDeep ? 'monospace' : 'NotoSansRunic-Regular, monospace'}`
           ctx.fillStyle = isDeep 
             ? `rgba(0, 68, 255, ${p.opacity})` // Dark blue binary coordinates
-            : `rgba(245, 158, 11, ${p.opacity})` // Golden-amber runes
+            : `rgba(154, 123, 12, ${p.opacity})` // Burnished gold runes
           
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
@@ -277,10 +277,10 @@ export function ArcaneCursor() {
             const radius = 10 + p * 50 // expand outward
             const angle = p * Math.PI // rotate as it expands
             
-            ctx.strokeStyle = `rgba(251, 191, 36, ${opacity})`
+            ctx.strokeStyle = `rgba(154, 123, 12, ${opacity})`
             ctx.lineWidth = 1.5
             ctx.shadowBlur = 10 * opacity
-            ctx.shadowColor = '#FBBF24'
+            ctx.shadowColor = '#9A7B0C'
 
             // Equilateral Triangle 1 (pointing up)
             ctx.beginPath()
@@ -445,10 +445,10 @@ export function ArcaneCursor() {
         float mask = smoothstep(0.5, 0.35, dist);
         
         // --- 1. MAGIC SHADER (Quick Pitch Golden Halo) ---
-        // Elegant glowing golden-amber tones
-        vec3 magicCore = vec3(1.0, 0.95, 0.78);   // Glowing light gold #FEF3C7
-        vec3 magicMid = vec3(0.98, 0.75, 0.14);    // Warm gold #FBBF24
-        vec3 magicOuter = vec3(0.96, 0.62, 0.04);  // Amber #F59E0B
+        // Elegant glowing burnished/antique gold tones
+        vec3 magicCore = vec3(0.85, 0.70, 0.30);   // Mellow light gold
+        vec3 magicMid = vec3(0.60, 0.48, 0.05);    // Burnished dark gold #9A7B0C
+        vec3 magicOuter = vec3(0.54, 0.40, 0.14);  // Antique bronze/gold #8A6623
         
         vec3 magicColor = mix(magicOuter, magicMid, dist * 2.0);
         magicColor = mix(magicColor, magicCore, pow(1.0 - dist * 2.0, 2.0));
