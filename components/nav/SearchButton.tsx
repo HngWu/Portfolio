@@ -8,8 +8,7 @@ export function SearchButton() {
   const [shortcut, setShortcut] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    const ua = typeof window !== "undefined" ? navigator.userAgent.toLowerCase() : ""
-    const isMac = ua.includes("mac") || ua.includes("linux")
+    const isMac = /mac|linux/.test(navigator.userAgent.toLowerCase())
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setShortcut(isMac ? "⌘K" : "Ctrl+K")
   }, [])
