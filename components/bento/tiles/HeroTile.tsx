@@ -38,15 +38,12 @@ export function HeroTile({ id, size, role, mark, description, typo, isDragging, 
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
-    if (typeof window !== "undefined") {
-      const ua = navigator.userAgent.toLowerCase()
-      setIsMacOrLinux(ua.includes("mac") || ua.includes("linux"))
-      
-      const checkMobile = () => setIsMobile(window.innerWidth < 768)
-      checkMobile()
-      window.addEventListener("resize", checkMobile)
-      return () => window.removeEventListener("resize", checkMobile)
-    }
+    setIsMacOrLinux(/mac|linux/.test(navigator.userAgent.toLowerCase()))
+    
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
 
