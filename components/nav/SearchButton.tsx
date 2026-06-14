@@ -6,16 +6,13 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export function SearchButton() {
-  const [mounted, setMounted] = React.useState(false)
-  const [isMacOrLinux, setIsMacOrLinux] = React.useState(false)
+  const [shortcut, setShortcut] = React.useState<string | null>(null)
 
   React.useEffect(() => {
+    const ua = typeof window !== "undefined" ? navigator.userAgent.toLowerCase() : ""
+    const isMac = ua.includes("mac") || ua.includes("linux")
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true)
-    if (typeof window !== "undefined") {
-      const ua = navigator.userAgent.toLowerCase()
-      setIsMacOrLinux(ua.includes("mac") || ua.includes("linux"))
-    }
+    setShortcut(isMac ? "⌘K" : "Ctrl+K")
   }, [])
 
   const handleClick = (e: React.MouseEvent) => {
@@ -23,12 +20,11 @@ export function SearchButton() {
     window.dispatchEvent(new CustomEvent("open-command-palette"))
   }
 
-  if (!mounted) {
+  if (shortcut === null) {
     return (
       <div className="h-8 w-[40px] sm:w-[100px] md:w-[150px] bg-white/[0.03] border border-white/10 rounded-full animate-pulse" />
     )
   }
-
   return (
     <Button
       onClick={handleClick}
@@ -43,7 +39,7 @@ export function SearchButton() {
       <Search className="size-3.5" />
       <span className="text-xs font-bold uppercase tracking-widest hidden sm:inline">Search</span>
       <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-bold bg-white/[0.05] border border-white/10 rounded text-white/30 group-hover/button:text-[#4AFFB4] group-hover/button:border-[#4AFFB4]/30 transition-all duration-300">
-        {isMacOrLinux ? "⌘K" : "Ctrl+K"}
+        {shortcut}
       </kbd>
     </Button>
   )
