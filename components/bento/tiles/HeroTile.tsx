@@ -32,13 +32,13 @@ export function HeroTile({ id, size, mark, description, isDragging, sortableProp
   const runes = ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ", "ᛇ", "ᛈ", "ᛉ", "ᛊ", "ᛏ", "ᛒ", "ᛖ", "ᛗ", "ᛚ", "ᛜ", "ᛞ", "ᛟ"]
 
   const [mounted, setMounted] = React.useState(false)
-  const [isMacOrLinux, setIsMacOrLinux] = React.useState(false)
+  const [isMac, setIsMac] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
 
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
-    setIsMacOrLinux(/mac|linux/i.test(navigator.userAgent))
+    setIsMac(/mac/i.test(navigator.userAgent))
     
     const checkMobile = () => setIsMobile(window.innerWidth < 768)
     checkMobile()
@@ -159,7 +159,7 @@ export function HeroTile({ id, size, mark, description, isDragging, sortableProp
                 {!isMobile && (
                   <div className="flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
                     <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
-                      {isMacOrLinux ? "⌘" : "Ctrl"}
+                      {isMac ? "⌘" : "Ctrl"}
                     </kbd>
                     <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                       K
@@ -214,7 +214,7 @@ export function HeroTile({ id, size, mark, description, isDragging, sortableProp
               {!isMobile && (
                 <div className="flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
                   <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
-                    {isMacOrLinux ? "⌘" : "Ctrl"}
+                    {isMac ? "⌘" : "Ctrl"}
                   </kbd>
                   <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                     K
