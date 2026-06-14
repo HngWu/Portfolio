@@ -128,8 +128,10 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
   }, [])
 
   React.useEffect(() => {
-    if (tileInputRef.current) {
-      tileInputRef.current.focus()
+    const isMobileViewport = window.innerWidth < 768
+    const isMobileUserAgent = /iphone|ipad|ipod|android/i.test(navigator.userAgent)
+    if (tileInputRef.current && !isMobileViewport && !isMobileUserAgent) {
+      tileInputRef.current.focus({ preventScroll: true })
     }
   }, [])
 
@@ -149,7 +151,7 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
   React.useEffect(() => {
     const activeInput = isMaximized ? maxInputRef.current : tileInputRef.current
     if (activeInput) {
-      activeInput.focus()
+      activeInput.focus({ preventScroll: true })
     }
     scrollToBottom()
   }, [isMaximized, scrollToBottom])
