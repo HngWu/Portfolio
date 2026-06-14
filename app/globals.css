@@ -27,7 +27,7 @@
 
   --animate-liquid-1: liquid-1 20s infinite alternate;
   --animate-liquid-2: liquid-2 25s infinite alternate-reverse;
-  --animate-shimmer: shimmer 6s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.2s ease-in-out 2 forwards;
 
   @keyframes liquid-1 {
     0% { transform: translate(0, 0) scale(1); }
@@ -45,7 +45,6 @@
 
   @keyframes shimmer {
     0% { background-position: -150% 0; }
-    10% { background-position: 150% 0; }
     100% { background-position: 150% 0; }
   }
 
