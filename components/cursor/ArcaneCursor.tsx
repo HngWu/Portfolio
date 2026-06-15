@@ -642,10 +642,10 @@ export function ArcaneCursor() {
           <>
             {/* Concentric diagnostics target brackets (snaps, grows and glows on interactive hover) */}
             <div 
-              className="absolute w-[36px] h-[36px] border-2 rounded transition-all duration-300 ease-out"
+              className="absolute w-[60px] h-[60px] border-2 rounded transition-all duration-300 ease-out"
               style={{
-                left: '27px',
-                top: '27px',
+                left: '15px',
+                top: '15px',
                 transform: isHovered ? 'scale(0.85) rotate(-45deg)' : 'scale(1.0) rotate(0deg)',
                 borderColor: isHovered ? 'rgba(0, 85, 255, 0.9)' : 'rgba(0, 51, 204, 0.35)', // Glowing dark blue
                 boxShadow: isHovered ? '0 0 12px rgba(0, 85, 255, 0.55)' : 'none'
