@@ -245,14 +245,14 @@ export function ArcaneCursor() {
             ctx.rotate(p.rotation)
           }
 
-          // Set emissive drop shadow glows (Dark Blue for Tech; Dark Gold for Magic)
+          // Set emissive drop shadow glows (Dark Blue for Tech; Warm Gold for Magic)
           ctx.shadowBlur = p.size * 1.5
-          ctx.shadowColor = isDeep ? '#0044FF' : '#785600' 
+          ctx.shadowColor = isDeep ? '#0044FF' : '#9E6B0F' 
 
           ctx.font = `${p.size}px ${isDeep ? 'monospace' : 'NotoSansRunic-Regular, monospace'}`
           ctx.fillStyle = isDeep 
             ? `rgba(0, 68, 255, ${p.opacity})` // Dark blue binary coordinates
-            : `rgba(120, 86, 0, ${p.opacity})` // Dark gold runes
+            : `rgba(158, 107, 15, ${p.opacity})` // Warm gold runes
           
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
@@ -277,10 +277,10 @@ export function ArcaneCursor() {
             const radius = 10 + p * 50 // expand outward
             const angle = p * Math.PI // rotate as it expands
             
-            ctx.strokeStyle = `rgba(120, 86, 0, ${opacity})`
+            ctx.strokeStyle = `rgba(158, 107, 15, ${opacity})`
             ctx.lineWidth = 1.5
             ctx.shadowBlur = 10 * opacity
-            ctx.shadowColor = '#785600'
+            ctx.shadowColor = '#9E6B0F'
 
             // Equilateral Triangle 1 (pointing up)
             ctx.beginPath()
@@ -445,10 +445,10 @@ export function ArcaneCursor() {
         float mask = smoothstep(0.5, 0.35, dist);
         
         // --- 1. MAGIC SHADER (Quick Pitch Golden Halo) ---
-        // Elegant glowing dark antique gold tones
-        vec3 magicCore = vec3(0.70, 0.55, 0.15);   // Rich gold #B8860B
-        vec3 magicMid = vec3(0.50, 0.38, 0.02);    // Dark gold/bronze #8A6508
-        vec3 magicOuter = vec3(0.35, 0.25, 0.05);  // Very dark antique gold #5C4008
+        // Elegant glowing dark antique gold tones (no green/olive tint)
+        vec3 magicCore = vec3(0.80, 0.58, 0.15);   // Rich warm gold
+        vec3 magicMid = vec3(0.60, 0.40, 0.05);    // Rich amber gold (Red=0.60, Green=0.40, Blue=0.05)
+        vec3 magicOuter = vec3(0.40, 0.22, 0.02);  // Deep warm bronze
         
         vec3 magicColor = mix(magicOuter, magicMid, dist * 2.0);
         magicColor = mix(magicColor, magicCore, pow(1.0 - dist * 2.0, 2.0));
@@ -673,7 +673,7 @@ export function ArcaneCursor() {
                 className="animate-[spin_28s_linear_infinite]"
                 style={{
                   opacity: isHovered ? 0.8 : 0.45,
-                  filter: isHovered ? 'drop-shadow(0 0 4px rgba(120, 86, 0, 0.85))' : 'none',
+                  filter: isHovered ? 'drop-shadow(0 0 4px rgba(158, 107, 15, 0.85))' : 'none',
                 }}
               >
                 {/* Outer boundary ring */}
@@ -725,8 +725,8 @@ export function ArcaneCursor() {
                         left: '50%',
                         top: '50%',
                         transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`,
-                        textShadow: isHovered ? '0 0 5px rgba(120, 86, 0, 0.9)' : '0 0 3px rgba(120, 86, 0, 0.5)',
-                        color: isHovered ? '#FFEAA7' : 'rgba(184, 134, 11, 0.85)',
+                        textShadow: isHovered ? '0 0 5px rgba(158, 107, 15, 0.9)' : '0 0 3px rgba(158, 107, 15, 0.5)',
+                        color: isHovered ? '#FFEAA7' : 'rgba(190, 130, 20, 0.85)',
                       }}
                     >
                       {rune}
@@ -744,9 +744,9 @@ export function ArcaneCursor() {
           style={{
             backgroundColor: isDeep 
               ? (isHovered ? '#E0F2FE' : '#0088FF') 
-              : (isHovered ? '#FFEAA7' : '#8A6508'),
+              : (isHovered ? '#FFEAA7' : '#9E6B0F'),
             boxShadow: isHovered 
-              ? (isDeep ? '0 0 8px rgba(0, 88, 255, 0.95)' : '0 0 8px rgba(120, 86, 0, 0.95)') 
+              ? (isDeep ? '0 0 8px rgba(0, 88, 255, 0.95)' : '0 0 8px rgba(158, 107, 15, 0.95)') 
               : 'none'
           }}
         />
