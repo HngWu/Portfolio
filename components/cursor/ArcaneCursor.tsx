@@ -656,70 +656,85 @@ export function ArcaneCursor() {
           // MAGIC MODE: Glowing golden-amber detailed custom tilted pointer (Concentric Runic Array)
           <>
             {/* 1. Concentric Astrological Spell Array (Interlocking glowing golden-amber geometric lines) */}
-            <svg
-              width="60"
-              height="60"
-              viewBox="0 0 80 80"
-              className="absolute animate-[spin_28s_linear_infinite] transition-all duration-300 ease-out"
+            <div
+              className="absolute transition-all duration-300 ease-out"
               style={{
                 left: '15px',
                 top: '15px',
                 transform: 'scale(1.0)',
-                opacity: isHovered ? 0.8 : 0.45,
-                filter: isHovered ? 'drop-shadow(0 0 4px rgba(120, 86, 0, 0.85))' : 'none',
+                width: '60px',
+                height: '60px',
               }}
             >
-              {/* Outer boundary ring */}
-              <circle cx="40" cy="40" r="38" stroke="rgba(245, 158, 11, 0.3)" strokeWidth="0.8" fill="none" />
-              {/* Dashed secondary boundary */}
-              <circle cx="40" cy="40" r="32" stroke="rgba(251, 191, 36, 0.2)" strokeWidth="0.8" fill="none" strokeDasharray="3, 3" />
-              {/* Inner focus ring */}
-              <circle cx="40" cy="40" r="19" stroke="rgba(251, 191, 36, 0.4)" strokeWidth="0.8" fill="none" />
-              
-              {/* Solomon's Star (Intersecting concentric triangles creating a stunning Hexagram spell grid) */}
-              <polygon points="40,3 72,58 8,58" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="0.8" fill="none" />
-              <polygon points="40,77 72,22 8,22" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="0.8" fill="none" />
-              
-              {/* Cardinal axis crosshair markers */}
-              <line x1="40" y1="2" x2="40" y2="7" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
-              <line x1="40" y1="73" x2="40" y2="78" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
-              <line x1="2" y1="40" x2="7" y2="40" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
-              <line x1="73" y1="40" x2="78" y2="40" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
-            </svg>
-
-            {/* 2. Concentric Counter-Rotating Runic Ring (Actual Norse runes) */}
-            <div 
-              className="absolute w-[60px] h-[60px] animate-[spin_12s_linear_infinite_reverse] transition-all duration-300 ease-out" 
-              style={{
-                left: '15px',
-                top: '15px',
-                transform: 'scale(1.0)',
-                animationDuration: isHovered ? '4s' : '15s' // Fast rotation on hover, slower at idle
-              }}
-            >
-              {/* Actual Norse Runes mapped around the circle */}
-              {["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ"].map((rune, idx, arr) => {
-                const angle = (idx / arr.length) * 360
-                const radius = 20 // stable radius
-                return (
-                  <span
-                    key={idx}
-                    className="absolute text-[8.5px] transition-all duration-300 select-none pointer-events-none"
-                    style={{
-                      fontFamily: 'NotoSansRunic-Regular, monospace',
-                      left: '50%',
-                      top: '50%',
-                      transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`,
-                      textShadow: isHovered ? '0 0 5px rgba(120, 86, 0, 0.9)' : '0 0 3px rgba(120, 86, 0, 0.5)',
-                      color: isHovered ? '#FFEAA7' : 'rgba(184, 134, 11, 0.85)',
-                    }}
-                  >
-                    {rune}
-                  </span>
-                )
-              })}
+              <svg
+                width="60"
+                height="60"
+                viewBox="0 0 80 80"
+                className="animate-[spin_28s_linear_infinite]"
+                style={{
+                  opacity: isHovered ? 0.8 : 0.45,
+                  filter: isHovered ? 'drop-shadow(0 0 4px rgba(120, 86, 0, 0.85))' : 'none',
+                }}
+              >
+                {/* Outer boundary ring */}
+                <circle cx="40" cy="40" r="38" stroke="rgba(245, 158, 11, 0.3)" strokeWidth="0.8" fill="none" />
+                {/* Dashed secondary boundary */}
+                <circle cx="40" cy="40" r="32" stroke="rgba(251, 191, 36, 0.2)" strokeWidth="0.8" fill="none" strokeDasharray="3, 3" />
+                {/* Inner focus ring */}
+                <circle cx="40" cy="40" r="19" stroke="rgba(251, 191, 36, 0.4)" strokeWidth="0.8" fill="none" />
+                
+                {/* Solomon's Star (Intersecting concentric triangles creating a stunning Hexgram spell grid) */}
+                <polygon points="40,3 72,58 8,58" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="0.8" fill="none" />
+                <polygon points="40,77 72,22 8,22" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="0.8" fill="none" />
+                
+                {/* Cardinal axis crosshair markers */}
+                <line x1="40" y1="2" x2="40" y2="7" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+                <line x1="40" y1="73" x2="40" y2="78" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+                <line x1="2" y1="40" x2="7" y2="40" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+                <line x1="73" y1="40" x2="78" y2="40" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+              </svg>
             </div>
 
+            {/* 2. Concentric Counter-Rotating Runic Ring (Actual Norse runes) */}
+            <div
+              className="absolute transition-all duration-300 ease-out"
+              style={{
+                left: '15px',
+                top: '15px',
+                transform: 'scale(1.0)',
+                width: '60px',
+                height: '60px',
+              }}
+            >
+              <div 
+                className="w-full h-full animate-[spin_12s_linear_infinite_reverse]" 
+                style={{
+                  animationDuration: isHovered ? '4s' : '15s' // Fast rotation on hover, slower at idle
+                }}
+              >
+                {/* Actual Norse Runes mapped around the circle */}
+                {["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ"].map((rune, idx, arr) => {
+                  const angle = (idx / arr.length) * 360
+                  const radius = 20 // stable radius
+                  return (
+                    <span
+                      key={idx}
+                      className="absolute text-[8.5px] transition-all duration-300 select-none pointer-events-none"
+                      style={{
+                        fontFamily: 'NotoSansRunic-Regular, monospace',
+                        left: '50%',
+                        top: '50%',
+                        transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`,
+                        textShadow: isHovered ? '0 0 5px rgba(120, 86, 0, 0.9)' : '0 0 3px rgba(120, 86, 0, 0.5)',
+                        color: isHovered ? '#FFEAA7' : 'rgba(184, 134, 11, 0.85)',
+                      }}
+                    >
+                      {rune}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
           </>
         )}
 
