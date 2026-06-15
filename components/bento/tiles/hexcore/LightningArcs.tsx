@@ -7,18 +7,26 @@ interface LightningArcsProps {
   mode: 'quick-pitch' | 'deep-dive';
   ringARef: React.RefObject<THREE.Object3D | null>;
   ringBRef: React.RefObject<THREE.Object3D | null>;
+  pyramidsGroupRef?: React.RefObject<THREE.Group | null>;
 }
 
-export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef, ringBRef }) => {
+export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef, ringBRef, pyramidsGroupRef }) => {
   const lineRef = useRef<THREE.LineSegments>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const [active, setActive] = useState(false);
   const triggerTimer = useRef(0);
   const arcDuration = useRef(0);
   const maxSegments = 32;
+  const numArcs = 3;
+
+  const targetPyramidIdxA = useRef(0);
+  const targetPyramidIdxB = useRef(0);
 
   const [positions, alphas] = useMemo(() => {
-    return [new Float32Array(maxSegments * 2 * 3), new Float32Array(maxSegments * 2)];
+    return [
+      new Float32Array(maxSegments * 2 * 3 * numArcs), 
+      new Float32Array(maxSegments * 2 * numArcs)
+    ];
   }, []);
 
   const generateLightningPath = (start: THREE.Vector3, end: THREE.Vector3, displace: number, numSegs: number) => {
@@ -71,7 +79,7 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
         setActive(false);
         if (lineRef.current) {
           const pos = lineRef.current.geometry.attributes.position as THREE.BufferAttribute;
-          pos.copyArray(new Float32Array(positions.length));
+          pos.array.fill(0);
           pos.needsUpdate = true;
         }
       }
@@ -91,6 +99,16 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
         setActive(true);
         arcDuration.current = 0;
         triggerTimer.current = 0;
+
+        // Select stable target pyramids for the duration of this discharge
+        if (pyramidsGroupRef?.current && pyramidsGroupRef.current.children.length > 0) {
+          const count = pyramidsGroupRef.current.children.length;
+          targetPyramidIdxA.current = Math.floor(Math.random() * count);
+          targetPyramidIdxB.current = Math.floor(Math.random() * count);
+          if (targetPyramidIdxA.current === targetPyramidIdxB.current) {
+            targetPyramidIdxB.current = (targetPyramidIdxB.current + 1) % count;
+          }
+        }
       }
     }
 
@@ -100,33 +118,68 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
         setActive(false);
         if (lineRef.current) {
           const pos = lineRef.current.geometry.attributes.position as THREE.BufferAttribute;
-          pos.copyArray(new Float32Array(positions.length));
+          pos.array.fill(0);
           pos.needsUpdate = true;
         }
         return;
       }
 
       if (ringARef.current && ringBRef.current && lineRef.current) {
-        const startWorld = new THREE.Vector3();
-        const endWorld = new THREE.Vector3();
+        const startA = new THREE.Vector3();
+        const endB = new THREE.Vector3();
+        const shellA = new THREE.Vector3();
+        const shellB = new THREE.Vector3();
+
         const angleA = state.clock.getElapsedTime() * 2.0;
         const angleB = -state.clock.getElapsedTime() * 1.5;
 
-        startWorld.set(Math.cos(angleA) * 1.4, 0, Math.sin(angleA) * 1.4);
-        endWorld.set(Math.cos(angleB) * 1.8, 0, Math.sin(angleB) * 1.8);
+        // 1. Ring points
+        startA.set(Math.cos(angleA) * 1.4, 0, Math.sin(angleA) * 1.4);
+        endB.set(Math.cos(angleB) * 1.8, 0, Math.sin(angleB) * 1.8);
+        ringARef.current.localToWorld(startA);
+        ringBRef.current.localToWorld(endB);
 
-        ringARef.current.localToWorld(startWorld);
-        ringBRef.current.localToWorld(endWorld);
+        // 2. Shell points
+        let gotShell = false;
+        if (pyramidsGroupRef?.current && pyramidsGroupRef.current.children.length > 0) {
+          const childA = pyramidsGroupRef.current.children[targetPyramidIdxA.current];
+          const childB = pyramidsGroupRef.current.children[targetPyramidIdxB.current];
+          if (childA && childB) {
+            childA.getWorldPosition(shellA);
+            childB.getWorldPosition(shellB);
+            gotShell = true;
+          }
+        }
 
-        lineRef.current.worldToLocal(startWorld);
-        lineRef.current.worldToLocal(endWorld);
+        // Convert all to local space
+        lineRef.current.worldToLocal(startA);
+        lineRef.current.worldToLocal(endB);
+        if (gotShell) {
+          lineRef.current.worldToLocal(shellA);
+          lineRef.current.worldToLocal(shellB);
+        } else {
+          shellA.copy(startA).multiplyScalar(0.5);
+          shellB.copy(endB).multiplyScalar(0.5);
+        }
 
-        const { posAttr, alpAttr } = generateLightningPath(startWorld, endWorld, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
+        // Generate paths
+        const pathRingToRing = generateLightningPath(startA, endB, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
+        const pathRingAToShell = generateLightningPath(startA, shellA, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
+        const pathRingBToShell = generateLightningPath(endB, shellB, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
 
         const pos = lineRef.current.geometry.attributes.position as THREE.BufferAttribute;
         const alp = lineRef.current.geometry.attributes.aAlpha as THREE.BufferAttribute;
-        pos.copyArray(posAttr);
-        alp.copyArray(alpAttr);
+
+        // Copy to flat attributes
+        (pos.array as Float32Array).set(pathRingToRing.posAttr, 0);
+        (alp.array as Float32Array).set(pathRingToRing.alpAttr, 0);
+
+        (pos.array as Float32Array).set(pathRingAToShell.posAttr, maxSegments * 2 * 3);
+        (alp.array as Float32Array).set(pathRingAToShell.alpAttr, maxSegments * 2);
+
+        (pos.array as Float32Array).set(pathRingBToShell.posAttr, maxSegments * 2 * 3 * 2);
+        (alp.array as Float32Array).set(pathRingBToShell.alpAttr, maxSegments * 2 * 2);
+
         pos.needsUpdate = true;
         alp.needsUpdate = true;
       }
