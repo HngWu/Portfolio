@@ -245,14 +245,14 @@ export function ArcaneCursor() {
             ctx.rotate(p.rotation)
           }
 
-          // Set emissive drop shadow glows (Dark Blue for Tech; Amber-Gold for Magic)
+          // Set emissive drop shadow glows (Dark Blue for Tech; Burnished Gold for Magic)
           ctx.shadowBlur = p.size * 1.5
-          ctx.shadowColor = isDeep ? '#0044FF' : '#B45309' 
+          ctx.shadowColor = isDeep ? '#0044FF' : '#9A7B0C' 
 
           ctx.font = `${p.size}px ${isDeep ? 'monospace' : 'NotoSansRunic-Regular, monospace'}`
           ctx.fillStyle = isDeep 
             ? `rgba(0, 68, 255, ${p.opacity})` // Dark blue binary coordinates
-            : `rgba(180, 83, 9, ${p.opacity})` // Amber-Gold runes
+            : `rgba(154, 123, 12, ${p.opacity})` // Burnished gold runes
           
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
@@ -277,10 +277,10 @@ export function ArcaneCursor() {
             const radius = 10 + p * 50 // expand outward
             const angle = p * Math.PI // rotate as it expands
             
-            ctx.strokeStyle = `rgba(180, 83, 9, ${opacity})`
+            ctx.strokeStyle = `rgba(154, 123, 12, ${opacity})`
             ctx.lineWidth = 1.5
             ctx.shadowBlur = 10 * opacity
-            ctx.shadowColor = '#B45309'
+            ctx.shadowColor = '#9A7B0C'
 
             // Equilateral Triangle 1 (pointing up)
             ctx.beginPath()
@@ -445,10 +445,10 @@ export function ArcaneCursor() {
         float mask = smoothstep(0.5, 0.35, dist);
         
         // --- 1. MAGIC SHADER (Quick Pitch Golden Halo) ---
-        // Elegant glowing dark antique gold tones (absolutely no green/olive tint)
-        vec3 magicCore = vec3(0.85, 0.50, 0.10);   // Warm amber core
-        vec3 magicMid = vec3(0.70, 0.32, 0.02);    // Rich amber-gold (Red=0.70, Green=0.32, Blue=0.02)
-        vec3 magicOuter = vec3(0.50, 0.18, 0.01);  // Deep warm bronze
+        // Elegant glowing burnished/antique gold tones (no green/olive tint)
+        vec3 magicCore = vec3(0.85, 0.70, 0.30);   // Mellow light gold
+        vec3 magicMid = vec3(0.60, 0.48, 0.05);    // Burnished dark gold #9A7B0C
+        vec3 magicOuter = vec3(0.54, 0.40, 0.14);  // Antique bronze/gold #8A6623
         
         vec3 magicColor = mix(magicOuter, magicMid, dist * 2.0);
         magicColor = mix(magicColor, magicCore, pow(1.0 - dist * 2.0, 2.0));
@@ -673,7 +673,7 @@ export function ArcaneCursor() {
                 className="animate-[spin_28s_linear_infinite]"
                 style={{
                   opacity: isHovered ? 0.8 : 0.45,
-                  filter: isHovered ? 'drop-shadow(0 0 4px rgba(180, 83, 9, 0.85))' : 'none',
+                  filter: isHovered ? 'drop-shadow(0 0 4px rgba(154, 123, 12, 0.75))' : 'none',
                 }}
               >
                 {/* Outer boundary ring */}
@@ -725,8 +725,8 @@ export function ArcaneCursor() {
                         left: '50%',
                         top: '50%',
                         transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`,
-                        textShadow: isHovered ? '0 0 5px rgba(180, 83, 9, 0.9)' : '0 0 3px rgba(180, 83, 9, 0.5)',
-                        color: isHovered ? '#FFEAA7' : 'rgba(217, 119, 6, 0.85)',
+                        textShadow: isHovered ? '0 0 5px rgba(154, 123, 12, 0.9)' : '0 0 3px rgba(154, 123, 12, 0.5)',
+                        color: isHovered ? '#FFFBEB' : 'rgba(170, 124, 17, 0.85)',
                       }}
                     >
                       {rune}
@@ -742,11 +742,9 @@ export function ArcaneCursor() {
         <div 
           className="absolute left-1/2 top-1/2 w-[5px] h-[5px] rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-150 ease-out z-[99999]"
           style={{
-            backgroundColor: isDeep 
-              ? (isHovered ? '#E0F2FE' : '#0088FF') 
-              : (isHovered ? '#FFEAA7' : '#B45309'),
+            backgroundColor: isDeep ? '#0088FF' : '#AA7C11',
             boxShadow: isHovered 
-              ? (isDeep ? '0 0 8px rgba(0, 88, 255, 0.95)' : '0 0 8px rgba(180, 83, 9, 0.95)') 
+              ? (isDeep ? '0 0 8px rgba(0, 136, 255, 0.95)' : '0 0 8px rgba(170, 124, 17, 0.95)') 
               : 'none'
           }}
         />
