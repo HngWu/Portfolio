@@ -1,7 +1,7 @@
 "use client"
 
 import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber"
-import { Suspense, useRef, useMemo, useState, useEffect } from "react"
+import React, { Suspense, useRef, useMemo, useState, useEffect } from "react"
 import { Float, Text } from "@react-three/drei"
 import * as THREE from "three"
 import { EffectComposer, Bloom } from "@react-three/postprocessing"
@@ -619,7 +619,13 @@ function generateLightningPath(start: THREE.Vector3, end: THREE.Vector3, detail 
   return currentSegmentCount + 1
 }
 
-function LightningArcs({ faces }: { faces: FaceData[] }) {
+function LightningArcs({ 
+  faces, 
+  pyramidsGroupRef 
+}: { 
+  faces: FaceData[], 
+  pyramidsGroupRef: React.RefObject<THREE.Group | null> 
+}) {
   const lineRef = useRef<THREE.LineSegments>(null)
   const lineGeoRef = useRef<THREE.BufferGeometry>(null)
   
@@ -653,9 +659,23 @@ function LightningArcs({ faces }: { faces: FaceData[] }) {
       const f1 = faces[p1Idx]
       const f2 = faces[p2Idx]
       
-      // Use scratch vectors to avoid clones and new vector allocations
-      const p1 = _scratchVector1.copy(f1.center).multiplyScalar(1.3)
-      const p2 = _scratchVector2.copy(f2.center).multiplyScalar(1.3)
+      const p1 = _scratchVector1
+      const p2 = _scratchVector2
+      
+      let gotP1 = false
+      let gotP2 = false
+      
+      if (pyramidsGroupRef.current && pyramidsGroupRef.current.children[p1Idx]) {
+        p1.copy(pyramidsGroupRef.current.children[p1Idx].position)
+        gotP1 = true
+      }
+      if (pyramidsGroupRef.current && pyramidsGroupRef.current.children[p2Idx]) {
+        p2.copy(pyramidsGroupRef.current.children[p2Idx].position)
+        gotP2 = true
+      }
+      
+      if (!gotP1) p1.copy(f1.center).multiplyScalar(1.3)
+      if (!gotP2) p2.copy(f2.center).multiplyScalar(1.3)
       
       const numPoints = generateLightningPath(p1, p2, 4, 0.45)
       for (let i = 0; i < numPoints - 1; i++) {
@@ -1280,7 +1300,7 @@ function PolyhedronScene({
         <GravityParticles />
 
         {/* Fractal lightning arcs */}
-        <LightningArcs faces={faces} />
+        <LightningArcs faces={faces} pyramidsGroupRef={pyramidsGroupRef} />
 
         {/* Dynamic Concentric Ring GPU Particles and lightning discharges */}
         <RunicDustStreams mode={isDeepDive ? 'deep-dive' : 'quick-pitch'} />
@@ -1288,6 +1308,7 @@ function PolyhedronScene({
           mode={isDeepDive ? 'deep-dive' : 'quick-pitch'} 
           ringARef={ring1Ref} 
           ringBRef={ring2Ref} 
+          pyramidsGroupRef={pyramidsGroupRef}
         />
 
         {/* Ring 1 (X-Y Diagonal) */}
