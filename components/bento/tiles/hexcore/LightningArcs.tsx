@@ -7,20 +7,22 @@ interface LightningArcsProps {
   mode: 'quick-pitch' | 'deep-dive';
   ringARef: React.RefObject<THREE.Object3D | null>;
   ringBRef: React.RefObject<THREE.Object3D | null>;
+  ringCRef?: React.RefObject<THREE.Object3D | null>;
   pyramidsGroupRef?: React.RefObject<THREE.Group | null>;
 }
 
-export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef, ringBRef, pyramidsGroupRef }) => {
+export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef, ringBRef, ringCRef, pyramidsGroupRef }) => {
   const lineRef = useRef<THREE.LineSegments>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const [active, setActive] = useState(false);
   const triggerTimer = useRef(0);
   const arcDuration = useRef(0);
   const maxSegments = 32;
-  const numArcs = 3;
+  const numArcs = 6;
 
   const targetPyramidIdxA = useRef(0);
   const targetPyramidIdxB = useRef(0);
+  const targetPyramidIdxC = useRef(0);
 
   const [positions, alphas] = useMemo(() => {
     return [
@@ -88,13 +90,13 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
 
     triggerTimer.current += delta;
 
-    // Spell overrides: lightning triggers snap arcs much faster, ignite overloads it
     const activeSpell = sharedSpellState.lightning || sharedSpellState.ignite;
-    const interval = activeSpell ? 0.35 : (mode === 'quick-pitch' ? 4.5 : 2.0);
-    const maxDuration = activeSpell ? 0.12 : (mode === 'quick-pitch' ? 0.35 : 0.15);
+    // High intensity: trigger much more frequently by default
+    const interval = activeSpell ? 0.15 : (mode === 'quick-pitch' ? 0.8 : 0.5);
+    const maxDuration = activeSpell ? 0.22 : (mode === 'quick-pitch' ? 0.5 : 0.35);
 
     if (!active && triggerTimer.current > interval) {
-      const probability = activeSpell ? 0.95 : 0.45;
+      const probability = activeSpell ? 0.98 : 0.80;
       if (Math.random() < probability && ringARef.current && ringBRef.current) {
         setActive(true);
         arcDuration.current = 0;
@@ -105,9 +107,7 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
           const count = pyramidsGroupRef.current.children.length;
           targetPyramidIdxA.current = Math.floor(Math.random() * count);
           targetPyramidIdxB.current = Math.floor(Math.random() * count);
-          if (targetPyramidIdxA.current === targetPyramidIdxB.current) {
-            targetPyramidIdxB.current = (targetPyramidIdxB.current + 1) % count;
-          }
+          targetPyramidIdxC.current = Math.floor(Math.random() * count);
         }
       }
     }
@@ -126,59 +126,96 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
 
       if (ringARef.current && ringBRef.current && lineRef.current) {
         const startA = new THREE.Vector3();
-        const endB = new THREE.Vector3();
+        const startB = new THREE.Vector3();
+        const startC = new THREE.Vector3();
         const shellA = new THREE.Vector3();
         const shellB = new THREE.Vector3();
+        const shellC = new THREE.Vector3();
 
-        const angleA = state.clock.getElapsedTime() * 2.0;
-        const angleB = -state.clock.getElapsedTime() * 1.5;
+        const elapsed = state.clock.getElapsedTime();
+        const angleA = elapsed * 2.0;
+        const angleB = -elapsed * 1.5;
+        const angleC = elapsed * 1.0;
 
         // 1. Ring points
         startA.set(Math.cos(angleA) * 1.4, 0, Math.sin(angleA) * 1.4);
-        endB.set(Math.cos(angleB) * 1.8, 0, Math.sin(angleB) * 1.8);
+        startB.set(Math.cos(angleB) * 1.8, 0, Math.sin(angleB) * 1.8);
+
         ringARef.current.localToWorld(startA);
-        ringBRef.current.localToWorld(endB);
+        ringBRef.current.localToWorld(startB);
+
+        let gotRingC = false;
+        if (ringCRef?.current) {
+          startC.set(0, Math.cos(angleC) * 2.2, Math.sin(angleC) * 2.2); // Z-X Diagonal Ring 3 orientation
+          ringCRef.current.localToWorld(startC);
+          gotRingC = true;
+        }
 
         // 2. Shell points
         let gotShell = false;
         if (pyramidsGroupRef?.current && pyramidsGroupRef.current.children.length > 0) {
           const childA = pyramidsGroupRef.current.children[targetPyramidIdxA.current];
           const childB = pyramidsGroupRef.current.children[targetPyramidIdxB.current];
-          if (childA && childB) {
+          const childC = pyramidsGroupRef.current.children[targetPyramidIdxC.current];
+          if (childA && childB && childC) {
             childA.getWorldPosition(shellA);
             childB.getWorldPosition(shellB);
+            childC.getWorldPosition(shellC);
             gotShell = true;
           }
         }
 
         // Convert all to local space
         lineRef.current.worldToLocal(startA);
-        lineRef.current.worldToLocal(endB);
+        lineRef.current.worldToLocal(startB);
+        if (gotRingC) {
+          lineRef.current.worldToLocal(startC);
+        } else {
+          startC.copy(startB);
+        }
+
         if (gotShell) {
           lineRef.current.worldToLocal(shellA);
           lineRef.current.worldToLocal(shellB);
+          lineRef.current.worldToLocal(shellC);
         } else {
           shellA.copy(startA).multiplyScalar(0.5);
-          shellB.copy(endB).multiplyScalar(0.5);
+          shellB.copy(startB).multiplyScalar(0.5);
+          shellC.copy(startC).multiplyScalar(0.5);
         }
 
         // Generate paths
-        const pathRingToRing = generateLightningPath(startA, endB, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
-        const pathRingAToShell = generateLightningPath(startA, shellA, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
-        const pathRingBToShell = generateLightningPath(endB, shellB, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
+        const pathA_B = generateLightningPath(startA, startB, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
+        const pathB_C = generateLightningPath(startB, startC, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
+        const pathC_A = generateLightningPath(startC, startA, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
+        const pathA_Shell = generateLightningPath(startA, shellA, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
+        const pathB_Shell = generateLightningPath(startB, shellB, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
+        const pathC_Shell = generateLightningPath(startC, shellC, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
 
         const pos = lineRef.current.geometry.attributes.position as THREE.BufferAttribute;
         const alp = lineRef.current.geometry.attributes.aAlpha as THREE.BufferAttribute;
 
-        // Copy to flat attributes
-        (pos.array as Float32Array).set(pathRingToRing.posAttr, 0);
-        (alp.array as Float32Array).set(pathRingToRing.alpAttr, 0);
+        // Copy paths to buffer array sequentially
+        const stridePos = maxSegments * 2 * 3;
+        const strideAlp = maxSegments * 2;
 
-        (pos.array as Float32Array).set(pathRingAToShell.posAttr, maxSegments * 2 * 3);
-        (alp.array as Float32Array).set(pathRingAToShell.alpAttr, maxSegments * 2);
+        (pos.array as Float32Array).set(pathA_B.posAttr, stridePos * 0);
+        (alp.array as Float32Array).set(pathA_B.alpAttr, strideAlp * 0);
 
-        (pos.array as Float32Array).set(pathRingBToShell.posAttr, maxSegments * 2 * 3 * 2);
-        (alp.array as Float32Array).set(pathRingBToShell.alpAttr, maxSegments * 2 * 2);
+        (pos.array as Float32Array).set(pathB_C.posAttr, stridePos * 1);
+        (alp.array as Float32Array).set(pathB_C.alpAttr, strideAlp * 1);
+
+        (pos.array as Float32Array).set(pathC_A.posAttr, stridePos * 2);
+        (alp.array as Float32Array).set(pathC_A.alpAttr, strideAlp * 2);
+
+        (pos.array as Float32Array).set(pathA_Shell.posAttr, stridePos * 3);
+        (alp.array as Float32Array).set(pathA_Shell.alpAttr, strideAlp * 3);
+
+        (pos.array as Float32Array).set(pathB_Shell.posAttr, stridePos * 4);
+        (alp.array as Float32Array).set(pathB_Shell.alpAttr, strideAlp * 4);
+
+        (pos.array as Float32Array).set(pathC_Shell.posAttr, stridePos * 5);
+        (alp.array as Float32Array).set(pathC_Shell.alpAttr, strideAlp * 5);
 
         pos.needsUpdate = true;
         alp.needsUpdate = true;
