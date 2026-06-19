@@ -3,6 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { sharedSpellState } from '../PolyhedronCanvas';
 
+const UP = new THREE.Vector3(0, 1, 0);
+
 interface LightningArcsProps {
   mode: 'quick-pitch' | 'deep-dive';
   ringARef: React.RefObject<THREE.Object3D | null>;
@@ -35,11 +37,12 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
 
   // 2. Pre-allocated vector pool for zero-garbage mathematics
   const calcPoints = useMemo(() => Array.from({ length: 33 }, () => new THREE.Vector3()), []);
-  const vectorPool = useMemo(() => Array.from({ length: 128 }, () => new THREE.Vector3()), []);
+  const tempPoints = useMemo(() => Array.from({ length: 33 }, () => new THREE.Vector3()), []);
+  const vectorPool = useMemo(() => Array.from({ length: 512 }, () => new THREE.Vector3()), []);
   let poolIdx = 0;
   const getScratchVector = () => {
     const v = vectorPool[poolIdx];
-    poolIdx = (poolIdx + 1) % 128;
+    poolIdx = (poolIdx + 1) % 512;
     return v;
   };
 
@@ -52,8 +55,6 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
     posOffset: number,
     alpOffset: number
   ) => {
-    poolIdx = 0; // Reset scratch index
-    
     calcPoints[0].copy(start);
     calcPoints[1].copy(end);
     let currentDisplace = displace;
@@ -62,10 +63,12 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
     for (let i = 0; i < Math.log2(numSegs); i++) {
       // Create temporary copy of current points
       const pointsCount = currentSegmentCount + 1;
-      const tempPoints = Array.from({ length: pointsCount }, (_, idx) => getScratchVector().copy(calcPoints[idx]));
+      for (let idx = 0; idx < pointsCount; idx++) {
+        tempPoints[idx].copy(calcPoints[idx]);
+      }
       
       calcPoints[0].copy(tempPoints[0]);
-      for (let j = 0; j < tempPoints.length - 1; j++) {
+      for (let j = 0; j < pointsCount - 1; j++) {
         const p1 = tempPoints[j];
         const p2 = tempPoints[j + 1];
         const midIdx = j * 2 + 1;
@@ -75,8 +78,7 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
 
         const mid = calcPoints[midIdx].addVectors(p1, p2).multiplyScalar(0.5);
         const dir = getScratchVector().subVectors(p2, p1).normalize();
-        const up = getScratchVector().set(0, 1, 0);
-        const tangent = getScratchVector().crossVectors(dir, up).normalize();
+        const tangent = getScratchVector().crossVectors(dir, UP).normalize();
         if (tangent.lengthSq() < 0.1) tangent.set(1, 0, 0);
         const angle = Math.random() * Math.PI * 2;
         tangent.applyAxisAngle(dir, angle);
@@ -113,6 +115,7 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
   };
 
   useFrame((state, rawDelta) => {
+    poolIdx = 0; // Reset scratch index at the start of frame
     const delta = Math.min(rawDelta, 0.1);
     if (sharedSpellState.lockdown) {
       if (active) {
