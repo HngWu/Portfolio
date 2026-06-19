@@ -629,8 +629,7 @@ function LightningArcs({
   const lineRef = useRef<THREE.LineSegments>(null)
   const lineGeoRef = useRef<THREE.BufferGeometry>(null)
   
-  // Max vertices = 3 paths * 33 points/path * 2 = 198
-  const maxVertices = 200
+  const maxVertices = 400
   const positions = useMemo(() => new Float32Array(maxVertices * 3), [])
   
   useFrame(() => {
@@ -648,7 +647,7 @@ function LightningArcs({
     if (!showLightning || !lineRef.current || !lineGeoRef.current) return
 
     let vertexIdx = 0
-    const count = 3
+    const count = 8
     const pos = lineGeoRef.current.attributes.position.array as Float32Array
 
     for (let l = 0; l < count; l++) {
@@ -1308,6 +1307,7 @@ function PolyhedronScene({
           mode={isDeepDive ? 'deep-dive' : 'quick-pitch'} 
           ringARef={ring1Ref} 
           ringBRef={ring2Ref} 
+          ringCRef={ring3Ref}
           pyramidsGroupRef={pyramidsGroupRef}
         />
 
