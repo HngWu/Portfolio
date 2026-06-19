@@ -18,12 +18,14 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
   const triggerTimer = useRef(0);
   const arcDuration = useRef(0);
   const maxSegments = 32;
-  const numArcs = 6;
+  const numArcs = 12; // Doubled from 6
 
   const targetPyramidIdxA = useRef(0);
   const targetPyramidIdxB = useRef(0);
   const targetPyramidIdxC = useRef(0);
+  const updateIndex = useRef(0); // For staggered scheduling
 
+  // 1. Pre-allocated flat buffers bound to geometry
   const [positions, alphas] = useMemo(() => {
     return [
       new Float32Array(maxSegments * 2 * 3 * numArcs), 
@@ -31,51 +33,87 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
     ];
   }, []);
 
-  const generateLightningPath = (start: THREE.Vector3, end: THREE.Vector3, displace: number, numSegs: number) => {
-    const points: THREE.Vector3[] = [start, end];
+  // 2. Pre-allocated vector pool for zero-garbage mathematics
+  const calcPoints = useMemo(() => Array.from({ length: 33 }, () => new THREE.Vector3()), []);
+  const vectorPool = useMemo(() => Array.from({ length: 128 }, () => new THREE.Vector3()), []);
+  let poolIdx = 0;
+  const getScratchVector = () => {
+    const v = vectorPool[poolIdx];
+    poolIdx = (poolIdx + 1) % 128;
+    return v;
+  };
+
+  // 3. In-place zero-allocation path generation
+  const generateLightningPathInPlace = (
+    start: THREE.Vector3, 
+    end: THREE.Vector3, 
+    displace: number, 
+    numSegs: number,
+    posOffset: number,
+    alpOffset: number
+  ) => {
+    poolIdx = 0; // Reset scratch index
+    
+    calcPoints[0].copy(start);
+    calcPoints[1].copy(end);
     let currentDisplace = displace;
+    let currentSegmentCount = 1;
+
     for (let i = 0; i < Math.log2(numSegs); i++) {
-      const tempPoints = [...points];
-      points.length = 0;
-      points.push(tempPoints[0]);
+      // Create temporary copy of current points
+      const pointsCount = currentSegmentCount + 1;
+      const tempPoints = Array.from({ length: pointsCount }, (_, idx) => getScratchVector().copy(calcPoints[idx]));
+      
+      calcPoints[0].copy(tempPoints[0]);
       for (let j = 0; j < tempPoints.length - 1; j++) {
         const p1 = tempPoints[j];
         const p2 = tempPoints[j + 1];
-        const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
-        const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
-        const up = new THREE.Vector3(0, 1, 0);
-        const tangent = new THREE.Vector3().crossVectors(dir, up).normalize();
+        const midIdx = j * 2 + 1;
+        const p2Idx = j * 2 + 2;
+
+        calcPoints[p2Idx].copy(p2);
+
+        const mid = calcPoints[midIdx].addVectors(p1, p2).multiplyScalar(0.5);
+        const dir = getScratchVector().subVectors(p2, p1).normalize();
+        const up = getScratchVector().set(0, 1, 0);
+        const tangent = getScratchVector().crossVectors(dir, up).normalize();
         if (tangent.lengthSq() < 0.1) tangent.set(1, 0, 0);
         const angle = Math.random() * Math.PI * 2;
         tangent.applyAxisAngle(dir, angle);
         mid.addScaledVector(tangent, (Math.random() - 0.5) * currentDisplace);
-        points.push(mid);
-        points.push(p2);
       }
+      currentSegmentCount *= 2;
       currentDisplace *= 0.5;
     }
 
-    const posAttr = new Float32Array(maxSegments * 2 * 3);
-    const alpAttr = new Float32Array(maxSegments * 2);
+    // Copy to flat output buffers in-place
+    const totalPoints = currentSegmentCount + 1;
     let index = 0;
-    for (let i = 0; i < points.length - 1; i++) {
+    for (let i = 0; i < totalPoints - 1; i++) {
       if (index >= maxSegments * 2) break;
-      posAttr[index * 3 + 0] = points[i].x;
-      posAttr[index * 3 + 1] = points[i].y;
-      posAttr[index * 3 + 2] = points[i].z;
-      alpAttr[index] = 1.0 - (i / points.length);
-      posAttr[(index + 1) * 3 + 0] = points[i + 1].x;
-      posAttr[(index + 1) * 3 + 1] = points[i + 1].y;
-      posAttr[(index + 1) * 3 + 2] = points[i + 1].z;
-      alpAttr[index + 1] = 1.0 - ((i + 1) / points.length);
+      const ptA = calcPoints[i];
+      const ptB = calcPoints[i + 1];
+      
+      const pIdx = posOffset + index * 3;
+      positions[pIdx + 0] = ptA.x;
+      positions[pIdx + 1] = ptA.y;
+      positions[pIdx + 2] = ptA.z;
+      
+      const pIdxNext = posOffset + (index + 1) * 3;
+      positions[pIdxNext + 0] = ptB.x;
+      positions[pIdxNext + 1] = ptB.y;
+      positions[pIdxNext + 2] = ptB.z;
+
+      const aIdx = alpOffset + index;
+      alphas[aIdx] = 1.0 - (i / totalPoints);
+      alphas[aIdx + 1] = 1.0 - ((i + 1) / totalPoints);
+      
       index += 2;
     }
-    return { posAttr, alpAttr };
   };
 
   useFrame((state, rawDelta) => {
     const delta = Math.min(rawDelta, 0.1);
-    // Immediate grid lockdown deactivation check
     if (sharedSpellState.lockdown) {
       if (active) {
         setActive(false);
@@ -89,9 +127,7 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
     }
 
     triggerTimer.current += delta;
-
     const activeSpell = sharedSpellState.lightning || sharedSpellState.ignite;
-    // High intensity: trigger much more frequently by default
     const interval = activeSpell ? 0.15 : (mode === 'quick-pitch' ? 0.8 : 0.5);
     const maxDuration = activeSpell ? 0.22 : (mode === 'quick-pitch' ? 0.5 : 0.35);
 
@@ -102,7 +138,6 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
         arcDuration.current = 0;
         triggerTimer.current = 0;
 
-        // Select stable target pyramids for the duration of this discharge
         if (pyramidsGroupRef?.current && pyramidsGroupRef.current.children.length > 0) {
           const count = pyramidsGroupRef.current.children.length;
           targetPyramidIdxA.current = Math.floor(Math.random() * count);
@@ -125,19 +160,18 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
       }
 
       if (ringARef.current && ringBRef.current && lineRef.current) {
-        const startA = new THREE.Vector3();
-        const startB = new THREE.Vector3();
-        const startC = new THREE.Vector3();
-        const shellA = new THREE.Vector3();
-        const shellB = new THREE.Vector3();
-        const shellC = new THREE.Vector3();
+        const startA = getScratchVector();
+        const startB = getScratchVector();
+        const startC = getScratchVector();
+        const shellA = getScratchVector();
+        const shellB = getScratchVector();
+        const shellC = getScratchVector();
 
         const elapsed = state.clock.getElapsedTime();
         const angleA = elapsed * 2.0;
         const angleB = -elapsed * 1.5;
         const angleC = elapsed * 1.0;
 
-        // 1. Ring points
         startA.set(Math.cos(angleA) * 1.4, 0, Math.sin(angleA) * 1.4);
         startB.set(Math.cos(angleB) * 1.8, 0, Math.sin(angleB) * 1.8);
 
@@ -146,12 +180,11 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
 
         let gotRingC = false;
         if (ringCRef?.current) {
-          startC.set(0, Math.cos(angleC) * 2.2, Math.sin(angleC) * 2.2); // Z-X Diagonal Ring 3 orientation
+          startC.set(0, Math.cos(angleC) * 2.2, Math.sin(angleC) * 2.2);
           ringCRef.current.localToWorld(startC);
           gotRingC = true;
         }
 
-        // 2. Shell points
         let gotShell = false;
         if (pyramidsGroupRef?.current && pyramidsGroupRef.current.children.length > 0) {
           const childA = pyramidsGroupRef.current.children[targetPyramidIdxA.current];
@@ -165,7 +198,6 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
           }
         }
 
-        // Convert all to local space
         lineRef.current.worldToLocal(startA);
         lineRef.current.worldToLocal(startB);
         if (gotRingC) {
@@ -184,39 +216,39 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
           shellC.copy(startC).multiplyScalar(0.5);
         }
 
-        // Generate paths
-        const pathA_B = generateLightningPath(startA, startB, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
-        const pathB_C = generateLightningPath(startB, startC, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
-        const pathC_A = generateLightningPath(startC, startA, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
-        const pathA_Shell = generateLightningPath(startA, shellA, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
-        const pathB_Shell = generateLightningPath(startB, shellB, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
-        const pathC_Shell = generateLightningPath(startC, shellC, mode === 'quick-pitch' ? 0.4 : 0.65, maxSegments);
+        // Staggered update schedule: compute 3 paths out of 12 per frame
+        const stridePos = maxSegments * 2 * 3;
+        const strideAlp = maxSegments * 2;
+        const displaceAmt = mode === 'quick-pitch' ? 0.4 : 0.65;
+
+        // Path generators lookup
+        const runGenerator = (pIdx: number) => {
+          const pOffset = pIdx * stridePos;
+          const aOffset = pIdx * strideAlp;
+
+          if (pIdx === 0) generateLightningPathInPlace(startA, startB, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 1) generateLightningPathInPlace(startB, startC, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 2) generateLightningPathInPlace(startC, startA, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 3) generateLightningPathInPlace(startA, shellA, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 4) generateLightningPathInPlace(startB, shellB, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 5) generateLightningPathInPlace(startC, shellC, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 6) generateLightningPathInPlace(startA, startC, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 7) generateLightningPathInPlace(startB, startA, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 8) generateLightningPathInPlace(startC, startB, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 9) generateLightningPathInPlace(startA, shellB, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 10) generateLightningPathInPlace(startB, shellC, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 11) generateLightningPathInPlace(startC, shellA, displaceAmt, maxSegments, pOffset, aOffset);
+        };
+
+        const idx = updateIndex.current;
+        runGenerator(idx);
+        runGenerator((idx + 1) % numArcs);
+        runGenerator((idx + 2) % numArcs);
+
+        updateIndex.current = (idx + 3) % numArcs;
 
         const pos = lineRef.current.geometry.attributes.position as THREE.BufferAttribute;
         const alp = lineRef.current.geometry.attributes.aAlpha as THREE.BufferAttribute;
-
-        // Copy paths to buffer array sequentially
-        const stridePos = maxSegments * 2 * 3;
-        const strideAlp = maxSegments * 2;
-
-        (pos.array as Float32Array).set(pathA_B.posAttr, stridePos * 0);
-        (alp.array as Float32Array).set(pathA_B.alpAttr, strideAlp * 0);
-
-        (pos.array as Float32Array).set(pathB_C.posAttr, stridePos * 1);
-        (alp.array as Float32Array).set(pathB_C.alpAttr, strideAlp * 1);
-
-        (pos.array as Float32Array).set(pathC_A.posAttr, stridePos * 2);
-        (alp.array as Float32Array).set(pathC_A.alpAttr, strideAlp * 2);
-
-        (pos.array as Float32Array).set(pathA_Shell.posAttr, stridePos * 3);
-        (alp.array as Float32Array).set(pathA_Shell.alpAttr, strideAlp * 3);
-
-        (pos.array as Float32Array).set(pathB_Shell.posAttr, stridePos * 4);
-        (alp.array as Float32Array).set(pathB_Shell.alpAttr, strideAlp * 4);
-
-        (pos.array as Float32Array).set(pathC_Shell.posAttr, stridePos * 5);
-        (alp.array as Float32Array).set(pathC_Shell.alpAttr, strideAlp * 5);
-
         pos.needsUpdate = true;
         alp.needsUpdate = true;
       }
@@ -283,7 +315,7 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
   }, []);
 
   return (
-    <lineSegments ref={lineRef}>
+    <lineSegments ref={lineRef} raycast={() => {}}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
         <bufferAttribute attach="attributes-aAlpha" args={[alphas, 1]} />
