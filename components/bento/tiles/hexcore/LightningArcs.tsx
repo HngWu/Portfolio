@@ -283,7 +283,7 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
   }, []);
 
   return (
-    <lineSegments ref={lineRef}>
+    <lineSegments ref={lineRef} raycast={() => {}}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
         <bufferAttribute attach="attributes-aAlpha" args={[alphas, 1]} />

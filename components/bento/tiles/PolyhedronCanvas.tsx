@@ -698,7 +698,7 @@ function LightningArcs({
   })
 
   return (
-    <lineSegments ref={lineRef}>
+    <lineSegments ref={lineRef} raycast={() => {}}>
       <bufferGeometry ref={lineGeoRef}>
         <bufferAttribute
           attach="attributes-position"
