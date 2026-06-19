@@ -35,10 +35,11 @@ export function ArcaneCursor() {
   const isDeep = mode === 'deep'
 
   const [isActive, setIsActive] = useState(false)
-  const [smoothedPos, setSmoothedPos] = useState({ x: 0, y: 0 })
   const [isHovered, setIsHovered] = useState(false)
   const [hasWebGLFailed, setHasWebGLFailed] = useState(false)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
+
+  const cursorRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const checkTouch = () => {
@@ -66,6 +67,58 @@ export function ArcaneCursor() {
   const clickEffectsRef = useRef<ClickEffect[]>([])
   const clickIdCounter = useRef(0)
 
+  // Sprite caching for particle optimization
+  const runeSpritesRef = useRef<Record<string, HTMLCanvasElement>>({})
+  const maxParticlesRef = useRef(45)
+  const clickProgressRef = useRef(1.0) // 1.0 means shockwave finished
+
+  // Cap particles based on hardware capability
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      const cores = navigator.hardwareConcurrency || 4
+      maxParticlesRef.current = cores < 4 ? 20 : 45
+    }
+  }, [])
+
+  // Clear sprite cache when fonts load to ensure fallback text isn't cached permanently
+  useEffect(() => {
+    if (typeof document !== 'undefined' && document.fonts) {
+      document.fonts.ready.then(() => {
+        runeSpritesRef.current = {}
+      })
+    }
+  }, [])
+
+  const getRuneSprite = (char: string, isDeepMode: boolean): HTMLCanvasElement => {
+    const key = `${char}_${isDeepMode ? 'tech' : 'magic'}`
+    if (runeSpritesRef.current[key]) {
+      return runeSpritesRef.current[key]
+    }
+
+    const canvas = document.createElement('canvas')
+    const size = 64
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')
+
+    if (ctx) {
+      ctx.imageSmoothingEnabled = true
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      
+      // Draw baked glow shadow
+      ctx.shadowBlur = 12
+      ctx.shadowColor = isDeepMode ? '#0044FF' : '#A16C07'
+      ctx.fillStyle = isDeepMode ? '#0088FF' : '#D97706' // slightly brighter base color for better contrast
+      
+      ctx.font = `32px ${isDeepMode ? 'monospace' : 'NotoSansRunic-Regular, monospace'}`
+      ctx.fillText(char, size / 2, size / 2)
+    }
+
+    runeSpritesRef.current[key] = canvas
+    return canvas
+  }
+
   // WebGL Shader Refs
   const canvasWebGLRef = useRef<HTMLCanvasElement | null>(null)
   const glRef = useRef<WebGLRenderingContext | null>(null)
@@ -77,6 +130,12 @@ export function ArcaneCursor() {
 
   const isHoveredRef = useRef(isHovered)
   const isDeepRef = useRef(isDeep)
+
+  // Optimization Refs
+  const lastTargetRef = useRef<HTMLElement | null>(null)
+  const lastMouseMoveTimeRef = useRef<number>(Date.now())
+  const start2DLoopRef = useRef<(() => void) | null>(null)
+  const startWebGLRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     isHoveredRef.current = isHovered
@@ -115,21 +174,38 @@ export function ArcaneCursor() {
     }
   }, [isActive, isTouchDevice])
 
-  // 2. Track real-time mouse coordinate and O(1) interactive hover state
+  // 2. Track real-time mouse coordinate and stashes coordinates/target to defer DOM walks
   useEffect(() => {
     const trackCoords = (e: MouseEvent) => {
       mouseRef.current.x = e.clientX
       mouseRef.current.y = e.clientY
-      
-      const target = e.target as HTMLElement | null
-      if (target) {
-        const isInteractive = target.closest('a, button, [role="button"], [data-hover-glow], [data-interactive], [data-id], .cursor-pointer') !== null
-        setIsHovered(isInteractive)
-      }
+      lastTargetRef.current = e.target as HTMLElement | null
+      lastMouseMoveTimeRef.current = Date.now()
+
+      // Resume loops if they are idle
+      if (start2DLoopRef.current) start2DLoopRef.current()
+      if (startWebGLRef.current) startWebGLRef.current()
+    }
+
+    const trackActivity = () => {
+      lastMouseMoveTimeRef.current = Date.now()
+      if (start2DLoopRef.current) start2DLoopRef.current()
+      if (startWebGLRef.current) startWebGLRef.current()
     }
 
     window.addEventListener('mousemove', trackCoords)
-    return () => window.removeEventListener('mousemove', trackCoords)
+    window.addEventListener('mousedown', trackActivity)
+    window.addEventListener('touchstart', trackActivity)
+    window.addEventListener('wheel', trackActivity, { passive: true })
+    window.addEventListener('scroll', trackActivity, { passive: true })
+
+    return () => {
+      window.removeEventListener('mousemove', trackCoords)
+      window.removeEventListener('mousedown', trackActivity)
+      window.removeEventListener('touchstart', trackActivity)
+      window.removeEventListener('wheel', trackActivity)
+      window.removeEventListener('scroll', trackActivity)
+    }
   }, [])
 
   // 2.1 Listen for click events to spawn interactive burst particles
@@ -146,6 +222,9 @@ export function ArcaneCursor() {
         maxAge: 0.5, // 500ms duration
         isDeep: isDeep
       })
+
+      // Trigger WebGL shockwave
+      clickProgressRef.current = 0.0
 
       // Spawn radial burst particles in the main trail loop
       const particleCount = isDeep ? 8 : 12
@@ -194,29 +273,96 @@ export function ArcaneCursor() {
   // 4. Smooth visual coordinate interpolation & 2D trail particle loop
   useEffect(() => {
     if (!isActive) return
-    let animationFrameId: number
+    let animationFrameId: number | null = null
+    let isLoopRunning = false
 
     const renderLoop = (time: number) => {
+      // 1. Evaluate hover state & magnetic snap
+      const target = lastTargetRef.current
+      let isInteractive = false
+      let shouldSnap = false
+      let snapCenter = { x: 0, y: 0 }
+
+      if (target) {
+        const interactiveEl = target.closest('a, button, [role="button"], [data-hover-glow], [data-interactive], [data-id], .cursor-pointer') as HTMLElement | null
+        isInteractive = interactiveEl !== null
+        
+        if (interactiveEl) {
+          const rect = interactiveEl.getBoundingClientRect()
+          const hasExplicitMagnetic = interactiveEl.hasAttribute('data-magnetic') || interactiveEl.closest('[data-magnetic]') !== null
+          const isSmallElement = rect.width < 120 && rect.height < 120
+          
+          if (hasExplicitMagnetic || isSmallElement) {
+            shouldSnap = true
+            snapCenter = {
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2
+            }
+          }
+        }
+      }
+
+      // Defer React re-renders: only update isHovered state when it actually flips
+      if (isInteractive !== isHoveredRef.current) {
+        isHoveredRef.current = isInteractive
+        setIsHovered(isInteractive)
+      }
+
       // Visual inertia: smoother LERP on hover for precise feel
-      const lerpFactor = isHovered ? 0.28 : 0.18
+      const lerpFactor = isHoveredRef.current ? 0.28 : 0.18
       const lastX = smoothedMouseRef.current.x
       const lastY = smoothedMouseRef.current.y
 
-      smoothedMouseRef.current.x += (mouseRef.current.x - smoothedMouseRef.current.x) * lerpFactor
-      smoothedMouseRef.current.y += (mouseRef.current.y - smoothedMouseRef.current.y) * lerpFactor
+      // Magnetic center interpolation
+      const targetX = shouldSnap 
+        ? snapCenter.x + (mouseRef.current.x - snapCenter.x) * 0.35
+        : mouseRef.current.x
+      const targetY = shouldSnap 
+        ? snapCenter.y + (mouseRef.current.y - snapCenter.y) * 0.35
+        : mouseRef.current.y
 
-      setSmoothedPos({ x: smoothedMouseRef.current.x, y: smoothedMouseRef.current.y })
+      smoothedMouseRef.current.x += (targetX - smoothedMouseRef.current.x) * lerpFactor
+      smoothedMouseRef.current.y += (targetY - smoothedMouseRef.current.y) * lerpFactor
 
       // Velocity calculation
-      velocityRef.current.x = smoothedMouseRef.current.x - lastX
-      velocityRef.current.y = smoothedMouseRef.current.y - lastY
+      const vx = smoothedMouseRef.current.x - lastX
+      const vy = smoothedMouseRef.current.y - lastY
+      velocityRef.current.x = vx
+      velocityRef.current.y = vy
 
-      // Draw particle trails on the 2D Canvas
+      // Direct DOM transform: translate3d + velocity-reactive stretch
+      if (cursorRef.current) {
+        const x = smoothedMouseRef.current.x
+        const y = smoothedMouseRef.current.y
+        const speed = Math.hypot(vx, vy)
+        
+        if (speed > 0.5 && !shouldSnap) {
+          const angle = Math.atan2(vy, vx)
+          const stretch = Math.min(1 + speed * 0.015, 1.35)
+          cursorRef.current.style.transform = `translate3d(${x - 45}px, ${y - 45}px, 0) rotate(${angle}rad) scaleX(${stretch}) rotate(${-angle}rad)`
+        } else {
+          cursorRef.current.style.transform = `translate3d(${x - 45}px, ${y - 45}px, 0)`
+        }
+      }
+
+      // 2. Idle Throttling
+      const isIdle = (Date.now() - lastMouseMoveTimeRef.current) > 2000
+      const hasActiveVisuals = particlesRef.current.length > 0 || clickEffectsRef.current.length > 0
+
+      if (isIdle && !hasActiveVisuals) {
+        isLoopRunning = false
+        animationFrameId = null
+        return // Stop requesting animation frames to save idle CPU/GPU
+      }
+
+      // 3. Draw particle trails on the 2D Canvas
       const canvas = canvasTrailRef.current
       const ctx = canvas?.getContext('2d')
       if (canvas && ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
         ctx.globalCompositeOperation = 'screen' // Additive blending for glows
+
+        const isDeepMode = isDeepRef.current
 
         // Update and draw active particles
         particlesRef.current.forEach((p) => {
@@ -227,7 +373,7 @@ export function ArcaneCursor() {
           p.vx *= 0.95
           p.vy *= 0.95
 
-          if (!isDeep) {
+          if (!isDeepMode) {
             // Magic: undulating sine-wave drifts (runic floating feel)
             p.x += p.vx + Math.sin(time * 0.008 + p.id) * 0.4
             p.y += p.vy + Math.cos(time * 0.008 + p.id) * 0.4
@@ -238,25 +384,17 @@ export function ArcaneCursor() {
             p.y += p.vy
           }
 
-          // Draw the glowing trail particle
+          // Draw the glowing trail particle using cache (NO shadowBlur in loop!)
           ctx.save()
           ctx.translate(p.x, p.y)
-          if (!isDeep) {
+          if (!isDeepMode) {
             ctx.rotate(p.rotation)
           }
 
-          // Set emissive drop shadow glows (Dark Blue for Tech; Burnished Gold for Magic)
-          ctx.shadowBlur = p.size * 1.5
-          ctx.shadowColor = isDeep ? '#0044FF' : '#9A7B0C' 
-
-          ctx.font = `${p.size}px ${isDeep ? 'monospace' : 'NotoSansRunic-Regular, monospace'}`
-          ctx.fillStyle = isDeep 
-            ? `rgba(0, 68, 255, ${p.opacity})` // Dark blue binary coordinates
-            : `rgba(154, 123, 12, ${p.opacity})` // Burnished gold runes
-          
-          ctx.textAlign = 'center'
-          ctx.textBaseline = 'middle'
-          ctx.fillText(p.char, 0, 0)
+          ctx.globalAlpha = p.opacity
+          const sprite = getRuneSprite(p.char, isDeepMode)
+          // Draw centered sprite
+          ctx.drawImage(sprite, -p.size, -p.size, p.size * 2, p.size * 2)
           ctx.restore()
         })
 
@@ -277,10 +415,10 @@ export function ArcaneCursor() {
             const radius = 10 + p * 50 // expand outward
             const angle = p * Math.PI // rotate as it expands
             
-            ctx.strokeStyle = `rgba(154, 123, 12, ${opacity})`
+            ctx.strokeStyle = `rgba(161, 108, 7, ${opacity})`
             ctx.lineWidth = 1.5
             ctx.shadowBlur = 10 * opacity
-            ctx.shadowColor = '#9A7B0C'
+            ctx.shadowColor = '#A16C07'
 
             // Equilateral Triangle 1 (pointing up)
             ctx.beginPath()
@@ -347,28 +485,31 @@ export function ArcaneCursor() {
           clickEffectsRef.current = clickEffectsRef.current.filter((effect) => effect.age < effect.maxAge)
         }
 
-        // Spawn new particles based on distance traveled
+        // Spawn new particles based on distance traveled (dynamic comet trail: spawn threshold scales down with speed)
         const dx = smoothedMouseRef.current.x - lastSpawnPos.current.x
         const dy = smoothedMouseRef.current.y - lastSpawnPos.current.y
         const dist = Math.hypot(dx, dy)
 
-        if (dist > 8 && particlesRef.current.length < 45) {
+        const speed = Math.hypot(vx, vy)
+        const dynamicThreshold = Math.max(3, 8 - speed * 0.15)
+
+        if (dist > dynamicThreshold && particlesRef.current.length < maxParticlesRef.current) {
           particleIdCounter.current += 1
-          const charPool = isDeep ? BINARY : RUNES
+          const charPool = isDeepMode ? BINARY : RUNES
           const randomChar = charPool[Math.floor(Math.random() * charPool.length)]
 
           const newParticle: Particle = {
             id: particleIdCounter.current,
             x: smoothedMouseRef.current.x,
             y: smoothedMouseRef.current.y,
-            vx: -velocityRef.current.x * 0.2 + (Math.random() - 0.5) * 1.2,
-            vy: -velocityRef.current.y * 0.2 + (Math.random() - 0.5) * 1.2,
+            vx: -vx * 0.2 + (Math.random() - 0.5) * 1.2,
+            vy: -vy * 0.2 + (Math.random() - 0.5) * 1.2,
             rotation: Math.random() * Math.PI * 2,
             rotationSpeed: (Math.random() - 0.5) * 2.5,
-            size: isDeep ? 7 + Math.random() * 4 : 9 + Math.random() * 5,
+            size: isDeepMode ? 7 + Math.random() * 4 : 9 + Math.random() * 5,
             opacity: 1.0,
             age: 0,
-            maxAge: isDeep ? 0.5 + Math.random() * 0.4 : 0.8 + Math.random() * 0.5,
+            maxAge: isDeepMode ? 0.5 + Math.random() * 0.4 : 0.8 + Math.random() * 0.5,
             char: randomChar
           }
 
@@ -380,9 +521,23 @@ export function ArcaneCursor() {
       animationFrameId = requestAnimationFrame(renderLoop)
     }
 
-    animationFrameId = requestAnimationFrame(renderLoop)
-    return () => cancelAnimationFrame(animationFrameId)
-  }, [isActive, isDeep, isHovered])
+    const start2DLoop = () => {
+      if (!isLoopRunning) {
+        isLoopRunning = true
+        animationFrameId = requestAnimationFrame(renderLoop)
+      }
+    }
+
+    start2DLoopRef.current = start2DLoop
+    start2DLoop()
+
+    return () => {
+      start2DLoopRef.current = null
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
+    }
+  }, [isActive])
 
   // 5. Vanilla WebGL custom shaders setup (Architecture 2)
   useEffect(() => {
@@ -436,6 +591,7 @@ export function ArcaneCursor() {
       uniform float u_time;
       uniform float u_hover;
       uniform float u_transition;
+      uniform float u_click;
 
       void main() {
         vec2 uv = vUv - 0.5;
@@ -446,19 +602,19 @@ export function ArcaneCursor() {
         
         // --- 1. MAGIC SHADER (Quick Pitch Golden Halo) ---
         // Elegant glowing burnished/antique gold tones (no green/olive tint)
-        vec3 magicCore = vec3(0.85, 0.70, 0.30);   // Mellow light gold
-        vec3 magicMid = vec3(0.60, 0.48, 0.05);    // Burnished dark gold #9A7B0C
-        vec3 magicOuter = vec3(0.54, 0.40, 0.14);  // Antique bronze/gold #8A6623
+        vec3 magicCore = vec3(0.85, 0.60, 0.20);   // Warm gold core
+        vec3 magicMid = vec3(0.65, 0.42, 0.03);    // Warm burnished gold
+        vec3 magicOuter = vec3(0.50, 0.30, 0.05);  // Warm antique gold
         
         vec3 magicColor = mix(magicOuter, magicMid, dist * 2.0);
         magicColor = mix(magicColor, magicCore, pow(1.0 - dist * 2.0, 2.0));
         
-        // Clean stable golden back-halo (pulsing sin-wave removed)
-        float magicGlow = 0.10 / (dist + 0.035);
+        // Ring glow peaking around the Norse runes (dist = 0.22) and hollow at the center
+        float magicGlow = 0.04 / (abs(dist - 0.22) + 0.07);
         magicColor += magicMid * magicGlow;
         
-        // Clean stable radial mask
-        float magicAlpha = smoothstep(0.45, 0.1, dist) * 0.45 * (0.8 + 0.2 * u_hover);
+        // Radial mask with hollow center (alpha = 0.0 at dist < 0.04)
+        float magicAlpha = smoothstep(0.45, 0.12, dist) * smoothstep(0.04, 0.14, dist) * 0.45 * (0.8 + 0.2 * u_hover);
         vec4 magicFinal = vec4(magicColor, magicAlpha);
         
         // --- 2. TECH SHADER (Deep Dive Dark Blue HUD Scanlines) ---
@@ -491,6 +647,18 @@ export function ArcaneCursor() {
         
         // --- 3. CINEMATIC INTERPOLATED TRANSITION ---
         vec4 finalColor = mix(magicFinal, techFinal, u_transition);
+        
+        // --- 4. SHOCKWAVE CLICK EFFECT ---
+        if (u_click < 1.0) {
+          float clickRadius = u_click * 0.45;
+          // Thin expanding ring
+          float clickGlow = smoothstep(clickRadius - 0.05, clickRadius, dist) * 
+                            smoothstep(clickRadius + 0.05, clickRadius, dist);
+          
+          vec3 clickColor = mix(magicCore, techCore, u_transition);
+          finalColor.rgb += clickColor * clickGlow * (1.0 - u_click) * 2.5;
+          finalColor.a += clickGlow * (1.0 - u_click) * 0.9;
+        }
         
         gl_FragColor = finalColor * mask;
       }
@@ -559,13 +727,16 @@ export function ArcaneCursor() {
     const timeLoc = gl.getUniformLocation(program, 'u_time')
     const hoverLoc = gl.getUniformLocation(program, 'u_hover')
     const transitionLoc = gl.getUniformLocation(program, 'u_transition')
+    const clickLoc = gl.getUniformLocation(program, 'u_click')
 
-    // Initial setup
-    const pixelRatio = window.devicePixelRatio || 1
+    // Initial setup (Cap effective pixel ratio to 2 to optimize fragment shader fills)
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2)
     canvas.width = 90 * pixelRatio
     canvas.height = 90 * pixelRatio
     gl.viewport(0, 0, canvas.width, canvas.height)
     gl.clearColor(0.0, 0.0, 0.0, 0.0)
+
+    let webglLoopRunning = false
 
     // Render loop
     const render = () => {
@@ -578,6 +749,24 @@ export function ArcaneCursor() {
       const targetTransition = isDeepRef.current ? 1.0 : 0.0
       transitionValRef.current += (targetTransition - transitionValRef.current) * 0.12
 
+      // Increment click progress (400ms duration)
+      if (clickProgressRef.current < 1.0) {
+        clickProgressRef.current += 0.016 / 0.4
+        if (clickProgressRef.current > 1.0) {
+          clickProgressRef.current = 1.0
+        }
+      }
+
+      // Idle Throttling
+      const isIdle = (Date.now() - lastMouseMoveTimeRef.current) > 2000
+      const isShockwaveDone = clickProgressRef.current >= 1.0
+
+      if (isIdle && isShockwaveDone) {
+        webglLoopRunning = false
+        animationWebGLRef.current = null
+        return // Pause rendering loop to conserve battery/GPU
+      }
+
       gl.clear(gl.COLOR_BUFFER_BIT)
 
       if (!startTimeRef.current) {
@@ -587,16 +776,26 @@ export function ArcaneCursor() {
       gl.uniform1f(timeLoc, elapsedSeconds)
       gl.uniform1f(hoverLoc, hoverValRef.current)
       gl.uniform1f(transitionLoc, transitionValRef.current)
+      gl.uniform1f(clickLoc, clickProgressRef.current)
 
       gl.drawArrays(gl.TRIANGLES, 0, 6)
 
       animationWebGLRef.current = requestAnimationFrame(render)
     }
 
-    animationWebGLRef.current = requestAnimationFrame(render)
+    const startWebGL = () => {
+      if (!webglLoopRunning) {
+        webglLoopRunning = true
+        animationWebGLRef.current = requestAnimationFrame(render)
+      }
+    }
+
+    startWebGLRef.current = startWebGL
+    startWebGL()
 
     // Cleanup resources
     return () => {
+      startWebGLRef.current = null
       if (animationWebGLRef.current) {
         cancelAnimationFrame(animationWebGLRef.current)
       }
@@ -621,11 +820,11 @@ export function ArcaneCursor() {
 
       {/* 2. Unified Custom Interactive Cursor Core (Aligned & mathematically exact tip hotspot) */}
       <div 
-        className="fixed pointer-events-none z-[99999] w-[90px] h-[90px]"
+        ref={cursorRef}
+        className="fixed pointer-events-none z-[99999] w-[90px] h-[90px] left-0 top-0"
         style={{
-          left: `${smoothedPos.x}px`,
-          top: `${smoothedPos.y}px`,
-          transform: 'translate(-50%, -50%)',
+          transform: 'translate3d(-100px, -100px, 0)',
+          willChange: 'transform'
         }}
       >
         {/* WebGL Shader Layer (Renders glowing holographic plasma/rings behind the pointer) */}
@@ -633,121 +832,132 @@ export function ArcaneCursor() {
           <canvas
             ref={canvasWebGLRef}
             className="absolute inset-0 w-full h-full"
-            style={{ width: '90px', height: '90px' }}
+            style={{ width: '90px', height: '90px', willChange: 'transform' }}
           />
         )}
 
-        {isDeep ? (
-          // TECH MODE: Sleek deep/dark blue custom tilted pointer (with Hextech Brass casing)
-          <>
-            {/* Concentric diagnostics target brackets (snaps, grows and glows on interactive hover) */}
-            <div 
-              className="absolute w-[60px] h-[60px] border-2 rounded transition-all duration-300 ease-out"
-              style={{
-                left: '15px',
-                top: '15px',
-                transform: isHovered ? 'scale(0.85) rotate(-45deg)' : 'scale(1.0) rotate(0deg)',
-                borderColor: isHovered ? 'rgba(0, 85, 255, 0.9)' : 'rgba(0, 51, 204, 0.35)', // Glowing dark blue
-                boxShadow: isHovered ? '0 0 12px rgba(0, 85, 255, 0.55)' : 'none'
-              }}
-            />
-          </>
-        ) : (
-          // MAGIC MODE: Glowing golden-amber detailed custom tilted pointer (Concentric Runic Array)
-          <>
-            {/* 1. Concentric Astrological Spell Array (Interlocking glowing golden-amber geometric lines) */}
-            <div
-              className="absolute transition-all duration-300 ease-out"
-              style={{
-                left: '15px',
-                top: '15px',
-                transform: 'scale(1.0)',
-                width: '60px',
-                height: '60px',
-              }}
-            >
-              <svg
-                width="60"
-                height="60"
-                viewBox="0 0 80 80"
-                className="animate-[spin_28s_linear_infinite]"
-                style={{
-                  opacity: isHovered ? 0.8 : 0.45,
-                  filter: isHovered ? 'drop-shadow(0 0 4px rgba(154, 123, 12, 0.75))' : 'none',
-                }}
-              >
-                {/* Outer boundary ring */}
-                <circle cx="40" cy="40" r="38" stroke="rgba(245, 158, 11, 0.3)" strokeWidth="0.8" fill="none" />
-                {/* Dashed secondary boundary */}
-                <circle cx="40" cy="40" r="32" stroke="rgba(251, 191, 36, 0.2)" strokeWidth="0.8" fill="none" strokeDasharray="3, 3" />
-                {/* Inner focus ring */}
-                <circle cx="40" cy="40" r="19" stroke="rgba(251, 191, 36, 0.4)" strokeWidth="0.8" fill="none" />
-                
-                {/* Solomon's Star (Intersecting concentric triangles creating a stunning Hexgram spell grid) */}
-                <polygon points="40,3 72,58 8,58" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="0.8" fill="none" />
-                <polygon points="40,77 72,22 8,22" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="0.8" fill="none" />
-                
-                {/* Cardinal axis crosshair markers */}
-                <line x1="40" y1="2" x2="40" y2="7" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
-                <line x1="40" y1="73" x2="40" y2="78" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
-                <line x1="2" y1="40" x2="7" y2="40" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
-                <line x1="73" y1="40" x2="78" y2="40" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
-              </svg>
-            </div>
-
-            {/* 2. Concentric Counter-Rotating Runic Ring (Actual Norse runes) */}
-            <div
-              className="absolute transition-all duration-300 ease-out"
-              style={{
-                left: '15px',
-                top: '15px',
-                transform: 'scale(1.0)',
-                width: '60px',
-                height: '60px',
-              }}
-            >
-              <div 
-                className="w-full h-full animate-[spin_12s_linear_infinite_reverse]" 
-                style={{
-                  animationDuration: isHovered ? '4s' : '15s' // Fast rotation on hover, slower at idle
-                }}
-              >
-                {/* Actual Norse Runes mapped around the circle */}
-                {["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ"].map((rune, idx, arr) => {
-                  const angle = (idx / arr.length) * 360
-                  const radius = 20 // stable radius
-                  return (
-                    <span
-                      key={idx}
-                      className="absolute text-[8.5px] transition-all duration-300 select-none pointer-events-none"
-                      style={{
-                        fontFamily: 'NotoSansRunic-Regular, monospace',
-                        left: '50%',
-                        top: '50%',
-                        transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`,
-                        textShadow: isHovered ? '0 0 5px rgba(154, 123, 12, 0.9)' : '0 0 3px rgba(154, 123, 12, 0.5)',
-                        color: isHovered ? '#FFFBEB' : 'rgba(170, 124, 17, 0.85)',
-                      }}
-                    >
-                      {rune}
-                    </span>
-                  )
-                })}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* 3. Center Point Click Area Indicator */}
-        <div 
-          className="absolute left-1/2 top-1/2 w-[5px] h-[5px] -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-150 ease-out z-[99999] rotate-45"
+        {/* 2.1 TECH MODE CONTAINER */}
+        <div
+          className="absolute inset-0 transition-opacity duration-500 ease-in-out"
           style={{
-            backgroundColor: isDeep ? '#0088FF' : '#AA7C11',
-            boxShadow: isHovered 
-              ? (isDeep ? '0 0 8px rgba(0, 136, 255, 0.95)' : '0 0 8px rgba(170, 124, 17, 0.95)') 
-              : 'none'
+            opacity: isDeep ? 1 : 0,
+            pointerEvents: 'none'
           }}
-        />
+        >
+          {/* Concentric diagnostics target brackets (snaps, grows and glows on interactive hover) */}
+          <div 
+            className="absolute w-[60px] h-[60px] border-2 rounded transition-all duration-500 ease-out"
+            style={{
+              left: '15px',
+              top: '15px',
+              transform: isDeep
+                ? (isHovered ? 'scale(0.85) rotate(-45deg)' : 'scale(1.0) rotate(0deg)')
+                : 'scale(0.3) rotate(45deg)',
+              borderColor: isHovered ? 'rgba(0, 85, 255, 0.9)' : 'rgba(0, 51, 204, 0.35)', // Glowing dark blue
+              boxShadow: isHovered ? '0 0 12px rgba(0, 85, 255, 0.55)' : 'none'
+            }}
+          />
+
+          {/* Center Point Click Area Indicator (Tech Mode only) */}
+          <div 
+            className="absolute left-1/2 top-1/2 w-[5px] h-[5px] -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-150 ease-out z-[99999] rotate-45"
+            style={{
+              backgroundColor: '#0088FF',
+              boxShadow: isHovered ? '0 0 8px rgba(0, 136, 255, 0.95)' : 'none'
+            }}
+          />
+        </div>
+
+        {/* 2.2 MAGIC MODE CONTAINER */}
+        <div
+          className="absolute inset-0 transition-opacity duration-500 ease-in-out"
+          style={{
+            opacity: isDeep ? 0 : 1,
+            pointerEvents: 'none'
+          }}
+        >
+          {/* Concentric Astrological Spell Array (Interlocking glowing golden-amber geometric lines) */}
+          <div
+            className="absolute transition-all duration-300 ease-out"
+            style={{
+              left: '15px',
+              top: '15px',
+              transform: 'scale(1.0)',
+              width: '60px',
+              height: '60px',
+            }}
+          >
+            <svg
+              width="60"
+              height="60"
+              viewBox="0 0 80 80"
+              className="animate-[spin_28s_linear_infinite]"
+              style={{
+                opacity: isHovered ? 0.8 : 0.45,
+                filter: isHovered ? 'drop-shadow(0 0 4px rgba(161, 108, 7, 0.75))' : 'none',
+              }}
+            >
+              {/* Outer boundary ring */}
+              <circle cx="40" cy="40" r="38" stroke="rgba(245, 158, 11, 0.3)" strokeWidth="0.8" fill="none" />
+              {/* Dashed secondary boundary */}
+              <circle cx="40" cy="40" r="32" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="0.8" fill="none" strokeDasharray="3, 3" />
+              
+              {/* Solomon's Star (Intersecting concentric triangles creating a stunning Hexgram spell grid) */}
+              <polygon points="40,3 72,58 8,58" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="0.8" fill="none" />
+              <polygon points="40,77 72,22 8,22" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="0.8" fill="none" />
+              
+              {/* Cardinal axis crosshair markers */}
+              <line x1="40" y1="2" x2="40" y2="7" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+              <line x1="40" y1="73" x2="40" y2="78" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+              <line x1="2" y1="40" x2="7" y2="40" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+              <line x1="73" y1="40" x2="78" y2="40" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="1" />
+            </svg>
+          </div>
+
+          {/* Concentric Counter-Rotating Runic Ring (Actual Norse runes) */}
+          <div
+            className="absolute transition-all duration-300 ease-out"
+            style={{
+              left: '15px',
+              top: '15px',
+              transform: 'scale(1.0)',
+              width: '60px',
+              height: '60px',
+            }}
+          >
+            <div 
+              className="w-full h-full animate-[spin_12s_linear_infinite_reverse]" 
+              style={{
+                animationDuration: isHovered ? '4s' : '15s' // Fast rotation on hover, slower at idle
+              }}
+            >
+              {/* Actual Norse Runes mapped around the circle */}
+              {["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ"].map((rune, idx, arr) => {
+                const angle = (idx / arr.length) * 360
+                const radius = 20 // stable radius
+                return (
+                  <span
+                    key={idx}
+                    className="absolute text-[8.5px] select-none pointer-events-none"
+                    style={{
+                      fontFamily: 'NotoSansRunic-Regular, monospace',
+                      left: '50%',
+                      top: '50%',
+                      transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${isDeep ? radius * 0.3 : radius}px) rotate(-${angle}deg) scale(${isDeep ? 0.01 : 1})`,
+                      transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease, color 0.3s ease, text-shadow 0.3s ease',
+                      transitionDelay: `${idx * 20}ms`,
+                      opacity: isDeep ? 0 : 1,
+                      textShadow: isHovered ? '0 0 5px rgba(161, 108, 7, 0.9)' : '0 0 3px rgba(161, 108, 7, 0.5)',
+                      color: isHovered ? '#FFFBEB' : 'rgba(161, 108, 7, 0.85)',
+                    }}
+                  >
+                    {rune}
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        </div>
 
         {/* Preload Runic Font Eagerly to Force Browser Download for Canvas Rendering */}
         <div 
