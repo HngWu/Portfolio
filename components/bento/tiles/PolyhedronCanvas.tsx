@@ -629,8 +629,10 @@ function LightningArcs({
   const lineRef = useRef<THREE.LineSegments>(null)
   const lineGeoRef = useRef<THREE.BufferGeometry>(null)
   
-  const maxVertices = 400
+  const maxVertices = 800 // Increased from 400 for 16 paths
   const positions = useMemo(() => new Float32Array(maxVertices * 3), [])
+  const updateIndex = useRef(0) // For staggered scheduling
+  const numPaths = 16 // Increased from 8
   
   useFrame(() => {
     const active = sharedSpellState.lightning
@@ -646,13 +648,18 @@ function LightningArcs({
     }
     if (!showLightning || !lineRef.current || !lineGeoRef.current) return
 
-    let vertexIdx = 0
-    const count = 8
     const pos = lineGeoRef.current.attributes.position.array as Float32Array
+    const pathsToUpdate = 4 // Compute 4 paths per frame
+    const pathVertexStride = 50 
 
-    for (let l = 0; l < count; l++) {
-      const p1Idx = Math.floor(Math.random() * faces.length)
-      let p2Idx = Math.floor(Math.random() * faces.length)
+    const idx = updateIndex.current
+
+    for (let k = 0; k < pathsToUpdate; k++) {
+      const l = (idx + k) % numPaths
+
+      // Select random nodes based on index seed to keep them relatively stable per slot
+      const p1Idx = (l * 7 + 3) % faces.length
+      let p2Idx = (l * 11 + 5) % faces.length
       if (p1Idx === p2Idx) p2Idx = (p2Idx + 1) % faces.length
       
       const f1 = faces[p1Idx]
@@ -677,23 +684,29 @@ function LightningArcs({
       if (!gotP2) p2.copy(f2.center).multiplyScalar(1.3)
       
       const numPoints = generateLightningPath(p1, p2, 4, 0.45)
+      
+      // Calculate buffer offset for this path
+      const vertexOffset = l * pathVertexStride
+      let segmentIndex = 0
       for (let i = 0; i < numPoints - 1; i++) {
-        if (vertexIdx + 2 <= maxVertices) {
+        if (segmentIndex + 2 <= pathVertexStride) {
           const ptA = _pathPoints[i]
           const ptB = _pathPoints[i+1]
-          const offset = vertexIdx * 3
+          const offset = (vertexOffset + segmentIndex) * 3
           pos[offset] = ptA.x
           pos[offset + 1] = ptA.y
           pos[offset + 2] = ptA.z
           pos[offset + 3] = ptB.x
           pos[offset + 4] = ptB.y
           pos[offset + 5] = ptB.z
-          vertexIdx += 2
+          segmentIndex += 2
         }
       }
     }
     
-    lineGeoRef.current.setDrawRange(0, vertexIdx)
+    updateIndex.current = (idx + pathsToUpdate) % numPaths
+
+    lineGeoRef.current.setDrawRange(0, maxVertices) // Keep drawing full vertices buffer
     lineGeoRef.current.attributes.position.needsUpdate = true
   })
 

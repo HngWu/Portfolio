@@ -276,9 +276,7 @@
 
 /* Custom Rune Cursor Styles */
 body.rune-cursor,
-body.rune-cursor *,
-body.custom-cursor-active,
-body.custom-cursor-active * {
+body.custom-cursor-active {
   cursor: none !important;
 }
 
