@@ -39,6 +39,10 @@ export const sharedSpellState = {
   scrollProgress: 0.0
 }
 
+if (typeof window !== 'undefined') {
+  (window as any).sharedSpellState = sharedSpellState;
+}
+
 // Pre-allocated static colors to avoid 60fps GC allocation overhead
 const COLOR_GOLD = new THREE.Color("#c9a227")
 const COLOR_DEFAULT = new THREE.Color("#0c0a1a")
