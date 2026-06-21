@@ -7,6 +7,7 @@ import { ForceMobileContext } from "./ForceMobileContext"
 import { usePageTransition } from "@/hooks/usePageTransition"
 import { useTilt } from "./useTilt"
 import { useViewModeStore } from "@/store/useViewModeStore"
+import { useNavigationStore } from "@/store/useNavigationStore"
 import { motion } from "framer-motion"
 
 interface BentoTileProps {
@@ -49,6 +50,11 @@ export function BentoTile({
   const mode = useViewModeStore((state) => state.mode)
   const isDeepDive = mode === "deep" && canDeepDive
   const forceMobile = React.useContext(ForceMobileContext)
+
+  const curtainState = useNavigationStore((state) => state.curtainState)
+  const originTileId = useNavigationStore((state) => state.originTileId)
+  
+  const isDissolving = curtainState !== "idle" && originTileId !== null && originTileId !== id
   
   const [dynamicRows, setDynamicRows] = React.useState<number | null>(null)
   const backRef = React.useRef<HTMLDivElement>(null)
@@ -95,18 +101,22 @@ export function BentoTile({
   const spanClass = getSizeClasses(size, canExpand && isDeepDive && !dynamicRows, forceMobile)
   const isClickable = !!href && !sortableProps && !isDragging
 
-  const handleClick = () => {
+  const handleClick = (event?: React.MouseEvent<HTMLDivElement>) => {
     if (isClickable && href) {
       if (href.startsWith("http") || href.startsWith("mailto:")) {
         window.open(href, "_blank", "noopener,noreferrer")
       } else {
-        navigateWithTransition(href)
+        // Pass the clicked card as the transition origin so the gold/blue
+        // entry overlay emanates from this tile rather than screen center.
+        const originEl = event?.currentTarget.closest("[data-id]")
+        navigateWithTransition(href, originEl)
       }
     }
   }
 
   return (
     <motion.div
+      data-id={id}
       layout={isMobileOverride ? false : layout}
       whileHover={!sortableProps ? { scale: 1.01, translateY: -4 } : undefined}
       transition={{ 
@@ -122,7 +132,8 @@ export function BentoTile({
         spanClass, 
         isMobileOverride && !forceFullHeight ? "h-auto" : "h-full",
         "perspective-[1500px]", 
-        isDragging ? "touch-none opacity-30" : "touch-pan-y"
+        isDragging ? "touch-none opacity-30" : "touch-pan-y",
+        isDissolving && "transition-all duration-500 ease-out opacity-0 scale-95 pointer-events-none"
       )}
       {...sortableProps}
     >
@@ -140,7 +151,6 @@ export function BentoTile({
             glowColor={glowColor}
             onClick={handleClick}
             interactive={!isDragging}
-            data-id={id}
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
               "flex flex-col",
@@ -165,7 +175,6 @@ export function BentoTile({
             glowColor={glowColor}
             onClick={handleClick}
             interactive={!isDragging}
-            data-id={id}
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
               "flex flex-col bg-lume-secondary/5 border-lume-secondary/20",
