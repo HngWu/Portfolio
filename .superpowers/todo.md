@@ -1,6 +1,6 @@
 # Task List: Cinematic Page Transitions & Core Stabilization
 
-- [ ] Task 1: Navigation Store Updates
+- [x] Task 1: Navigation Store Updates
 - [ ] Task 2: Bento Grid Tile capture & Card Dissolves
 - [ ] Task 3: 2D Canvas Overlay Updates (Particle Dissolve)
 - [ ] Task 4: Quick Pitch (Mel’s Magic) — SVG Brush Mask
