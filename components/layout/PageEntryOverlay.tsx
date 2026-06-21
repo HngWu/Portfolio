@@ -20,13 +20,20 @@ export function PageEntryOverlay() {
   const rafRef = React.useRef<number | null>(null)
   const stateRef = React.useRef<EntryState | null>(null)
   const curtainState = useNavigationStore((s) => s.curtainState)
+  const isTransitionActive = curtainState !== "idle"
   const originRect = useNavigationStore((s) => s.originRect)
   const bentoTilesBounds = useNavigationStore((s) => s.bentoTilesBounds)
   const mode = useViewModeStore((s) => s.mode)
 
-  // Start the effect keyed on entering the "covering" phase.
+  // Track latest parameters in a ref so the effect only re-runs when transition activity changes
+  const paramsRef = React.useRef({ mode, originRect, bentoTilesBounds })
   React.useEffect(() => {
-    if (curtainState !== "covering") return
+    paramsRef.current = { mode, originRect, bentoTilesBounds }
+  }, [mode, originRect, bentoTilesBounds])
+
+  // Start the effect keyed on entering the transition active phase.
+  React.useEffect(() => {
+    if (!isTransitionActive) return
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext("2d")
@@ -42,7 +49,8 @@ export function PageEntryOverlay() {
     canvas.style.height = `${h}px`
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    stateRef.current = initEntry(mode, w, h, originRect, bentoTilesBounds)
+    const { mode: m, originRect: o, bentoTilesBounds: b } = paramsRef.current
+    stateRef.current = initEntry(m, w, h, o, b)
 
     const loop = (now: number) => {
       if (!stateRef.current) return
@@ -63,7 +71,7 @@ export function PageEntryOverlay() {
         rafRef.current = null
       }
     }
-  }, [curtainState, mode, originRect, bentoTilesBounds])
+  }, [isTransitionActive])
 
   // Hard cleanup if the component ever unmounts mid-effect.
   React.useEffect(() => {
