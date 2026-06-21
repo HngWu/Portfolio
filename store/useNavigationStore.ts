@@ -25,6 +25,8 @@ interface NavigationStore {
   setBentoTilesBounds: (bounds: Record<string, OriginRect> | null) => void
   curtainState: 'idle' | 'covering' | 'revealing'
   setCurtainState: (state: 'idle' | 'covering' | 'revealing') => void
+  isPageLoaded: boolean
+  setPageLoaded: (loaded: boolean) => void
 }
 
 export const useNavigationStore = create<NavigationStore>((set) => ({
@@ -36,4 +38,6 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
   setBentoTilesBounds: (bounds) => set({ bentoTilesBounds: bounds }),
   curtainState: 'idle',
   setCurtainState: (state) => set({ curtainState: state }),
+  isPageLoaded: false,
+  setPageLoaded: (loaded) => set({ isPageLoaded: loaded }),
 }))

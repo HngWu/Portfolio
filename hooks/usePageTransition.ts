@@ -7,7 +7,7 @@ export const TRANSITION_DURATION = 500
 
 export function usePageTransition() {
   const router = useRouter()
-  const { setCurtainState, setOriginRect, setOriginTileId, setBentoTilesBounds } = useNavigationStore()
+  const { setCurtainState, setOriginRect, setOriginTileId, setBentoTilesBounds, setPageLoaded } = useNavigationStore()
 
   const navigateWithTransition = async (path: string, originEl?: Element | null) => {
     // 1. Capture origin element and its ID
@@ -51,16 +51,8 @@ export function usePageTransition() {
 
     setCurtainState("covering")
     await new Promise((resolve) => setTimeout(resolve, TRANSITION_DURATION))
+    setPageLoaded(false)
     router.push(path)
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    setCurtainState("revealing")
-
-    setTimeout(() => {
-      setCurtainState("idle")
-      setOriginRect(null)
-      setOriginTileId(null)
-      setBentoTilesBounds(null)
-    }, TRANSITION_DURATION)
   }
 
   return { navigateWithTransition }

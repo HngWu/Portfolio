@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 import { useNavigationStore } from "@/store/useNavigationStore"
 import { useViewModeStore } from "@/store/useViewModeStore"
 import { initEntry, drawEntry, type EntryState } from "./page-entry"
@@ -19,11 +20,73 @@ export function PageEntryOverlay() {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null)
   const rafRef = React.useRef<number | null>(null)
   const stateRef = React.useRef<EntryState | null>(null)
+  
   const curtainState = useNavigationStore((s) => s.curtainState)
+  const setCurtainState = useNavigationStore((s) => s.setCurtainState)
+  const isPageLoaded = useNavigationStore((s) => s.isPageLoaded)
+  const setPageLoaded = useNavigationStore((s) => s.setPageLoaded)
+
   const isTransitionActive = curtainState !== "idle"
   const originRect = useNavigationStore((s) => s.originRect)
   const bentoTilesBounds = useNavigationStore((s) => s.bentoTilesBounds)
   const mode = useViewModeStore((s) => s.mode)
+  const pathname = usePathname()
+
+  // 1. Detect browser back/forward popstate to trigger curtain covering
+  React.useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const handlePopState = () => {
+      setPageLoaded(false)
+      setCurtainState("covering")
+    }
+
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
+  }, [setCurtainState, setPageLoaded])
+
+  // 2. Watch pathname changes during transition to mark the new page as loaded
+  React.useEffect(() => {
+    if (curtainState === "covering") {
+      setPageLoaded(true)
+    }
+  }, [pathname, curtainState, setPageLoaded])
+
+  // 3. Fallback timer: if new page content does not mount or swap, force reveal after 1.8s
+  React.useEffect(() => {
+    let timeoutId: number | null = null
+
+    if (curtainState === "covering") {
+      timeoutId = window.setTimeout(() => {
+        setCurtainState("revealing")
+      }, 1800)
+    }
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId)
+    }
+  }, [curtainState, setCurtainState])
+
+  // 4. Swap covering -> revealing when page reports loaded
+  React.useEffect(() => {
+    if (curtainState === "covering" && isPageLoaded) {
+      setCurtainState("revealing")
+    }
+  }, [curtainState, isPageLoaded, setCurtainState])
+
+  // 5. Clean up transition parameters after revealing completes
+  React.useEffect(() => {
+    if (curtainState === "revealing") {
+      const t = window.setTimeout(() => {
+        setCurtainState("idle")
+        useNavigationStore.getState().setOriginRect(null)
+        useNavigationStore.getState().setOriginTileId(null)
+        useNavigationStore.getState().setBentoTilesBounds(null)
+        setPageLoaded(false)
+      }, 500)
+      return () => window.clearTimeout(t)
+    }
+  }, [curtainState, setCurtainState, setPageLoaded])
 
   // Track latest parameters in a ref so the effect only re-runs when transition activity changes
   const paramsRef = React.useRef({ mode, originRect, bentoTilesBounds })
