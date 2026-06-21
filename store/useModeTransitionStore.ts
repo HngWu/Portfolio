@@ -36,27 +36,7 @@ export const useModeTransitionStore = create<ModeTransitionStore>((set, get) => 
 
   startTransition: (targetMode) => {
     const currentMode = useViewModeStore.getState().mode
-    // No-op if already in the target mode or a transition is in flight.
-    if (currentMode === targetMode || get().phase !== "idle") return
-
-    const direction: ModeTransitionDirection =
-      currentMode === "quick" ? "gold-to-blue" : "blue-to-gold"
-
-    set({ phase: "covering", direction, pendingMode: targetMode })
-
-    // Cover completes → screen is fully obscured → commit the swap, then peak.
-    window.setTimeout(() => {
-      set({ phase: "peak" })
-      if (get().pendingMode) {
-        useViewModeStore.getState().setMode(get().pendingMode!)
-      }
-      window.setTimeout(() => {
-        // Begin reveal; the new theme is now applied underneath.
-        set({ phase: "revealing" })
-        window.setTimeout(() => {
-          set({ phase: "idle", direction: null, pendingMode: null })
-        }, REVEAL_MS)
-      }, PEAK_MS)
-    }, COVER_MS)
+    if (currentMode === targetMode) return
+    useViewModeStore.getState().setMode(targetMode)
   },
 }))

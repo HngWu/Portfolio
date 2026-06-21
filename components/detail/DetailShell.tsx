@@ -98,7 +98,7 @@ export function DetailShell({ typeLabel, title, descriptor, children }: DetailSh
     <main
       className="min-h-screen pt-24 pb-24 px-4 md:px-8 max-w-4xl mx-auto"
       style={
-        mode === "quick"
+        mode === "quick" && curtainState !== "idle"
           ? {
               maskImage: "url(#brush-mask-clip)",
               WebkitMaskImage: "url(#brush-mask-clip)",
