@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display } from "next/font/google";
 import { CommandPalette } from "@/components/cli/CommandPalette";
-import { PageCurtain } from "@/components/layout/PageCurtain";
+import { PageEntryOverlay } from "@/components/layout/PageEntryOverlay";
+import { ModeTransitionOverlay } from "@/components/layout/ModeTransitionOverlay";
 import { GenerativeBackground } from "@/components/canvas/GenerativeBackground";
 import { InfiniteGrid } from "@/components/ui/infinite-grid";
 import { ThemeApplier } from "@/components/providers/ThemeApplier";
+import { ModeApplier } from "@/components/providers/ModeApplier";
 import { CursorProvider } from "@/components/providers/CursorProvider";
 import "./globals.css";
 
@@ -40,10 +42,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased bg-[#050505]`}
       >
         <ThemeApplier />
+        <ModeApplier />
         <CursorProvider />
         <GenerativeBackground />
         <InfiniteGrid />
-        <PageCurtain />
+        <PageEntryOverlay />
+        <ModeTransitionOverlay />
         <CommandPalette />
         {children}
       </body>

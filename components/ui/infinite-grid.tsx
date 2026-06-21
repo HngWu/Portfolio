@@ -56,10 +56,16 @@ export const InfiniteGrid = ({ className }: { className?: string }) => {
         <GridPattern id="interactive-grid" offsetX={gridOffsetX} offsetY={gridOffsetY} />
       </motion.div>
 
-      {/* Ambient Glows */}
+      {/* Ambient Glows — tinted by the active view mode via --mode-accent */}
       <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute right-[-20%] top-[-20%] w-[40%] h-[40%] rounded-full bg-emerald-500/10 blur-[120px]" />
-        <div className="absolute left-[-10%] bottom-[-20%] w-[40%] h-[40%] rounded-full bg-blue-500/10 blur-[120px]" />
+        <div
+          className="absolute right-[-20%] top-[-20%] w-[40%] h-[40%] rounded-full blur-[120px]"
+          style={{ backgroundColor: "rgba(var(--mode-glow-rgb), 0.10)" }}
+        />
+        <div
+          className="absolute left-[-10%] bottom-[-20%] w-[40%] h-[40%] rounded-full blur-[120px]"
+          style={{ backgroundColor: "rgba(var(--mode-glow-rgb), 0.08)" }}
+        />
       </div>
     </div>
   );

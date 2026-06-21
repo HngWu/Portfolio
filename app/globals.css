@@ -103,23 +103,35 @@
     --bg-surface: #0f0f0f;
     --bg-elevated: #141414;
     --bg-overlay: #1a1a1a;
-    
+
     --glass-1: rgba(255, 255, 255, 0.03);
     --glass-2: rgba(255, 255, 255, 0.06);
     --glass-3: rgba(255, 255, 255, 0.09);
     --glass-border: rgba(255, 255, 255, 0.08);
     --glass-border-active: rgba(255, 255, 255, 0.18);
-    
+
     --lume-primary: #4AFFB4;
     --lume-secondary: #4A8FFF;
     --lume-tertiary: #FF4A8F;
     --lume-warm: #FFB44A;
-    
+
     --lume-glow-sm: 0 0 12px rgba(74, 255, 180, 0.15);
     --lume-glow-md: 0 0 32px rgba(74, 255, 180, 0.20);
     --lume-glow-lg: 0 0 64px rgba(74, 255, 180, 0.12);
     --lume-glow-xl: 0 0 120px rgba(74, 255, 180, 0.08);
-    
+
+    /* === Mode theme tokens ===
+       Parallel namespace to the accent-color cycler (useThemeStore -> --lume-primary)
+       so the two features compose. Driven by ModeApplier via [data-mode] on <html>.
+       Quick-Pitch (gold / "Magic") is the default. */
+    --mode-accent: #C9A227;          /* burnished gold (matches hexcore palette) */
+    --mode-accent-bright: #FFE875;   /* gold-leaf highlight */
+    --mode-accent-deep: #7A5E12;     /* engraved-gold shadow */
+    --mode-accent-soft: #FFB44A;     /* warm amber wash */
+    --mode-glow-rgb: 201, 162, 39;
+    --mode-bg-tint: rgba(201, 162, 39, 0.04);
+    --mode-text-accent: #FFD66B;
+
     --text-primary: rgba(255, 255, 255, 0.92);
     --text-secondary: rgba(255, 255, 255, 0.55);
     --text-muted: rgba(255, 255, 255, 0.28);
@@ -147,6 +159,18 @@
     --input: rgba(255, 255, 255, 0.08);
     --ring: #4AFFB4;
     --radius: 1rem;
+  }
+
+  /* Deep-Dive (blue / "Tech") mode — only the mode palette swaps;
+     shadCN bases & lume accents are inherited unchanged from :root. */
+  :root[data-mode="deep"] {
+    --mode-accent: #4A8FFF;          /* electric blueprint blue */
+    --mode-accent-bright: #6AFFFF;   /* hextech cyan edge */
+    --mode-accent-deep: #0c0a1a;     /* indigo void */
+    --mode-accent-soft: #6A0DAD;     /* arcane violet */
+    --mode-glow-rgb: 74, 143, 255;
+    --mode-bg-tint: rgba(74, 143, 255, 0.05);
+    --mode-text-accent: #8FB8FF;
   }
 }
 
@@ -197,6 +221,37 @@
 
   .lume-glow-amber {
     @apply hover:shadow-[0_0_40px_rgba(255,180,74,0.15),inset_0_0_20px_rgba(255,180,74,0.15)] hover:border-[rgba(255,180,74,0.4)];
+  }
+
+  /* === Mode-aware utilities (read --mode-* tokens) === */
+  .mode-glow {
+    box-shadow: 0 0 40px rgba(var(--mode-glow-rgb), 0.15),
+                inset 0 0 20px rgba(var(--mode-glow-rgb), 0.10);
+  }
+  .mode-border {
+    border-color: rgba(var(--mode-glow-rgb), 0.4);
+  }
+  .mode-text {
+    color: var(--mode-text-accent);
+  }
+  .mode-bg {
+    background-color: var(--mode-accent);
+  }
+
+  /* Ambient mode tint behind all content — cheapest way to make the
+     current mode read site-wide. Settles smoothly when data-mode swaps. */
+  .mode-atmosphere::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 80% 60% at 50% 0%,
+      var(--mode-bg-tint),
+      transparent 70%
+    );
+    transition: background 400ms ease;
   }
 
   /* Custom Thin Scrollbar */
@@ -317,4 +372,22 @@ body.custom-cursor-active {
   pointer-events: none;
   transition: opacity 300ms ease;
 }
+
+/* Media unmask reveal styles (Quick Pitch) */
+.unmask-media {
+  position: relative;
+  overflow: hidden;
+  clip-path: inset(0 100% 0 0); /* will be driven by GSAP */
+}
+
+.unmask-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--mode-accent-bright);
+  z-index: 10;
+  pointer-events: none;
+}
+
 

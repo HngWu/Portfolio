@@ -1,3 +1,7 @@
+"use client"
+
+import { useViewModeStore } from "@/store/useViewModeStore"
+
 interface PageHeroProps {
   typeLabel: string
   title: string
@@ -5,15 +9,27 @@ interface PageHeroProps {
 }
 
 export function PageHero({ typeLabel, title, descriptor }: PageHeroProps) {
+  const mode = useViewModeStore((s) => s.mode)
+
   return (
-    <div className="mb-16">
-      <div className="reveal-item text-[0.6875rem] font-mono tracking-widest text-[var(--lume-primary)] uppercase mb-4">
-        {typeLabel}
+    <div className="reveal-item mb-12">
+      <span className="text-xs font-mono uppercase tracking-widest text-[var(--mode-accent,#C9A227)]">{typeLabel}</span>
+      <div className="relative mt-2">
+        {mode === "quick" ? (
+          <>
+            {/* Base grey layer */}
+            <h1 className="text-4xl md:text-5xl font-display text-white/30 tracking-tight">{title}</h1>
+            {/* Golden gilded layer */}
+            <h1 className="gild-text absolute inset-0 text-4xl md:text-5xl font-display bg-gradient-to-r from-[var(--lume-warm,#FFB44A)] via-[var(--mode-accent-bright,#FFE875)] to-[var(--lume-warm,#FFB44A)] bg-clip-text text-transparent tracking-tight">
+              {title}
+            </h1>
+          </>
+        ) : (
+          <h1 className="text-4xl md:text-5xl font-display text-white tracking-tight">{title}</h1>
+        )}
       </div>
-      <h1 className="reveal-item text-4xl md:text-5xl font-display text-white/90 mb-4">{title}</h1>
-      <p className="reveal-item text-lg text-white/60 max-w-2xl">{descriptor}</p>
-      
-      <div className="reveal-item h-[1px] w-full bg-white/10 mt-12" />
+      <p className="mt-4 text-sm text-[var(--text-secondary,rgba(255,255,255,0.55))] max-w-xl leading-relaxed">{descriptor}</p>
+      <div className="h-[1px] w-full bg-white/10 mt-12" />
     </div>
   )
 }

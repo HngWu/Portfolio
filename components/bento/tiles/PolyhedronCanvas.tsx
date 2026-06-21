@@ -10,6 +10,7 @@ import gsap from "gsap"
 import { RunicDustStreams } from "./hexcore/RunicDustStreams"
 import { RingLightningArcs } from "./hexcore/LightningArcs"
 import { useIgniteStore } from "@/store/useIgniteStore"
+import { useModeTransitionStore } from "@/store/useModeTransitionStore"
 
 // Ancient runes for a mystical high-tech look
 const RUNES = ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ", "ᛇ", "ᛈ", "ᛉ", "ᛊ", "ᛏ", "ᛒ", "ᛖ", "ᛗ", "ᛚ", "ᛜ", "ᛞ", "ᛟ"]
@@ -1953,6 +1954,19 @@ export default function PolyhedronCanvas({
       }
     }
   }, [])
+
+  const transitionPhase = useModeTransitionStore((s) => s.phase)
+  const transitionDirection = useModeTransitionStore((s) => s.direction)
+
+  useEffect(() => {
+    if (transitionPhase === "covering" && transitionDirection === "gold-to-blue") {
+      executeCommand("shatter")
+    } else if (transitionPhase === "peak" && transitionDirection === "gold-to-blue") {
+      executeCommand("pulse")
+    } else if (transitionPhase === "covering" && transitionDirection === "blue-to-gold") {
+      executeCommand("reset") // release blue charge and lightning
+    }
+  }, [transitionPhase, transitionDirection])
 
   if (!ready) return null
 

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { usePageTransition } from "@/hooks/usePageTransition"
 import { useThemeStore } from "@/store/useThemeStore"
 import { useViewModeStore } from "@/store/useViewModeStore"
+import { useModeTransitionStore } from "@/store/useModeTransitionStore"
 import { SEARCHABLE_CONTENT } from "@/lib/search"
 
 type CommandAction = {
@@ -32,21 +33,22 @@ export function CommandPalette() {
   
   const { navigateWithTransition } = usePageTransition()
   const toggleTheme = useThemeStore((state) => state.togglePrimaryColor)
-  const { mode, setMode } = useViewModeStore()
+  const { mode } = useViewModeStore()
+  const startModeTransition = useModeTransitionStore((state) => state.startTransition)
 
   const commands: CommandAction[] = React.useMemo(() => [
     { id: "home", label: "Home", path: "/", category: "Navigation" },
     { id: "projects", label: "Projects", path: "/projects", category: "Navigation" },
     { id: "experience", label: "Experience", path: "/experience", category: "Navigation" },
     { id: "theme", label: "Toggle Accent Color", action: toggleTheme, category: "Theme", icon: Palette },
-    { id: "mode", label: `Switch to ${mode === "quick" ? "Deep Dive" : "Quick-Pitch"}`, action: () => setMode(mode === "quick" ? "deep" : "quick"), category: "Theme", icon: Monitor },
+    { id: "mode", label: `Switch to ${mode === "quick" ? "Deep Dive" : "Quick-Pitch"}`, action: () => startModeTransition(mode === "quick" ? "deep" : "quick"), category: "Theme", icon: Monitor },
     ...SEARCHABLE_CONTENT.filter(item => !["home", "projects", "experience"].includes(item.id)).map(item => ({
       id: item.id,
       label: item.title,
       category: item.category,
       path: item.path
     }))
-  ], [toggleTheme, mode, setMode])
+  ], [toggleTheme, mode, startModeTransition])
 
   const filteredCommands = React.useMemo(() => {
     if (!search) return commands

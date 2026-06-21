@@ -3,10 +3,20 @@
 import { Canvas, useFrame } from "@react-three/fiber"
 import { useMemo, useRef } from "react"
 import * as THREE from "three"
+import { useViewModeStore } from "@/store/useViewModeStore"
+
+// WebGL can't read CSS variables, so we map the mode → hex directly. These
+// mirror --mode-accent in globals.css so the point field recolors with the
+// gold/blue theme.
+const MODE_COLOR: Record<"quick" | "deep", string> = {
+  quick: "#C9A227", // burnished gold
+  deep: "#4A8FFF", // electric blueprint blue
+}
 
 function Scene() {
   const count = 1500
-  
+  const mode = useViewModeStore((s) => s.mode)
+
   // Use a deterministic pseudo-random generator to satisfy React's purity rules
   // Simple LCG (Linear Generator)
   const [pos, s] = useMemo(() => {
@@ -28,6 +38,7 @@ function Scene() {
   }, [])
 
   const pointsRef = useRef<THREE.Points>(null)
+  const materialRef = useRef<THREE.PointsMaterial>(null)
 
   useFrame(() => {
     const time = performance.now() / 1000
@@ -50,8 +61,9 @@ function Scene() {
         />
       </bufferGeometry>
       <pointsMaterial
+        ref={materialRef}
         size={0.015}
-        color="#4AFFB4"
+        color={MODE_COLOR[mode]}
         transparent
         sizeAttenuation
       />
