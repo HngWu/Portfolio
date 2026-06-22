@@ -7,19 +7,46 @@ import { initCollapse, drawCollapse, type CollapseState } from "./core-collapse"
 /**
  * Core Collapse overlay — a full-screen 2D canvas that plays the Quick-Pitch ⇄
  * Deep-Dive mode toggle transition. Mounts once globally (layout.tsx), sits
- * above PageCurtain (z-[10001]). The rAF loop only runs while a transition is
- * active; it tears down on completion so there is zero idle cost.
+ * above PageCurtain (z-[10002]).
+ *
+ * The rAF loop starts ONCE when a transition begins (phase leaves "idle") and
+ * plays the full 1000ms core-collapse pass to completion, independent of the
+ * store's intermediate phase changes (covering→peak→revealing). The store
+ * drives visibility and mode-commit timing; this component only paints. The
+ * loop tears down when the sequence returns to idle, so there is zero idle
+ * cost.
  */
 export function ModeTransitionOverlay() {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null)
   const rafRef = React.useRef<number | null>(null)
   const stateRef = React.useRef<CollapseState | null>(null)
+
   const phase = useModeTransitionStore((s) => s.phase)
   const direction = useModeTransitionStore((s) => s.direction)
 
-  // Start/stop the effect keyed on entering the "covering" phase.
+  // Mirror direction into a ref so the rAF effect (keyed on the stable boolean
+  // below) reads the latest value without re-subscribing / re-initing on every
+  // phase change.
+  const directionRef = React.useRef(direction)
+  directionRef.current = direction
+
+  // Stable transition-active flag: false→true once per sequence, true→false on
+  // idle. Intermediate phase changes (covering/peak/revealing) all read true,
+  // so the rAF effect never re-runs or cancels mid-animation.
+  const isTransitioning = phase !== "idle"
+
   React.useEffect(() => {
-    if (phase !== "covering" || !direction) return
+    if (!isTransitioning) return
+    const direction = directionRef.current
+    if (!direction) return
+
+    // Respect reduced motion: the store's startTransition still commits the
+    // mode, but we render no canvas.
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (prefersReduced) return
+
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext("2d")
@@ -43,8 +70,8 @@ export function ModeTransitionOverlay() {
       if (alive) {
         rafRef.current = requestAnimationFrame(loop)
       } else {
-        // Hold the final frame briefly; the store drives reveal→idle, after
-        // which the canvas is unmounted (phase === "idle" hides the element).
+        // The pass has finished drawing. Hold the final frame until the store
+        // settles to idle, at which point the canvas is hidden (phase === idle).
         rafRef.current = null
       }
     }
@@ -55,8 +82,9 @@ export function ModeTransitionOverlay() {
         cancelAnimationFrame(rafRef.current)
         rafRef.current = null
       }
+      stateRef.current = null
     }
-  }, [phase, direction])
+  }, [isTransitioning])
 
   // Hard cleanup if the component ever unmounts mid-effect.
   React.useEffect(() => {
@@ -76,10 +104,10 @@ export function ModeTransitionOverlay() {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 10001,
+        zIndex: 10002,
         pointerEvents: "none",
         opacity: visible ? 1 : 0,
-        transition: visible ? undefined : "opacity 60ms linear",
+        transition: visible ? undefined : "opacity 120ms ease-out",
       }}
     />
   )
