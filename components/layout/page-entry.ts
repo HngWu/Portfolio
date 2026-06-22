@@ -266,10 +266,17 @@ export function drawEntry(
   const oy = state.originY
   const maxR = Math.hypot(w, h)
 
-  // Clear with a near-black base so additive draws pop.
   ctx.globalCompositeOperation = "source-over"
-  ctx.fillStyle = "rgba(5,5,5,1)"
-  ctx.fillRect(0, 0, w, h)
+  if (state.phase === "reveal") {
+    // Reveal: clear to *transparent* so page B shows through everywhere the
+    // reveal functions don't paint (outside the shrinking origin disc). This is
+    // the key difference from cover/peak, which need an opaque base.
+    ctx.clearRect(0, 0, w, h)
+  } else {
+    // Cover: fill with a near-black base so additive draws pop.
+    ctx.fillStyle = "rgba(5,5,5,1)"
+    ctx.fillRect(0, 0, w, h)
+  }
 
   ctx.globalCompositeOperation = "lighter" // additive
 

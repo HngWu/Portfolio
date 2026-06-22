@@ -39,11 +39,14 @@ export function PageEntryOverlay() {
   const mode = useViewModeStore((s) => s.mode)
   const pathname = usePathname()
 
-  // 1. Detect browser back/forward popstate to trigger curtain covering
+  // 1. Detect browser back/forward popstate to trigger curtain covering.
+  //    Under reduced motion we skip the canvas entirely — Next.js will swap the
+  //    route and the detail shell's reduced-motion fade handles the entrance.
   React.useEffect(() => {
     if (typeof window === "undefined") return
 
     const handlePopState = () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
       setPageLoaded(false)
       setCurtainState("covering")
     }
