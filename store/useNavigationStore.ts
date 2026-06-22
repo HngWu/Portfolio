@@ -23,8 +23,14 @@ interface NavigationStore {
   setOriginRect: (rect: OriginRect | null) => void
   bentoTilesBounds: Record<string, OriginRect> | null
   setBentoTilesBounds: (bounds: Record<string, OriginRect> | null) => void
-  curtainState: 'idle' | 'covering' | 'revealing'
-  setCurtainState: (state: 'idle' | 'covering' | 'revealing') => void
+  /**
+   * Page-curtain lifecycle.
+   *   idle → covering (canvas paints page A away) →
+   *   peak (screen fully occluded; route swap happens here) →
+   *   revealing (canvas unwinds back toward origin, exposing page B) → idle
+   */
+  curtainState: 'idle' | 'covering' | 'peak' | 'revealing'
+  setCurtainState: (state: 'idle' | 'covering' | 'peak' | 'revealing') => void
   isPageLoaded: boolean
   setPageLoaded: (loaded: boolean) => void
 }
