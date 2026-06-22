@@ -22,32 +22,60 @@ export function DetailShell({ typeLabel, title, descriptor, children }: DetailSh
   const curtainState = useNavigationStore((s) => s.curtainState)
   const originRect = useNavigationStore((s) => s.originRect)
 
-  const maskPathRef = React.useRef<SVGPathElement | null>(null)
+  const shellRef = React.useRef<HTMLElement | null>(null)
 
+  // 1. Pre-hide content while the cover is still up. If the canvas ever lags a
+  //    frame behind the route swap, nothing can flash through. Set on mount and
+  //    again whenever we re-enter a covered phase.
   React.useLayoutEffect(() => {
-    if (mode !== "quick" || !maskPathRef.current) return
-    
-    if (curtainState === "revealing") {
-      gsap.fromTo(maskPathRef.current,
-        { scale: 0, transformOrigin: "center" },
-        { scale: 15, duration: 1.2, ease: "power3.inOut" }
-      )
+    if (!shellRef.current) return
+    if (curtainState === "covering" || curtainState === "peak") {
+      gsap.set(shellRef.current.querySelectorAll(".reveal-item"), { opacity: 0 })
+      gsap.set(shellRef.current.querySelectorAll(".gild-text"), { clipPath: "inset(0 100% 0 0)" })
     }
-  }, [curtainState, mode])
+  }, [curtainState])
 
+  // 2. Reveal — only play once the curtain is unwinding (or immediately on a
+  //    direct load / refresh where curtainState is idle). Gating on curtainState
+  //    means the reveal now lands *after* the canvas opens instead of racing it
+  //    underneath.
   useGsap(() => {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches
 
+    // Respect the user setting — a simple fade, no blur/trace/gild.
     if (prefersReducedMotion) {
-      // Respect the user setting — a simple fade, no blur/trace/gild.
       gsap.from(".reveal-item", { opacity: 0, duration: 0.4, stagger: 0.05 })
       return
     }
 
+    // Origin point for the gold clip-path open (viewport coords). Falls back to
+    // the shell's top-center when there's no captured tile (⌘K, refresh).
+    const shell = shellRef.current
+    let cx = "50%"
+    let cy = "0%"
+    if (shell && originRect) {
+      const r = shell.getBoundingClientRect()
+      cx = `${((originRect.left + originRect.width / 2 - r.left) / r.width) * 100}%`
+      cy = `${((originRect.top + originRect.height / 2 - r.top) / r.height) * 100}%`
+    }
+
     if (mode === "quick") {
-      // Golden Canvas reveal: soft blur-to-focus + gilded headers.
+      // Golden Canvas reveal: open the page from the clicked tile via a
+      // circle clip-path, coordinated with the canvas brush-edge ring.
+      if (shell) {
+        gsap.fromTo(
+          shell,
+          { clipPath: `circle(0% at ${cx} ${cy})` },
+          {
+            clipPath: `circle(150% at ${cx} ${cy})`,
+            duration: 0.9,
+            ease: "power3.out",
+          }
+        )
+      }
+      // Soft blur-to-focus + gilded headers.
       gsap.from(".reveal-item", {
         opacity: 0,
         filter: "blur(8px)",
@@ -56,8 +84,8 @@ export function DetailShell({ typeLabel, title, descriptor, children }: DetailSh
         stagger: 0.12,
         ease: "expo.out",
       })
-      // Gild-in the hero title + reveal-item headings via a gold-gradient
-      // clip-path width sweep (left → right), evoking gold leaf laid down.
+      // Gild-in the hero title via a gold-gradient clip-path width sweep
+      // (left → right), evoking gold leaf laid down.
       gsap.fromTo(
         ".gild-text",
         { clipPath: "inset(0 100% 0 0)" },
@@ -92,34 +120,14 @@ export function DetailShell({ typeLabel, title, descriptor, children }: DetailSh
         }
       )
     }
-  }, [mode])
+  }, [mode, curtainState])
 
   return (
     <main
+      ref={shellRef}
       className="min-h-screen pt-24 pb-24 px-4 md:px-8 max-w-4xl mx-auto"
-      style={
-        mode === "quick" && curtainState !== "idle"
-          ? {
-              maskImage: "url(#brush-mask-clip)",
-              WebkitMaskImage: "url(#brush-mask-clip)",
-              maskSize: "100% 100%",
-            }
-          : undefined
-      }
     >
       <ModeScrollFx />
-      <svg className="absolute w-0 h-0 pointer-events-none">
-        <defs>
-          <mask id="brush-mask-clip" maskUnits="userSpaceOnUse">
-            <rect width="100%" height="100%" fill="black" />
-            <path
-              ref={maskPathRef}
-              d="M 500 500 C 350 450, 650 350, 500 500 C 400 600, 300 400, 500 500 Z"
-              fill="white"
-            />
-          </mask>
-        </defs>
-      </svg>
       <div className="fixed top-6 right-6 z-50">
         <SearchButton />
       </div>
