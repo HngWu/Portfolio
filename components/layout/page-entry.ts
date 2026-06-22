@@ -1,18 +1,27 @@
 /**
  * Page Entry — pure 2D canvas animation engine for the Grid→Page transition.
- * No React; driven by a start timestamp and a draw(ctx, t, w, h) call.
+ * No React; driven by a phase + a draw(ctx, now, w, h) call.
  *
- * Two modes, each ~1s, both originating from the clicked tile's center (or
- * viewport center when no origin rect is supplied):
+ * Two coordinated phases, each mode-aware, both originating from the clicked
+ * tile's center (or viewport center when no origin rect is supplied):
  *
- *  - "quick" (Golden Canvas Brush): a liquid-gold radial wash spreads outward
- *    from the tile, gold-leaf shimmer particles drift up, and faint golden
- *    geometric line strokes sweep across — like a painting coming to life.
+ *  - "cover": the golden brush / hextech boot sweeps outward from the origin
+ *    until the viewport is fully occluded. Ends on the peak frame, where the
+ *    route swap happens behind the canvas.
  *
- *  - "deep" (Hextech Matrix Boot): a sharp blue neon pulse flashes at the tile,
- *    bright hex-blue vector lines "trace" outward (blueprint boot sequence),
- *    a hex-coordinate digit matrix ticks up rapidly (data injection), and an
- *    electric-blue shockwave ring expands.
+ *  - "reveal": the cover *unwinds back toward the origin* so page B shows
+ *    through. The wash contracts, particles fall back inward, and a bright
+ *    leading edge expands from the origin — the page is "opened" from exactly
+ *    where the user clicked. This is the seamlessness fix: it replaces the old
+ *    60ms opacity pop that exposed a half-rendered page.
+ *
+ * Modes:
+ *  - "quick" (Golden Canvas Brush): liquid-gold radial wash, gold-leaf shimmer,
+ *    faint geometric line strokes. Reveal reads as a brush stroke opening.
+ *
+ *  - "deep" (Hextech Matrix Boot): neon pulse, blue vector "trace" lines, a
+ *    hex-coordinate digit matrix ticking up, electric-blue shockwave. Reveal
+ *    reads as a blueprint scanner finishing its boot (raster scan from origin).
  *
  * Colors mirror the hexcore palette so the entry reads as one continuous piece
  * with the Core Collapse toggle. Particle count scales with hardwareConcurrency.
@@ -24,6 +33,7 @@
 import type { OriginRect } from "@/store/useNavigationStore"
 
 export type EntryMode = "quick" | "deep"
+export type EntryPhase = "cover" | "peak" | "reveal"
 
 const GOLD = "#C9A227"
 const GOLD_BRIGHT = "#FFE875"
@@ -31,10 +41,17 @@ const GOLD_SOFT = "#FFB44A"
 const BLUE = "#4A8FFF"
 const BLUE_BRIGHT = "#6AFFFF"
 const BLUE_DEEP = "#0A1A3A"
-const DURATION = 1000 // ms; full cover→reveal effect
+
+/** ms for the cover sweep to reach full occlusion. */
+const COVER_DURATION = 600
+/** ms for the reveal sweep to fully unwind back to the origin. */
+const REVEAL_DURATION = 600
 
 export interface EntryState {
-  startTime: number | null
+  phase: EntryPhase
+  phaseStartTime: number | null
+  /** previous frame's timestamp, for real dt */
+  lastTime: number | null
   mode: EntryMode
   originX: number
   originY: number
@@ -44,7 +61,7 @@ export interface EntryState {
   /** pre-seeded target points for the blue vector "trace" lines */
   traces: { angle: number; len: number }[]
   /** pre-seeded rows/cols of hex-coordinate digits for the data matrix */
-  matrix: { x: number; y: number; seed: number }[]
+  matrix: { x: number; y: number; dist: number; seed: number }[]
 }
 
 interface Particle {
@@ -62,6 +79,9 @@ function easeInOutCubic(t: number): number {
 }
 function easeOutExpo(t: number): number {
   return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)
+}
+function easeInExpo(t: number): number {
+  return t <= 0 ? 0 : Math.pow(2, 10 * t - 10)
 }
 function clamp01(t: number): number {
   return t < 0 ? 0 : t > 1 ? 1 : t
@@ -154,15 +174,18 @@ export function initEntry(
       : []
 
   // Blue: a sparse grid of hex-coordinate digit cells for the data matrix.
+  // Each cell stores its normalized distance from the origin so the reveal
+  // scan can switch cells off in a radial wave.
   const matrix =
     mode === "deep"
       ? (() => {
-          const cells: { x: number; y: number; seed: number }[] = []
+          const cells: { x: number; y: number; dist: number; seed: number }[] = []
           const gap = 120
           for (let x = gap / 2; x < w; x += gap) {
             for (let y = gap / 2; y < h; y += gap) {
               if (Math.random() < 0.6) {
-                cells.push({ x, y, seed: Math.random() * 0xffff })
+                const d = Math.hypot(x - ox, y - oy) / maxR
+                cells.push({ x, y, dist: clamp01(d), seed: Math.random() * 0xffff })
               }
             }
           }
@@ -170,7 +193,18 @@ export function initEntry(
         })()
       : []
 
-  return { startTime: null, mode, originX: ox, originY: oy, particles, strokes, traces, matrix }
+  return {
+    phase: "cover",
+    phaseStartTime: null,
+    lastTime: null,
+    mode,
+    originX: ox,
+    originY: oy,
+    particles,
+    strokes,
+    traces,
+    matrix,
+  }
 }
 
 function rgba(hex: string, a: number): string {
@@ -198,8 +232,13 @@ function drawHexLabel(
 }
 
 /**
- * Advance + render one frame. Returns false when the effect is done.
- * `now` is a performance.now()-style timestamp.
+ * Advance + render one frame. Returns false when the current phase is done
+ * and the engine has nothing more to animate (used by PageEntryOverlay to
+ * keep the peak frame live without burning rAF). `now` is a
+ * performance.now()-style timestamp.
+ *
+ * Callers transition `state.phase` externally (cover→peak→reveal); the draw
+ * function never changes phase itself — it just plays the current one.
  */
 export function drawEntry(
   ctx: CanvasRenderingContext2D,
@@ -208,15 +247,24 @@ export function drawEntry(
   w: number,
   h: number
 ): boolean {
-  if (state.startTime === null) state.startTime = now
-  const elapsed = now - state.startTime
-  const p = clamp01(elapsed / DURATION)
-  if (p >= 1) return false
+  if (state.phaseStartTime === null) state.phaseStartTime = now
 
+  // Real, clamped dt so particle motion is framerate-independent.
+  const last = state.lastTime ?? now
+  const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05)
+  state.lastTime = now
+
+  // Peak holds the final cover frame statically — the route swap happens here.
+  // Keep returning true so the overlay keeps the canvas opaque while covered.
+  if (state.phase === "peak") {
+    drawPeak(ctx, state, w, h)
+    return true
+  }
+
+  const elapsed = now - state.phaseStartTime
   const ox = state.originX
   const oy = state.originY
   const maxR = Math.hypot(w, h)
-  const dt = 1 / 60
 
   // Clear with a near-black base so additive draws pop.
   ctx.globalCompositeOperation = "source-over"
@@ -225,10 +273,21 @@ export function drawEntry(
 
   ctx.globalCompositeOperation = "lighter" // additive
 
-  if (state.mode === "quick") {
-    drawGoldenBrush(ctx, state, p, ox, oy, maxR, dt)
+  let alive: boolean
+  if (state.phase === "cover") {
+    const p = clamp01(elapsed / COVER_DURATION)
+    if (state.mode === "quick") drawGoldenCover(ctx, state, p, ox, oy, maxR, dt)
+    else drawHextechCover(ctx, state, p, ox, oy, maxR, w, h, dt)
+    // Cover is "done" at p=1, but the overlay holds the peak frame separately,
+    // so we report alive=false to stop the rAF; the overlay will restart it for
+    // the reveal phase.
+    alive = p < 1
   } else {
-    drawHextechBoot(ctx, state, p, ox, oy, maxR, w, h, dt)
+    // reveal
+    const p = clamp01(elapsed / REVEAL_DURATION)
+    if (state.mode === "quick") drawGoldenReveal(ctx, state, p, ox, oy, maxR, w, h, dt)
+    else drawHextechReveal(ctx, state, p, ox, oy, maxR, w, h, dt)
+    alive = p < 1
   }
 
   // Reset composite for the next frame's clear.
@@ -236,11 +295,28 @@ export function drawEntry(
   ctx.globalAlpha = 1
   ctx.shadowBlur = 0
 
-  return true
+  return alive
 }
 
-/** Quick-Pitch: Golden Canvas Brush. */
-function drawGoldenBrush(
+/** Repaint the held peak frame (no time advance). */
+function drawPeak(ctx: CanvasRenderingContext2D, state: EntryState, w: number, h: number) {
+  ctx.globalCompositeOperation = "source-over"
+  ctx.fillStyle = "rgba(5,5,5,1)"
+  ctx.fillRect(0, 0, w, h)
+  ctx.globalCompositeOperation = "lighter"
+  if (state.mode === "quick") drawGoldenCover(ctx, state, 1, state.originX, state.originY, Math.hypot(w, h), 0)
+  else drawHextechCover(ctx, state, 1, state.originX, state.originY, Math.hypot(w, h), w, h, 0)
+  ctx.globalCompositeOperation = "source-over"
+  ctx.globalAlpha = 1
+  ctx.shadowBlur = 0
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// COVER
+// ────────────────────────────────────────────────────────────────────────────
+
+/** Quick-Pitch cover: Golden Canvas Brush sweeps out to full occlusion. */
+function drawGoldenCover(
   ctx: CanvasRenderingContext2D,
   state: EntryState,
   p: number,
@@ -288,19 +364,18 @@ function drawGoldenBrush(
   for (const part of state.particles) {
     part.x += part.vx * dt * (0.6 + coverP)
     part.y += part.vy * dt * (0.6 + coverP)
-    const color = GOLD_BRIGHT
     ctx.globalAlpha = (1 - p) * part.life
-    ctx.fillStyle = color
+    ctx.fillStyle = GOLD_BRIGHT
     ctx.shadowBlur = 6
-    ctx.shadowColor = color
+    ctx.shadowColor = GOLD_BRIGHT
     ctx.beginPath()
     ctx.arc(part.x, part.y, part.size, 0, Math.PI * 2)
     ctx.fill()
   }
 }
 
-/** Deep-Dive: Hextech Matrix Boot. */
-function drawHextechBoot(
+/** Deep-Dive cover: Hextech Matrix Boot sweeps out to full occlusion. */
+function drawHextechCover(
   ctx: CanvasRenderingContext2D,
   state: EntryState,
   p: number,
@@ -380,11 +455,173 @@ function drawHextechBoot(
   for (const part of state.particles) {
     part.x += part.vx * dt * burstP
     part.y += part.vy * dt * burstP
-    const color = BLUE_BRIGHT
     ctx.globalAlpha = (1 - p) * part.life
-    ctx.fillStyle = color
+    ctx.fillStyle = BLUE_BRIGHT
     ctx.shadowBlur = 6
-    ctx.shadowColor = color
+    ctx.shadowColor = BLUE_BRIGHT
+    ctx.beginPath()
+    ctx.arc(part.x, part.y, part.size, 0, Math.PI * 2)
+    ctx.fill()
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// REVEAL — the unwinding pass that exposes page B from the origin outward.
+// This replaces the old 60ms opacity pop.
+// ────────────────────────────────────────────────────────────────────────────
+
+/** Quick-Pitch reveal: the gold wash contracts back toward the origin, leaving
+ *  a bright brush-edge ring expanding outward as the page "opens". */
+function drawGoldenReveal(
+  ctx: CanvasRenderingContext2D,
+  state: EntryState,
+  p: number,
+  ox: number,
+  oy: number,
+  maxR: number,
+  w: number,
+  h: number,
+  dt: number
+) {
+  // As p→1 the occluded disc shrinks to zero at the origin. We draw the cover
+  // wash with a shrinking radius; outside the disc the canvas is cleared so
+  // page B shows through.
+  const revealP = easeInExpo(p) // fast at the end → page snaps cleanly open
+  const washR = maxR * (1 - revealP)
+
+  // Re-paint the base cover color only within the shrinking disc, so the area
+  // outside it is transparent (page B underneath shows through).
+  ctx.globalCompositeOperation = "source-over"
+  if (washR > 0.5) {
+    ctx.fillStyle = "rgba(5,5,5,1)"
+    ctx.beginPath()
+    ctx.arc(ox, oy, washR, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  ctx.globalCompositeOperation = "lighter"
+
+  // Residual gold wash inside the shrinking disc.
+  if (washR > 0.5) {
+    const g = ctx.createRadialGradient(ox, oy, 0, ox, oy, washR)
+    g.addColorStop(0, rgba(GOLD_BRIGHT, 0.4 * (1 - p)))
+    g.addColorStop(0.6, rgba(GOLD, 0.25 * (1 - p)))
+    g.addColorStop(1, rgba(GOLD_SOFT, 0))
+    ctx.fillStyle = g
+    ctx.beginPath()
+    ctx.arc(ox, oy, washR, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // Bright brush-edge ring expanding outward from the origin — the leading
+  // edge of the "opening" stroke. Coordinates with DetailShell's clip-path.
+  const edgeR = easeOutExpo(p) * maxR * 1.05
+  if (edgeR > 1 && p < 1) {
+    ctx.save()
+    ctx.globalAlpha = (1 - p) * 0.9
+    ctx.strokeStyle = GOLD_BRIGHT
+    ctx.lineWidth = 2.5
+    ctx.shadowBlur = 18
+    ctx.shadowColor = GOLD_BRIGHT
+    ctx.beginPath()
+    ctx.arc(ox, oy, edgeR, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  // Particles fall back inward toward the origin as the page opens.
+  for (const part of state.particles) {
+    part.x += (ox - part.x) * dt * 2.5
+    part.y += (oy - part.y) * dt * 2.5
+    ctx.globalAlpha = (1 - p) * part.life
+    ctx.fillStyle = GOLD_BRIGHT
+    ctx.shadowBlur = 6
+    ctx.shadowColor = GOLD_BRIGHT
+    ctx.beginPath()
+    ctx.arc(part.x, part.y, part.size, 0, Math.PI * 2)
+    ctx.fill()
+  }
+}
+
+/** Deep-Dive reveal: a blueprint scanner finishing its boot. The data matrix
+ *  cells switch off in a radial wave from the origin, the shockwave ring
+ *  contracts, and a scan line sweeps outward. */
+function drawHextechReveal(
+  ctx: CanvasRenderingContext2D,
+  state: EntryState,
+  p: number,
+  ox: number,
+  oy: number,
+  maxR: number,
+  w: number,
+  h: number,
+  dt: number
+) {
+  // The occluded disc shrinks toward the origin; outside it the canvas clears.
+  const revealP = easeInExpo(p)
+  const discR = maxR * (1 - revealP)
+
+  ctx.globalCompositeOperation = "source-over"
+  if (discR > 0.5) {
+    ctx.fillStyle = rgba(BLUE_DEEP, 0.6)
+    ctx.beginPath()
+    ctx.arc(ox, oy, discR, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = "rgba(5,5,5,0.9)"
+    ctx.beginPath()
+    ctx.arc(ox, oy, discR, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  ctx.globalCompositeOperation = "lighter"
+
+  // Data matrix: cells within the wave front (closer to origin than the
+  // expanding edgeR) have already been "scanned off" and go dark; the rest
+  // keep ticking until the front reaches them.
+  const front = easeOutExpo(p) // 0→1, the scan front distance
+  for (const cell of state.matrix) {
+    if (cell.dist > front) {
+      drawHexLabel(ctx, cell.x, cell.y, cell.seed, p, clamp01(1 - p * 1.5) * 0.4)
+    }
+  }
+
+  // Bright scan line ring expanding outward — the blueprint scanner's sweep.
+  const edgeR = front * maxR * 1.05
+  if (edgeR > 1 && p < 1) {
+    ctx.save()
+    ctx.globalAlpha = (1 - p) * 0.85
+    ctx.strokeStyle = BLUE_BRIGHT
+    ctx.lineWidth = 2
+    ctx.shadowBlur = 16
+    ctx.shadowColor = BLUE_BRIGHT
+    ctx.beginPath()
+    ctx.arc(ox, oy, edgeR, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  // Contracting shockwave ring (the original boot pulse reversing inward).
+  if (discR > 1) {
+    ctx.save()
+    ctx.globalAlpha = (1 - p) * 0.6
+    ctx.strokeStyle = BLUE
+    ctx.lineWidth = 1.5
+    ctx.shadowBlur = 10
+    ctx.shadowColor = BLUE
+    ctx.beginPath()
+    ctx.arc(ox, oy, discR * 0.78, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  // Particles stream back toward the origin.
+  for (const part of state.particles) {
+    part.x += (ox - part.x) * dt * 2.5
+    part.y += (oy - part.y) * dt * 2.5
+    ctx.globalAlpha = (1 - p) * part.life
+    ctx.fillStyle = BLUE_BRIGHT
+    ctx.shadowBlur = 6
+    ctx.shadowColor = BLUE_BRIGHT
     ctx.beginPath()
     ctx.arc(part.x, part.y, part.size, 0, Math.PI * 2)
     ctx.fill()
