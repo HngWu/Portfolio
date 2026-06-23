@@ -43,3 +43,6 @@ next-env.d.ts
 # superpowers & documentation
 .superpowers/
 docs/
+.playwright-mcp/
+.gemini/
+autoresearch.sh
