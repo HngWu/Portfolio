@@ -4,30 +4,30 @@ import { GraduationCap, Zap, LayoutGrid, BarChart3 } from "lucide-react"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
 
+import type { StatContent } from "@/lib/tiles/schemas"
+
 export function StatTile({ 
   id, 
   size, 
-  value, 
-  label, 
+  content, 
   deepDive,
   isDragging, 
   sortableProps 
 }: { 
   id: string
   size: string
-  value: string | number
-  label: string
+  content: StatContent
   deepDive?: unknown
   isDragging?: boolean
   sortableProps?: Record<string, unknown> 
 }) {
+  const { value, label } = content
   const forceMobile = React.useContext(ForceMobileContext)
   const typo = getTypographyClasses(size, false, forceMobile)
 
   const deep = deepDive as Record<string, unknown> | null
   const deepValue = deep?.value as string | number | undefined
   const deepLabel = deep?.label as string | undefined
-  const deepDetail = deep?.detail as string | undefined
 
   const getIcon = () => {
     const l = label.toLowerCase()

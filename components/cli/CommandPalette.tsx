@@ -7,7 +7,7 @@ import { usePageTransition } from "@/hooks/usePageTransition"
 import { useThemeStore } from "@/store/useThemeStore"
 import { useViewModeStore } from "@/store/useViewModeStore"
 import { useModeTransitionStore } from "@/store/useModeTransitionStore"
-import { SEARCHABLE_CONTENT } from "@/lib/search"
+import { SEARCHABLE_CONTENT, type SearchResult } from "@/lib/search"
 
 type CommandAction = {
   id: string
@@ -18,7 +18,7 @@ type CommandAction = {
   action?: () => void
 }
 
-export function CommandPalette() {
+export function CommandPalette({ initialContent }: { initialContent?: SearchResult[] }) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [selectedIndex, setSelectedIndex] = React.useState(0)
@@ -42,13 +42,13 @@ export function CommandPalette() {
     { id: "experience", label: "Experience", path: "/experience", category: "Navigation" },
     { id: "theme", label: "Toggle Accent Color", action: toggleTheme, category: "Theme", icon: Palette },
     { id: "mode", label: `Switch to ${mode === "quick" ? "Deep Dive" : "Quick-Pitch"}`, action: () => startModeTransition(mode === "quick" ? "deep" : "quick"), category: "Theme", icon: Monitor },
-    ...SEARCHABLE_CONTENT.filter(item => !["home", "projects", "experience"].includes(item.id)).map(item => ({
+    ...(initialContent || SEARCHABLE_CONTENT).filter(item => !["home", "projects", "experience"].includes(item.id)).map(item => ({
       id: item.id,
       label: item.title,
       category: item.category,
       path: item.path
     }))
-  ], [toggleTheme, mode, startModeTransition])
+  ], [toggleTheme, mode, startModeTransition, initialContent])
 
   const filteredCommands = React.useMemo(() => {
     if (!search) return commands

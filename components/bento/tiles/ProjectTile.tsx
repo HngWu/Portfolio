@@ -7,29 +7,27 @@ import { FolderGit2 } from "lucide-react"
 import * as React from "react"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
-import { Json } from "@/types/supabase"
+import { parseTileDeepDive, type ProjectContent } from "@/lib/tiles/schemas"
+import type { Json } from "@/types/supabase"
 
 interface ProjectTileProps {
   id: string
   size: string
-  name: string
-  description: string
-  tags: string[]
-  deepDiveContent?: Json
+  content: ProjectContent
+  deepDive?: Json
   isDragging?: boolean
   sortableProps?: Record<string, unknown>
 }
 
-export function ProjectTile({ id, size, name, description, tags, deepDiveContent, isDragging, sortableProps }: ProjectTileProps) {
+export function ProjectTile({ id, size, content, deepDive, isDragging, sortableProps }: ProjectTileProps) {
+  const { name, description, techStack: tags } = content
   const mode = useViewModeStore((state) => state.mode)
   const isDeepDive = mode === "deep"
   const forceMobile = React.useContext(ForceMobileContext)
   const typo = getTypographyClasses(size, isDeepDive, forceMobile)
 
-  // Safely extract deep dive notes
-  const notes = typeof deepDiveContent === 'string' 
-    ? deepDiveContent 
-    : (deepDiveContent as Record<string, unknown>)?.notes as string || ''
+  // Safely extract deep dive notes via the typed parser.
+  const notes = parseTileDeepDive("project", deepDive).notes
 
   return (
     <BentoTile 

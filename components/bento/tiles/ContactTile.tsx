@@ -4,15 +4,14 @@ import * as React from "react"
 import { BentoTile } from "../BentoTile"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
-import { Mail, Github, Linkedin, ExternalLink, Check, Copy, Key, Calendar, Clock } from "lucide-react"
+import { Mail, Github, Linkedin, Check, Copy, Calendar } from "lucide-react"
+
+import type { ContactContent } from "@/lib/tiles/schemas"
 
 interface ContactTileProps {
   id: string
   size: string
-  email: string
-  github: string
-  linkedin: string
-  telegram?: string
+  content: ContactContent
   deepDive?: unknown
   isDragging?: boolean
   sortableProps?: Record<string, unknown>
@@ -179,22 +178,19 @@ function SgtClockAnimation() {
 export function ContactTile({
   id,
   size,
-  email,
-  github,
-  linkedin,
-  telegram,
+  content,
   deepDive,
   isDragging,
   sortableProps
 }: ContactTileProps) {
+  const { email, github, linkedin, telegram } = content
   const forceMobile = React.useContext(ForceMobileContext)
   const typo = getTypographyClasses(size, false, forceMobile)
   const deepTypo = getTypographyClasses(size, true, forceMobile)
 
   const [copied, setCopied] = React.useState(false)
-  
+
   const deep = deepDive as Record<string, unknown> | null
-  const pgpKey = deep?.pgp_key as string | undefined
   const availability = deep?.availability as string || "Available Q3 2026"
 
   // Dynamic social links with production defaults to guarantee they show up
@@ -208,10 +204,6 @@ export function ContactTile({
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
-
-  // Pre-filled intent email URLs
-  const projectMailto = `mailto:${email}?subject=${encodeURIComponent("[Project Request] System Architecture & Frontend Overhaul")}&body=${encodeURIComponent("Hi HW,\n\nI saw your portfolio and would love to discuss a potential project collaboration. Here are some brief details:\n\nScope:\nTimeline:\nBudget:\n\nLooking forward to speaking with you!")}`
-  const chatMailto = `mailto:${email}?subject=${encodeURIComponent("[Coffee Chat] Discussing UI Engineering & Immersive 3D")}&body=${encodeURIComponent("Hi HW,\n\nI really enjoyed exploring your cinematic portfolio grids. I would love to hop on a quick virtual coffee chat to discuss UI animations, three.js, or simply connect as fellow engineers.\n\nBest regards,")}`
 
   return (
     <BentoTile

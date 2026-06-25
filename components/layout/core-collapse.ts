@@ -22,7 +22,6 @@ const GOLD_BRIGHT = "#FFE875"
 const GOLD_SOFT = "#FFB44A"
 const BLUE = "#4A8FFF"
 const BLUE_BRIGHT = "#6AFFFF"
-const INDIGO = "#6A0DAD"
 const DURATION = 1000 // ms, full effect; cover/peak/reveal timing handled by the store
 
 export interface CollapseState {

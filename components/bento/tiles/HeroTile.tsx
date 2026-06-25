@@ -4,26 +4,20 @@ import * as React from "react"
 import { BentoTile } from "../BentoTile"
 import { Download } from "lucide-react"
 import { useViewModeStore } from "@/store/useViewModeStore"
+import type { HeroContent } from "@/lib/tiles/schemas"
 
 interface HeroTileProps {
   id: string
   size: string
-  role: string
-  mark: string
-  description: string
-  typo: {
-    heading: string
-    body: string
-    meta: string
-    icon: string
-  }
+  content: HeroContent
   isDragging?: boolean
   sortableProps?: Record<string, unknown>
 }
 
-export function HeroTile({ id, size, mark, description, isDragging, sortableProps }: HeroTileProps) {
+export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroTileProps) {
+  const { mark, description } = content
   const markRef = React.useRef<HTMLHeadingElement>(null)
-  
+
   const deepMarkRef = React.useRef<HTMLHeadingElement>(null)
 
   const mode = useViewModeStore((state) => state.mode)

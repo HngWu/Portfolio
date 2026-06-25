@@ -41,7 +41,7 @@ export const sharedSpellState = {
 }
 
 if (typeof window !== 'undefined') {
-  (window as any).sharedSpellState = sharedSpellState;
+  (window as unknown as { sharedSpellState?: typeof sharedSpellState }).sharedSpellState = sharedSpellState;
 }
 
 // Pre-allocated static colors to avoid 60fps GC allocation overhead
@@ -1940,8 +1940,7 @@ export default function PolyhedronCanvas({
   // Expose global window CLI spell API
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const win = window as unknown as Record<string, unknown>
-      win.__hexcore_cmd = (cmdStr: string) => {
+      window.__hexcore_cmd = (cmdStr: string) => {
         const res = executeCommand(cmdStr)
         console.log(`[Hexcore CLI] ${res}`)
         return res
@@ -1949,8 +1948,7 @@ export default function PolyhedronCanvas({
     }
     return () => {
       if (typeof window !== 'undefined') {
-        const win = window as unknown as Record<string, unknown>
-        delete win.__hexcore_cmd
+        delete window.__hexcore_cmd
       }
     }
   }, [])

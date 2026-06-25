@@ -27,24 +27,28 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
   const targetPyramidIdxC = useRef(0);
   const updateIndex = useRef(0); // For staggered scheduling
 
-  // 1. Pre-allocated flat buffers bound to geometry
-  const [positions, alphas] = useMemo(() => {
-    return [
-      new Float32Array(maxSegments * 2 * 3 * numArcs), 
-      new Float32Array(maxSegments * 2 * numArcs)
-    ];
-  }, []);
+  // 1. Pre-allocated flat buffers bound to geometry. These are long-lived
+  // mutable buffers, written in-place every frame by the lightning path
+  // generator inside useFrame. Because they are mutated (not just read) after
+  // render, they must live in refs — useMemo values are treated as immutable
+  // by react-hooks and R3F reads `.current` lazily when building the geometry,
+  // so a ref is both allocation-stable and safe to mutate post-render.
+  const positionsRef = useRef(new Float32Array(maxSegments * 2 * 3 * numArcs))
+  const alphasRef = useRef(new Float32Array(maxSegments * 2 * numArcs))
 
   // 2. Pre-allocated vector pool for zero-garbage mathematics
-  const calcPoints = useMemo(() => Array.from({ length: 33 }, () => new THREE.Vector3()), []);
-  const tempPoints = useMemo(() => Array.from({ length: 33 }, () => new THREE.Vector3()), []);
-  const vectorPool = useMemo(() => Array.from({ length: 512 }, () => new THREE.Vector3()), []);
-  let poolIdx = 0;
+  const calcPoints = useMemo(() => Array.from({ length: 33 }, () => new THREE.Vector3()), [])
+  const tempPoints = useMemo(() => Array.from({ length: 33 }, () => new THREE.Vector3()), [])
+  const vectorPool = useMemo(() => Array.from({ length: 512 }, () => new THREE.Vector3()), [])
+  // Per-frame scratch index for the vector pool. Held in a ref because it is
+  // reassigned every frame inside useFrame (a render-phase let would violate
+  // react-hooks immutability and is unsafe under the React Compiler).
+  const poolIdxRef = useRef(0)
   const getScratchVector = () => {
-    const v = vectorPool[poolIdx];
-    poolIdx = (poolIdx + 1) % 512;
-    return v;
-  };
+    const v = vectorPool[poolIdxRef.current]
+    poolIdxRef.current = (poolIdxRef.current + 1) % 512
+    return v
+  }
 
   // 3. In-place zero-allocation path generation
   const generateLightningPathInPlace = (
@@ -97,25 +101,25 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
       const ptB = calcPoints[i + 1];
       
       const pIdx = posOffset + index * 3;
-      positions[pIdx + 0] = ptA.x;
-      positions[pIdx + 1] = ptA.y;
-      positions[pIdx + 2] = ptA.z;
+      positionsRef.current[pIdx + 0] = ptA.x;
+      positionsRef.current[pIdx + 1] = ptA.y;
+      positionsRef.current[pIdx + 2] = ptA.z;
       
       const pIdxNext = posOffset + (index + 1) * 3;
-      positions[pIdxNext + 0] = ptB.x;
-      positions[pIdxNext + 1] = ptB.y;
-      positions[pIdxNext + 2] = ptB.z;
+      positionsRef.current[pIdxNext + 0] = ptB.x;
+      positionsRef.current[pIdxNext + 1] = ptB.y;
+      positionsRef.current[pIdxNext + 2] = ptB.z;
 
       const aIdx = alpOffset + index;
-      alphas[aIdx] = 1.0 - (i / totalPoints);
-      alphas[aIdx + 1] = 1.0 - ((i + 1) / totalPoints);
+      alphasRef.current[aIdx] = 1.0 - (i / totalPoints);
+      alphasRef.current[aIdx + 1] = 1.0 - ((i + 1) / totalPoints);
       
       index += 2;
     }
   };
 
   useFrame((state, rawDelta) => {
-    poolIdx = 0; // Reset scratch index at the start of frame
+    poolIdxRef.current = 0; // Reset scratch index at the start of frame
     const delta = Math.min(rawDelta, 0.1);
     if (sharedSpellState.lockdown) {
       if (active) {
@@ -320,8 +324,16 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
   return (
     <lineSegments ref={lineRef} raycast={() => {}}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-        <bufferAttribute attach="attributes-aAlpha" args={[alphas, 1]} />
+        {/* R3F requires the typed-array reference here at JSX-creation time to
+            build the BufferAttribute, while the same arrays are mutated in
+            place every frame by useFrame. That dual use (read at render +
+            mutate post-commit) is the canonical R3F mutable-buffer pattern
+            and has no React-pure equivalent, so we intentionally read the
+            ref during render. */}
+        {/* eslint-disable-next-line react-hooks/refs */}
+        <bufferAttribute attach="attributes-position" args={[positionsRef.current, 3]} />
+        {/* eslint-disable-next-line react-hooks/refs */}
+        <bufferAttribute attach="attributes-aAlpha" args={[alphasRef.current, 1]} />
       </bufferGeometry>
       <shaderMaterial
         ref={materialRef}

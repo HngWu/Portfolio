@@ -9,6 +9,7 @@ import { InfiniteGrid } from "@/components/ui/infinite-grid";
 import { ThemeApplier } from "@/components/providers/ThemeApplier";
 import { ModeApplier } from "@/components/providers/ModeApplier";
 import { CursorProvider } from "@/components/providers/CursorProvider";
+import { getPortfolioContent, getSearchableContent } from "@/lib/content/portfolio";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,11 +32,14 @@ export const metadata: Metadata = {
   description: "Creative Developer Portfolio",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const content = await getPortfolioContent();
+  const searchableContent = getSearchableContent(content);
+
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
@@ -48,12 +52,13 @@ export default function RootLayout({
         <InfiniteGrid />
         <PageEntryOverlay />
         <ModeTransitionOverlay />
-        <CommandPalette />
+        <CommandPalette initialContent={searchableContent} />
         {children}
       </body>
     </html>
   );
 }
+
 
 // Shimmer Revamp Cache Invalidator
 

@@ -14,20 +14,19 @@ import * as React from "react"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
 import { Json } from "@/types/supabase"
+import type { ExperienceContent } from "@/lib/tiles/schemas"
 
 interface ExperienceTileProps {
   id: string
   size: string
-  role: string
-  company: string
-  date: string
-  highlights?: string[] // Quick Pitch view
+  content: ExperienceContent
   deepDive?: Json // Deep Dive full content
   isDragging?: boolean
   sortableProps?: Record<string, unknown>
 }
 
-export function ExperienceTile({ id, size, role, company, date, highlights = [], deepDive, isDragging, sortableProps }: ExperienceTileProps) {
+export function ExperienceTile({ id, size, content, deepDive, isDragging, sortableProps }: ExperienceTileProps) {
+  const { role, company, date, highlights = [] } = content
   const mode = useViewModeStore((state) => state.mode)
   const isDeepDive = mode === "deep"
   const forceMobile = React.useContext(ForceMobileContext)

@@ -26,9 +26,12 @@ export function ModeTransitionOverlay() {
 
   // Mirror direction into a ref so the rAF effect (keyed on the stable boolean
   // below) reads the latest value without re-subscribing / re-initing on every
-  // phase change.
+  // phase change. Written in an effect rather than during render to satisfy
+  // react-hooks/refs.
   const directionRef = React.useRef(direction)
-  directionRef.current = direction
+  React.useEffect(() => {
+    directionRef.current = direction
+  }, [direction])
 
   // Stable transition-active flag: false→true once per sequence, true→false on
   // idle. Intermediate phase changes (covering/peak/revealing) all read true,

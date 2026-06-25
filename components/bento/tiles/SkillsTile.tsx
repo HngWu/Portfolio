@@ -6,10 +6,12 @@ import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
 import { Cpu, Terminal, Braces, Brain, Code2 } from "lucide-react"
 
+import type { SkillContent } from "@/lib/tiles/schemas"
+
 interface SkillsTileProps {
   id: string
   size: string
-  tags: string[]
+  content: SkillContent
   isDragging?: boolean
   sortableProps?: Record<string, unknown>
 }
@@ -235,7 +237,8 @@ function getTechTagInfo(tag: string): TechTagInfo {
   }
 }
 
-export function SkillsTile({ id, size, tags, isDragging, sortableProps }: SkillsTileProps) {
+export function SkillsTile({ id, size, content, isDragging, sortableProps }: SkillsTileProps) {
+  const { tags } = content
   const forceMobile = React.useContext(ForceMobileContext)
   const typo = getTypographyClasses(size, false, forceMobile)
   const deepTypo = getTypographyClasses(size, true, forceMobile)

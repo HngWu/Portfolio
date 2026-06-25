@@ -6,8 +6,8 @@ import { BentoTile } from "../BentoTile"
 import { cn } from "@/lib/utils"
 import { usePageTransition } from "@/hooks/usePageTransition"
 import { usePathname } from "next/navigation"
-import { SEARCHABLE_CONTENT } from "@/lib/search"
 import { X } from "lucide-react"
+import { isHexcoreBridgeActive, sendHexcoreCommand } from "@/lib/hexcore/bridge"
 
 type HistoryItem = {
   type: "command" | "output"
@@ -27,15 +27,88 @@ interface TerminalConfig {
   }
 }
 
-const BIO = "HW - Creative Developer / Systems Architect. Specialized in high-performance web applications and immersive interfaces. Bridging the gap between engineering and aesthetic design."
+const BIO_FALLBACK = "HW - Creative Developer / Systems Architect. Specialized in high-performance web applications and immersive interfaces. Bridging the gap between engineering and aesthetic design."
 
-const SKILLS = [
+const SKILLS_FALLBACK = [
   { category: "Languages", items: ["Java", "Python", "JavaScript", "TypeScript", "Kotlin", "C#", "SQL"] },
   { category: "Frameworks", items: ["Spring Boot", "React.js", "Next.js", "Node.js"] },
   { category: "Databases", items: ["MariaDB", "MongoDB", "MSSQL", "MySQL"] }
 ]
 
-export function TerminalTile({ id, size, isDragging, sortableProps }: { id: string; size: string; isDragging?: boolean; sortableProps?: Record<string, unknown> }) {
+const CATEGORY_MAP: Record<string, string> = {
+  "Java": "Languages",
+  "TypeScript": "Languages",
+  "JavaScript": "Languages",
+  "Python": "Languages",
+  "Kotlin": "Languages",
+  "C#": "Languages",
+  "SQL": "Languages",
+  "Solidity": "Languages",
+  "Spring Boot": "Frameworks",
+  "Next.js": "Frameworks",
+  "Next.js 16": "Frameworks",
+  "React": "Frameworks",
+  "React 19": "Frameworks",
+  "React.js": "Frameworks",
+  "Node.js": "Frameworks",
+  "GSAP": "Frameworks",
+  "Three.js": "Frameworks",
+  "TailwindCSS": "Frameworks",
+  "Vite": "Frameworks",
+  "ethers.js": "Frameworks",
+  "MariaDB": "Databases",
+  "MongoDB": "Databases",
+  "MSSQL": "Databases",
+  "MySQL": "Databases",
+  "Redis": "Databases",
+  "OpenShift": "Databases",
+  "Jenkins": "Databases",
+  "Supabase": "Databases",
+  "Gemini AI": "Databases",
+}
+
+interface TerminalTileProps {
+  id: string
+  size: string
+  isDragging?: boolean
+  sortableProps?: Record<string, unknown>
+  bio?: string
+  skillsTags?: string[]
+  projects?: { name: string; slug: string; description: string; notes?: string }[]
+}
+
+export function TerminalTile({
+  id,
+  size,
+  isDragging,
+  sortableProps,
+  bio,
+  skillsTags,
+  projects,
+}: TerminalTileProps) {
+  const skillsList = React.useMemo(() => {
+    if (!skillsTags || skillsTags.length === 0) {
+      return SKILLS_FALLBACK
+    }
+    const groups: Record<string, string[]> = {
+      "Languages": [],
+      "Frameworks": [],
+      "Databases": [],
+      "Tools & Others": []
+    }
+    for (const tag of skillsTags) {
+      const cat = CATEGORY_MAP[tag] || "Tools & Others"
+      if (groups[cat]) {
+        groups[cat].push(tag)
+      } else {
+        groups["Tools & Others"].push(tag)
+      }
+    }
+    return Object.entries(groups)
+      .filter(([, items]) => items.length > 0)
+      .map(([category, items]) => ({ category, items }))
+  }, [skillsTags])
+
   const [input, setInput] = React.useState("")
   const [os, setOS] = React.useState<OSType>("linux")
   const [history, setHistory] = React.useState<HistoryItem[]>([])
@@ -205,21 +278,21 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
     } else if (trimmedCmd === "sudo ignite") {
       setHistory([...newHistory, { type: "output", content: "🔥 Root access granted. Initializing neural bridge..." }])
       ignite()
-      if (typeof window !== "undefined" && (window as unknown as { __hexcore_cmd?: (cmd: string) => string }).__hexcore_cmd) {
-        (window as unknown as { __hexcore_cmd?: (cmd: string) => string }).__hexcore_cmd!("ignite on")
+      if (isHexcoreBridgeActive()) {
+        sendHexcoreCommand("ignite on")
       }
     } else if (trimmedCmd === `${config.commands.list} projects`) {
-      const projects = SEARCHABLE_CONTENT.filter(item => item.category === "Projects")
+      const projectsList = projects || []
       setHistory([
         ...newHistory,
         { 
           type: "output", 
           content: (
             <div className="grid gap-1 mt-1">
-              {projects.map(p => (
-                <div key={p.id} className="flex gap-4">
-                  <span className={os === "windows" ? "text-white font-bold" : "text-lume-primary"}>{p.id}</span>
-                  <span className="text-white/40">{p.title}</span>
+              {projectsList.map(p => (
+                <div key={p.slug} className="flex gap-4">
+                  <span className={os === "windows" ? "text-white font-bold" : "text-lume-primary"}>{p.slug}</span>
+                  <span className="text-white/40">{p.name}</span>
                 </div>
               ))}
             </div>
@@ -228,14 +301,14 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
       ])
     } else if (trimmedCmd.startsWith(`${config.commands.read} project/`)) {
       const name = trimmedCmd.replace(`${config.commands.read} project/`, "").trim()
-      const project = SEARCHABLE_CONTENT.find(item => item.id === name && item.category === "Projects")
-      if (project) {
+      const proj = (projects || []).find(p => p.slug === name)
+      if (proj) {
         setHistory([
           ...newHistory,
-          { type: "output", content: `Project: ${project.title}` },
-          { type: "output", content: `Description: ${project.description}` },
-          { type: "output", content: `Path: ${project.path}` },
-          { type: "output", content: `Type 'open ${project.path}' to view.` }
+          { type: "output", content: `Project: ${proj.name}` },
+          { type: "output", content: `Description: ${proj.description}` },
+          { type: "output", content: `Path: /projects/${proj.slug}` },
+          { type: "output", content: `Type 'open /projects/${proj.slug}' to view.` }
         ])
       } else {
         setHistory([...newHistory, { type: "output", content: `Project not found: ${name}` }])
@@ -247,7 +320,7 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
           type: "output",
           content: (
             <div className="space-y-2 mt-1">
-              {SKILLS.map(s => (
+              {skillsList.map(s => (
                 <div key={s.category}>
                   <div className={os === "windows" ? "text-white font-bold" : "text-lume-secondary uppercase text-[10px] tracking-widest"}>{s.category}</div>
                   <div className="text-white/60">{s.items.join(", ")}</div>
@@ -258,7 +331,7 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
         }
       ])
     } else if (trimmedCmd === "whoami") {
-      setHistory([...newHistory, { type: "output", content: BIO }])
+      setHistory([...newHistory, { type: "output", content: bio || BIO_FALLBACK }])
     } else if (trimmedCmd.startsWith("open ")) {
       const url = cmd.trim().replace(/^open\s+/i, "")
       let targetUrl = url
@@ -295,8 +368,8 @@ export function TerminalTile({ id, size, isDragging, sortableProps }: { id: stri
       trimmedCmd.startsWith("lightning") ||
       trimmedCmd.startsWith("lockdown")
     ) {
-      if (typeof window !== "undefined" && (window as unknown as { __hexcore_cmd?: (cmd: string) => string }).__hexcore_cmd) {
-        const hexRes = (window as unknown as { __hexcore_cmd?: (cmd: string) => string }).__hexcore_cmd!(trimmedCmd)
+      if (isHexcoreBridgeActive()) {
+        const hexRes = sendHexcoreCommand(trimmedCmd)
         setHistory([...newHistory, { type: "output", content: hexRes }])
 
         // Synchronize bento grid global overlay with Hexcore spell telemetry

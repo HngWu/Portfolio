@@ -114,10 +114,13 @@ export function PageEntryOverlay() {
     paramsRef.current = { mode, originRect, bentoTilesBounds }
   }, [mode, originRect, bentoTilesBounds])
 
-  // Mirror the current curtain state into the engine ref each render so the
-  // rAF loop can react to phase changes (cover→peak→reveal) without restarting.
+  // Mirror the current curtain state into the engine ref so the rAF loop can
+  // react to phase changes (cover→peak→reveal) without restarting. Written in
+  // an effect rather than during render to satisfy react-hooks/refs.
   const phaseRef = React.useRef(curtainState)
-  phaseRef.current = curtainState
+  React.useEffect(() => {
+    phaseRef.current = curtainState
+  }, [curtainState])
 
   // Start the rAF loop when a transition becomes active; tear down on idle.
   React.useEffect(() => {

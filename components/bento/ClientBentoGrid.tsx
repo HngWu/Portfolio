@@ -50,7 +50,7 @@ export default function ClientBentoGrid({
   return (
     <BentoGrid>
       {sortedTiles.map((tile) => (
-        <TileRenderer key={tile.id} tile={tile} />
+        <TileRenderer key={tile.id} tile={tile} allTiles={initialTiles} />
       ))}
       {showEasterEgg && <EasterEggTile />}
     </BentoGrid>

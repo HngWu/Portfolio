@@ -133,7 +133,13 @@ export function ArcaneCursor() {
 
   // Optimization Refs
   const lastTargetRef = useRef<HTMLElement | null>(null)
-  const lastMouseMoveTimeRef = useRef<number>(Date.now())
+  // Seeded on mount (not during render) so the first mouse-move "stale" check
+  // has a sensible baseline timestamp. Reading/writing refs during render is
+  // disallowed by react-hooks, so this lives in an effect.
+  const lastMouseMoveTimeRef = useRef<number>(0)
+  useEffect(() => {
+    lastMouseMoveTimeRef.current = Date.now()
+  }, [])
   const start2DLoopRef = useRef<(() => void) | null>(null)
   const startWebGLRef = useRef<(() => void) | null>(null)
 
