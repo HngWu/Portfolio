@@ -16,9 +16,11 @@ export const useSiteLoaderStore = create<SiteLoaderState>((set, get) => ({
   isBootFinished: false,
   isLoaded: false,
   markModelReady: () => {
-    set({ isModelReady: true })
-    if (get().progress >= 90) {
-      set({ progress: 100, isBootFinished: true, isLoaded: true })
+    const { progress, isBootFinished } = get()
+    if (progress >= 90) {
+      set({ isModelReady: true, progress: 100, isBootFinished: true, isLoaded: true })
+    } else {
+      set({ isModelReady: true, isLoaded: isBootFinished })
     }
   },
   setBootFinished: (finished) => {
