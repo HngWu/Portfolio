@@ -200,7 +200,7 @@ export function InitialLoaderOverlay() {
             </div>
 
             {/* Scrolling Logs */}
-            <div className="h-48 overflow-y-auto flex flex-col gap-1.5 text-xs text-white/60 text-left scrollbar-thin">
+            <div className="h-48 overflow-y-auto flex flex-col gap-1.5 text-xs text-white/60 text-left scrollbar-custom">
               {logs.map((log, index) => (
                 <div key={index} className="flex gap-2">
                   <span className="text-[#4AFFB4] font-bold">
