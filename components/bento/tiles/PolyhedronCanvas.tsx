@@ -11,6 +11,7 @@ import { RunicDustStreams } from "./hexcore/RunicDustStreams"
 import { RingLightningArcs } from "./hexcore/LightningArcs"
 import { useIgniteStore } from "@/store/useIgniteStore"
 import { useModeTransitionStore } from "@/store/useModeTransitionStore"
+import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 
 // Ancient runes for a mystical high-tech look
 const RUNES = ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ", "ᛇ", "ᛈ", "ᛉ", "ᛊ", "ᛏ", "ᛒ", "ᛖ", "ᛗ", "ᛚ", "ᛜ", "ᛞ", "ᛟ"]
@@ -37,7 +38,8 @@ export const sharedSpellState = {
   hitPoint: new THREE.Vector3(),
   isHit: false,
   modeProgress: 0.0, // 0 for quick pitch (gold), 1 for deep dive (default indigo)
-  scrollProgress: 0.0
+  scrollProgress: 0.0,
+  assemblyProgress: 0.0
 }
 
 if (typeof window !== 'undefined') {
@@ -774,9 +776,16 @@ function PolyhedronScene({
     handleScrollOrResize()
     window.addEventListener("scroll", handleScrollOrResize, { passive: true })
     window.addEventListener("resize", handleScrollOrResize)
+
+    // Notify loader that WebGL scene is ready
+    const timer = setTimeout(() => {
+      useSiteLoaderStore.getState().markModelReady()
+    }, 150)
+
     return () => {
       window.removeEventListener("scroll", handleScrollOrResize)
       window.removeEventListener("resize", handleScrollOrResize)
+      clearTimeout(timer)
     }
   }, [])
 
@@ -1702,18 +1711,20 @@ function PyramidFragment({
         .add(driftOffset) // Antigravity float
         .add(floatDrift) // Click-shatter float
 
-      const currentPos = _scratchVector4.lerpVectors(flyInOffset, assembledPos, assemblyProgress)
+      const assemblyProg = sharedSpellState.assemblyProgress
+      const currentPos = _scratchVector4.lerpVectors(flyInOffset, assembledPos, assemblyProg)
       meshGroupRef.current.position.copy(currentPos)
       
-      // Tumble and Click Tumble rotations
+      // Tumble and Click Tumble rotations scaled by assembly state
+      const tumbleFactor = 1.0 - assemblyProg
       const clickTumbleX = stateRef.current.tumbleVelocity.x * stateRef.current.shatterVal * 1.8
       const clickTumbleY = stateRef.current.tumbleVelocity.y * stateRef.current.shatterVal * 1.8
       const clickTumbleZ = stateRef.current.tumbleVelocity.z * stateRef.current.shatterVal * 1.8
       
       const finalTumble = _scratchEuler.set(
-        stateRef.current.tumbleRotation.x + clickTumbleX,
-        stateRef.current.tumbleRotation.y + clickTumbleY,
-        stateRef.current.tumbleRotation.z + clickTumbleZ
+        (stateRef.current.tumbleRotation.x + clickTumbleX) * tumbleFactor + (stateRef.current.tumbleVelocity.x * 4.0 * tumbleFactor),
+        (stateRef.current.tumbleRotation.y + clickTumbleY) * tumbleFactor + (stateRef.current.tumbleVelocity.y * 4.0 * tumbleFactor),
+        (stateRef.current.tumbleRotation.z + clickTumbleZ) * tumbleFactor + (stateRef.current.tumbleVelocity.z * 4.0 * tumbleFactor)
       )
       
       const finalQuat = _scratchQuat1.copy(currQuat).multiply(_scratchQuat3.setFromEuler(finalTumble))
@@ -1810,6 +1821,7 @@ export default function PolyhedronCanvas({
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState(false)
+  const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
   
   // Tooltip HUD Overlay state
   const [hud, setHud] = useState<{
@@ -1832,6 +1844,35 @@ export default function PolyhedronCanvas({
       clearTimeout(timer)
     }
   }, [])
+
+  // Drive snap-back assembly timeline
+  useEffect(() => {
+    if (isLoaded) {
+      gsap.killTweensOf(sharedSpellState)
+      gsap.fromTo(sharedSpellState,
+        { assemblyProgress: 0.0 },
+        {
+          assemblyProgress: 1.0,
+          duration: 2.2,
+          ease: "elastic.out(1.0, 0.58)",
+          onStart: () => {
+            gsap.fromTo(sharedSpellState,
+              { pulseScale: 1.0 },
+              {
+                pulseScale: 1.6,
+                duration: 0.35,
+                yoyo: true,
+                repeat: 1,
+                ease: "sine.out"
+              }
+            )
+          }
+        }
+      )
+    } else {
+      sharedSpellState.assemblyProgress = 0.0
+    }
+  }, [isLoaded])
 
   // Window command executor sequence (called by our consolidated static TerminalTile)
   const executeCommand = (cmd: string): string => {
