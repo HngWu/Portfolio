@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -15,47 +15,116 @@ const BOOT_LOG_TEMPLATES = [
   "COMPILING INTERACTIVE LAYER GRAPHENE SHADERS...",
 ]
 
+function MatrixRain() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    const fontSize = 14
+    const columns = Math.floor(canvas.width / 20)
+    const yPositions = Array(columns).fill(0)
+    const chars = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ01"
+
+    const draw = () => {
+      ctx.fillStyle = "rgba(5, 5, 5, 0.08)"
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      ctx.fillStyle = "rgba(74, 255, 180, 0.15)" // Neon mint matrix rain
+      ctx.font = `${fontSize}px monospace`
+
+      for (let i = 0; i < yPositions.length; i++) {
+        const char = chars[Math.floor(Math.random() * chars.length)]
+        const x = i * 20
+        const y = yPositions[i]
+
+        ctx.fillText(char, x, y)
+
+        if (y > 100 + Math.random() * 10000) {
+          yPositions[i] = 0
+        } else {
+          yPositions[i] += 20
+        }
+      }
+    }
+
+    const interval = setInterval(draw, 33)
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+    window.addEventListener("resize", handleResize)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener("resize", handleResize)
+    }
+  }, [])
+
+  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none opacity-40" />
+}
+
 export function InitialLoaderOverlay() {
   const progress = useSiteLoaderStore((s) => s.progress)
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
   const setProgress = useSiteLoaderStore((s) => s.setProgress)
   const isModelReady = useSiteLoaderStore((s) => s.isModelReady)
+  const setBootFinished = useSiteLoaderStore((s) => s.setBootFinished)
 
   const [logs, setLogs] = useState<string[]>([])
   const [logIndex, setLogIndex] = useState(0)
+  const [finishedSequence, setFinishedSequence] = useState(false)
 
-  // 1. Simulate progress increment
+  // 1. Progress Simulation (Caps at 90% until WebGL compiles and logIndex finishes templates)
   useEffect(() => {
-    if (isLoaded) return
+    if (finishedSequence) return
 
     const interval = setInterval(() => {
-      setProgress(Math.min(90, progress + Math.floor(Math.random() * 8) + 4))
+      setProgress(Math.min(90, progress + Math.floor(Math.random() * 6) + 3))
     }, 120)
 
     return () => clearInterval(interval)
-  }, [progress, setProgress, isLoaded])
+  }, [progress, setProgress, finishedSequence])
 
-  // 2. Typewriter log loop
+  // 2. Ticker log sequence logic
   useEffect(() => {
-    if (isLoaded) return
+    if (finishedSequence) return
 
     if (logIndex < BOOT_LOG_TEMPLATES.length) {
-      const delay = 180 + Math.random() * 120
+      const delay = 160 + Math.random() * 100
       const timer = setTimeout(() => {
         setLogs((prev) => [...prev, `[ RUN ] ${BOOT_LOG_TEMPLATES[logIndex]}`])
         setLogIndex(logIndex + 1)
       }, delay)
       return () => clearTimeout(timer)
     } else if (isModelReady && progress >= 90) {
-      setLogs((prev) => [
-        ...prev,
-        "[ OK ] WEBGL RENDERING CONTEXT ATTACHED",
-        "[ OK ] HEXCORE 3x3 MATRIX FULLY COMPILED",
-        "[ OK ] DISCHARGE COMMENCING. RELEASING RECOILS...",
-      ])
-      setProgress(100)
+      // Model ready & initial logs printed: display final logs & complete loading
+      setFinishedSequence(true)
+      
+      const successSequence = async () => {
+        setLogs((prev) => [...prev, "[ OK ] WEBGL RENDERING CONTEXT ATTACHED"])
+        setProgress(95)
+        await new Promise((r) => setTimeout(r, 200))
+        
+        setLogs((prev) => [...prev, "[ OK ] HEXCORE 3x3 MATRIX FULLY COMPILED"])
+        setProgress(100)
+        await new Promise((r) => setTimeout(r, 200))
+        
+        setLogs((prev) => [...prev, "[ OK ] DISCHARGE COMMENCING. RELEASING RECOILS..."])
+        await new Promise((r) => setTimeout(r, 300))
+        
+        setBootFinished(true)
+      }
+      successSequence()
     }
-  }, [logIndex, isModelReady, progress, setProgress, isLoaded])
+  }, [logIndex, isModelReady, progress, setProgress, setBootFinished, finishedSequence])
 
   // 3. Prevent scrollbar issues during loading
   useEffect(() => {
@@ -85,7 +154,10 @@ export function InitialLoaderOverlay() {
           }}
           className="fixed inset-0 bg-[#050505] z-[10002] flex items-center justify-center p-4 font-mono select-none"
         >
-          {/* Retro scanlines and grid overlay */}
+          {/* Matrix Rain Background */}
+          <MatrixRain />
+
+          {/* Retro scanlines overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(74,255,180,0.02),rgba(74,143,255,0.01))] bg-[size:100%_4px,6px_100%] pointer-events-none opacity-80" />
           
           <div className="w-full max-w-xl p-8 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-2xl shadow-2xl flex flex-col gap-6 relative overflow-hidden">
