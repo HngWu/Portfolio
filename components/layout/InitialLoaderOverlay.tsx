@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 import { motion, AnimatePresence } from "framer-motion"
+import { GlassCard } from "@/components/ui/GlassCard"
 
 const BOOT_LOG_TEMPLATES = [
   "HEX_DECRYPTOR: LUME-GLASS PORTFOLIO MODULE [ACTIVE]",
@@ -28,16 +29,18 @@ function MatrixRain() {
     canvas.height = window.innerHeight
 
     const fontSize = 14
-    const columns = Math.floor(canvas.width / 20)
-    const yPositions = Array(columns).fill(0)
+    let columns = Math.floor(canvas.width / 20)
+    // Initialize columns at random heights above the screen to stagger them from start
+    let yPositions = Array.from({ length: columns }, () => Math.random() * -canvas.height)
     const chars = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ01"
 
     const draw = () => {
       ctx.fillStyle = "rgba(5, 5, 5, 0.08)"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      ctx.fillStyle = "rgba(74, 255, 180, 0.15)" // Neon mint matrix rain
-      ctx.font = `${fontSize}px monospace`
+      // Use custom font, falling back to monospace
+      ctx.font = `${fontSize}px 'NotoSansRunic-Regular', monospace`
+      ctx.fillStyle = "rgba(74, 255, 180, 0.15)"
 
       for (let i = 0; i < yPositions.length; i++) {
         const char = chars[Math.floor(Math.random() * chars.length)]
@@ -46,7 +49,8 @@ function MatrixRain() {
 
         ctx.fillText(char, x, y)
 
-        if (y > 100 + Math.random() * 10000) {
+        // Reset if it goes below screen or randomized threshold, adding small probability
+        if (y > canvas.height && Math.random() > 0.975) {
           yPositions[i] = 0
         } else {
           yPositions[i] += 20
@@ -57,8 +61,18 @@ function MatrixRain() {
     const interval = setInterval(draw, 33)
 
     const handleResize = () => {
+      const oldColumns = columns
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      columns = Math.floor(canvas.width / 20)
+      
+      // Scale array size to match new column count
+      if (columns > oldColumns) {
+        const extra = Array.from({ length: columns - oldColumns }, () => Math.random() * -canvas.height)
+        yPositions.push(...extra)
+      } else if (columns < oldColumns) {
+        yPositions.splice(columns)
+      }
     }
     window.addEventListener("resize", handleResize)
 
@@ -82,30 +96,41 @@ export function InitialLoaderOverlay() {
   const [logIndex, setLogIndex] = useState(0)
   const [finishedSequence, setFinishedSequence] = useState(false)
 
-  // 1. Progress Simulation (Caps at 90% until WebGL compiles and logIndex finishes templates)
+  // 1. Progress Simulation (Fires steady interval; no-op when complete)
   useEffect(() => {
     if (finishedSequence) return
 
     const interval = setInterval(() => {
-      setProgress(Math.min(90, progress + Math.floor(Math.random() * 6) + 3))
+      const current = useSiteLoaderStore.getState().progress
+      if (current >= 90) {
+        clearInterval(interval)
+        return
+      }
+      setProgress(Math.min(90, current + Math.floor(Math.random() * 6) + 3))
     }, 120)
 
     return () => clearInterval(interval)
-  }, [progress, setProgress, finishedSequence])
+  }, [setProgress, finishedSequence])
 
-  // 2. Ticker log sequence logic
+  // 2. Typewriter Log Sequence (Independent typing ticker)
+  useEffect(() => {
+    if (logIndex >= BOOT_LOG_TEMPLATES.length) return
+
+    const delay = 160 + Math.random() * 100
+    const timer = setTimeout(() => {
+      setLogs((prev) => [...prev, `[ RUN ] ${BOOT_LOG_TEMPLATES[logIndex]}`])
+      setLogIndex((prev) => prev + 1)
+    }, delay)
+
+    return () => clearTimeout(timer)
+  }, [logIndex])
+
+  // 3. Success Trigger (Fires once ready condition is satisfied)
   useEffect(() => {
     if (finishedSequence) return
 
-    if (logIndex < BOOT_LOG_TEMPLATES.length) {
-      const delay = 160 + Math.random() * 100
-      const timer = setTimeout(() => {
-        setLogs((prev) => [...prev, `[ RUN ] ${BOOT_LOG_TEMPLATES[logIndex]}`])
-        setLogIndex(logIndex + 1)
-      }, delay)
-      return () => clearTimeout(timer)
-    } else if (isModelReady && progress >= 90) {
-      // Model ready & initial logs printed: display final logs & complete loading
+    const logsDone = logIndex === BOOT_LOG_TEMPLATES.length
+    if (logsDone && isModelReady && progress >= 90) {
       setFinishedSequence(true)
       
       const successSequence = async () => {
@@ -126,7 +151,7 @@ export function InitialLoaderOverlay() {
     }
   }, [logIndex, isModelReady, progress, setProgress, setBootFinished, finishedSequence])
 
-  // 3. Prevent scrollbar issues during loading
+  // 4. Prevent scrollbar issues during loading
   useEffect(() => {
     if (!isLoaded) {
       document.body.style.overflow = "hidden"
@@ -160,7 +185,11 @@ export function InitialLoaderOverlay() {
           {/* Retro scanlines overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(74,255,180,0.02),rgba(74,143,255,0.01))] bg-[size:100%_4px,6px_100%] pointer-events-none opacity-80" />
           
-          <div className="w-full max-w-xl p-8 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-2xl shadow-2xl flex flex-col gap-6 relative overflow-hidden">
+          <GlassCard
+            interactive={false}
+            glowColor="none"
+            className="w-full max-w-xl p-8 flex flex-col gap-6 relative overflow-hidden"
+          >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/5 pb-4 text-[10px] uppercase tracking-widest text-white/40">
               <span className="flex items-center gap-2">
@@ -197,12 +226,14 @@ export function InitialLoaderOverlay() {
               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden relative">
                 <motion.div
                   className="h-full bg-[#4AFFB4] rounded-full"
-                  style={{ width: `${progress}%`, boxShadow: "0 0 12px rgba(74, 255, 180, 0.15)" }}
-                  transition={{ ease: "easeOut", duration: 0.1 }}
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ ease: "easeOut", duration: 0.2 }}
+                  style={{ boxShadow: "0 0 12px rgba(74, 255, 180, 0.15)" }}
                 />
               </div>
             </div>
-          </div>
+          </GlassCard>
         </motion.div>
       )}
     </AnimatePresence>
