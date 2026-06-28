@@ -10,7 +10,7 @@ interface SiteLoaderState {
   setProgress: (progress: number) => void
 }
 
-export const useSiteLoaderStore = create<SiteLoaderState>((set, get) => ({
+export const useSiteLoaderStore = create<SiteLoaderState>()((set, get) => ({
   progress: 0,
   isModelReady: false,
   isBootFinished: false,
@@ -28,7 +28,8 @@ export const useSiteLoaderStore = create<SiteLoaderState>((set, get) => ({
     set({ isBootFinished: finished, isLoaded: isModelReady && finished })
   },
   setProgress: (p) => {
-    const { isModelReady } = get()
+    const { progress, isModelReady } = get()
+    if (p <= progress) return // Prevent backward progress
     if (p >= 100) {
       set({ progress: 100, isBootFinished: true, isLoaded: isModelReady })
     } else {
