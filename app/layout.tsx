@@ -4,6 +4,7 @@ import { Playfair_Display } from "next/font/google";
 import { CommandPalette } from "@/components/cli/CommandPalette";
 import { PageEntryOverlay } from "@/components/layout/PageEntryOverlay";
 import { ModeTransitionOverlay } from "@/components/layout/ModeTransitionOverlay";
+import { InitialLoaderOverlay } from "@/components/layout/InitialLoaderOverlay";
 import { GenerativeBackground } from "@/components/canvas/GenerativeBackground";
 import { InfiniteGrid } from "@/components/ui/infinite-grid";
 import { ThemeApplier } from "@/components/providers/ThemeApplier";
@@ -48,6 +49,7 @@ export default async function RootLayout({
         <ThemeApplier />
         <ModeApplier />
         <CursorProvider />
+        <InitialLoaderOverlay />
         <GenerativeBackground />
         <InfiniteGrid />
         <PageEntryOverlay />
