@@ -206,7 +206,7 @@ export function InitialLoaderOverlay() {
                   <span className="text-[#4AFFB4] font-bold">
                     {log.startsWith("[ OK ]") ? "[ OK ]" : "[ RUN ]"}
                   </span>
-                  <span className="text-white/80">{log.slice(8)}</span>
+                  <span className="text-white/80">{log.slice(log.indexOf("]") + 2)}</span>
                 </div>
               ))}
               {logIndex === BOOT_LOG_TEMPLATES.length && !isModelReady && (

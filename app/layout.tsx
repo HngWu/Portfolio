@@ -46,10 +46,10 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased bg-[#050505]`}
       >
+        <InitialLoaderOverlay />
         <ThemeApplier />
         <ModeApplier />
         <CursorProvider />
-        <InitialLoaderOverlay />
         <GenerativeBackground />
         <InfiniteGrid />
         <PageEntryOverlay />
