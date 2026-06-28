@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { useIgniteStore } from "@/store/useIgniteStore"
 import gsap from "gsap"
 import { ForceMobileContext } from "./ForceMobileContext"
+import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 
 export function BentoGrid({
   className,
@@ -18,6 +19,33 @@ export function BentoGrid({
   const gridRef = React.useRef<HTMLDivElement>(null)
   const flashRef = React.useRef<HTMLDivElement>(null)
   const prevIgnited = React.useRef(isIgnited)
+  const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
+
+  // Handle initial bento stagger entrance
+  React.useEffect(() => {
+    if (!gridRef.current) return
+    const tiles = gridRef.current.querySelectorAll('[data-id]')
+
+    if (!isLoaded) {
+      gsap.set(tiles, { opacity: 0, y: 32, scale: 0.95 })
+    } else {
+      gsap.fromTo(tiles,
+        { opacity: 0, y: 32, scale: 0.95 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.95,
+          stagger: {
+            amount: 0.35,
+            grid: "auto",
+            from: "center"
+          },
+          ease: "power2.out"
+        }
+      )
+    }
+  }, [isLoaded])
 
   React.useEffect(() => {
     if (isIgnited && !prevIgnited.current) {
