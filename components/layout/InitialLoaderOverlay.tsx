@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
+import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { GlassCard } from "@/components/ui/GlassCard"
 
@@ -86,11 +87,20 @@ function MatrixRain() {
 }
 
 export function InitialLoaderOverlay() {
+  const pathname = usePathname()
   const progress = useSiteLoaderStore((s) => s.progress)
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
   const setProgress = useSiteLoaderStore((s) => s.setProgress)
   const isModelReady = useSiteLoaderStore((s) => s.isModelReady)
   const setBootFinished = useSiteLoaderStore((s) => s.setBootFinished)
+  const markModelReady = useSiteLoaderStore((s) => s.markModelReady)
+
+  // Auto-resolve 3D model loading on subpages where PolyhedronCanvas is not rendered
+  useEffect(() => {
+    if (pathname && pathname !== "/") {
+      markModelReady()
+    }
+  }, [pathname, markModelReady])
 
   const [logs, setLogs] = useState<string[]>([])
   const [logIndex, setLogIndex] = useState(0)
