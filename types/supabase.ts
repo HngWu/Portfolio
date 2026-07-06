@@ -56,6 +56,44 @@ export interface Database {
           updated_at?: string
         }
       }
+      detailed_items: {
+        Row: {
+          id: string
+          type: string
+          title: string
+          subtitle: string | null
+          date_range: string | null
+          content: Json
+          deep_dive: Json | null
+          created_at: string
+          updated_at: string
+          order_val: number
+        }
+        Insert: {
+          id?: string
+          type: string
+          title: string
+          subtitle?: string | null
+          date_range?: string | null
+          content?: Json
+          deep_dive?: Json | null
+          created_at?: string
+          updated_at?: string
+          order_val?: number
+        }
+        Update: {
+          id?: string
+          type?: string
+          title?: string
+          subtitle?: string | null
+          date_range?: string | null
+          content?: Json
+          deep_dive?: Json | null
+          created_at?: string
+          updated_at?: string
+          order_val?: number
+        }
+      }
     }
     Views: {
       [_ in never]: never

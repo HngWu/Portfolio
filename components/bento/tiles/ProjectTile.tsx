@@ -29,11 +29,13 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
   // Safely extract deep dive notes via the typed parser.
   const notes = parseTileDeepDive("project", deepDive).notes
 
+  const projectSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, "")
+
   return (
     <BentoTile 
       id={id} 
       size={size} 
-      href={`/projects/${id}`} 
+      href={`/projects/${projectSlug}`} 
       glowColor="blue" 
       className="justify-between" 
       isDragging={isDragging} 

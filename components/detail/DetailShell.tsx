@@ -3,7 +3,6 @@
 import * as React from "react"
 import { BackLink } from "./BackLink"
 import { PageHero } from "./PageHero"
-import { SearchButton } from "../nav/SearchButton"
 import { ModeScrollFx } from "./ModeScrollFx"
 import { useGsap } from "@/hooks/useGsap"
 import { useViewModeStore } from "@/store/useViewModeStore"
@@ -15,9 +14,10 @@ interface DetailShellProps {
   title: string
   descriptor: string
   children: React.ReactNode
+  hideHero?: boolean
 }
 
-export function DetailShell({ typeLabel, title, descriptor, children }: DetailShellProps) {
+export function DetailShell({ typeLabel, title, descriptor, children, hideHero = false }: DetailShellProps) {
   const mode = useViewModeStore((s) => s.mode)
   const curtainState = useNavigationStore((s) => s.curtainState)
   const originRect = useNavigationStore((s) => s.originRect)
@@ -72,6 +72,9 @@ export function DetailShell({ typeLabel, title, descriptor, children }: DetailSh
             clipPath: `circle(150% at ${cx} ${cy})`,
             duration: 0.9,
             ease: "power3.out",
+            onComplete: () => {
+              gsap.set(shell, { clearProps: "clipPath" })
+            }
           }
         )
       }
@@ -128,11 +131,8 @@ export function DetailShell({ typeLabel, title, descriptor, children }: DetailSh
       className="min-h-screen pt-24 pb-24 px-4 md:px-8 max-w-4xl mx-auto"
     >
       <ModeScrollFx />
-      <div className="fixed top-6 right-6 z-50">
-        <SearchButton />
-      </div>
       <BackLink />
-      <PageHero typeLabel={typeLabel} title={title} descriptor={descriptor} />
+      {!hideHero && <PageHero typeLabel={typeLabel} title={title} descriptor={descriptor} />}
       <div className="flex flex-col gap-6">
         {React.Children.map(children, (child) => (
           <div className="reveal-item relative">

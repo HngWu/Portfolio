@@ -25,10 +25,37 @@ CREATE TABLE IF NOT EXISTS public.tiles (
   updated_at  timestamptz DEFAULT now()
 );
 
+-- Unified detailed items table for career, education, and projects details
+CREATE TABLE IF NOT EXISTS public.detailed_items (
+  id          uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  type        text NOT NULL,              -- 'project' | 'experience' | 'education'
+  title       text NOT NULL,              -- e.g. project name, experience role, education degree
+  subtitle    text,                       -- e.g. company, institution
+  date_range  text,                       -- e.g. "Apr 2025 - Mar 2026"
+  content     jsonb DEFAULT '{}'::jsonb,  -- flexible content payload
+  deep_dive   jsonb DEFAULT '{}'::jsonb,  -- deep dive details
+  order_val   int DEFAULT 0,
+  created_at  timestamptz DEFAULT now(),
+  updated_at  timestamptz DEFAULT now()
+);
+
 -- ==========================================
 -- 3. RLS POLICIES
 -- ==========================================
 ALTER TABLE public.tiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.detailed_items ENABLE ROW LEVEL SECURITY;
+
+-- Public Read Access
+CREATE POLICY "Allow public read access on detailed_items" 
+ON public.detailed_items FOR SELECT USING (true);
+
+-- Admin Full Access (Session-based)
+CREATE POLICY "Admin full access on detailed_items" 
+ON public.detailed_items 
+FOR ALL 
+TO authenticated 
+USING (true) 
+WITH CHECK (true);
 
 -- Public Read Access
 CREATE POLICY "Allow public read access on tiles" 

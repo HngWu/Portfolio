@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
 import ClientBentoGrid from "@/components/bento/ClientBentoGrid"
-import { ViewModeToggle } from "@/components/nav/ViewModeToggle"
 import { Database } from "@/types/supabase"
 
 type Tile = Database['public']['Tables']['tiles']['Row']
@@ -37,9 +36,6 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen flex flex-col justify-center items-center py-20 px-4 md:px-8 relative z-10">
-      <div className="fixed top-6 right-6 z-50">
-        <ViewModeToggle />
-      </div>
       <div className="w-full max-w-[1400px]">
         <ClientBentoGrid initialTiles={visibleTiles} showEasterEgg={showEasterEgg} />
       </div>

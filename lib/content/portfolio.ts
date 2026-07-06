@@ -221,24 +221,80 @@ export function parseTilesToPortfolioContent(tiles: Tile[]): PortfolioContent {
 
 export async function getPortfolioContent(): Promise<PortfolioContent> {
   const supabase = await createClient()
-  const { data: tiles, error } = await supabase
-    .from("tiles")
-    .select("*")
-    .order("order_val", { ascending: true })
+  
+  const [tilesRes, detailedRes] = await Promise.all([
+    supabase.from("tiles").select("*").order("order_val", { ascending: true }),
+    supabase.from("detailed_items").select("*").order("order_val", { ascending: true })
+  ])
 
-  if (error) {
-    console.error("Error fetching portfolio content from Supabase:", error)
-    return {
-      projects: [],
-      experience: [],
-      education: [],
-      awards: [],
-      stats: [],
-      skills: [],
+  if (tilesRes.error) {
+    console.error("Error fetching portfolio content (tiles) from Supabase:", tilesRes.error)
+  }
+  if (detailedRes.error) {
+    console.error("Error fetching portfolio content (detailed_items) from Supabase:", detailedRes.error)
+  }
+
+  const content = parseTilesToPortfolioContent(tilesRes.data || [])
+
+  // Populate projects, experience, and education from detailed_items if available
+  if (detailedRes.data && detailedRes.data.length > 0) {
+    content.projects = []
+    content.experience = []
+    content.education = []
+
+    for (const item of detailedRes.data) {
+      switch (item.type) {
+        case "project": {
+          const contentVal = (item.content || {}) as any
+          const deepDiveVal = (item.deep_dive || {}) as any
+          content.projects.push({
+            id: item.id,
+            slug: item.title.toLowerCase().replace(/[^a-z0-9]+/g, ""),
+            name: item.title,
+            description: item.subtitle || "",
+            techStack: contentVal.techStack || contentVal.tech_stack || [],
+            githubUrl: contentVal.githubUrl || contentVal.github_url || "",
+            liveUrl: contentVal.liveUrl || contentVal.live_url || "",
+            featured: contentVal.featured || false,
+            notes: deepDiveVal.notes || "",
+          })
+          break
+        }
+        case "experience": {
+          const contentVal = (item.content || {}) as any
+          const deepDiveVal = (item.deep_dive || {}) as any
+          content.experience.push({
+            id: item.id,
+            role: item.title,
+            company: item.subtitle || "",
+            date: item.date_range || "",
+            highlights: contentVal.highlights || [],
+            deepDiveHighlights: deepDiveVal.highlights || [],
+          })
+          break
+        }
+        case "education": {
+          const contentVal = (item.content || {}) as any
+          const deepDiveVal = (item.deep_dive || {}) as any
+          content.education.push({
+            id: item.id,
+            institution: item.subtitle || "",
+            degree: item.title,
+            date: item.date_range || "",
+            gpa: contentVal.gpa || "",
+            deepDiveDegree: deepDiveVal.degree || undefined,
+            deepDiveInstitution: deepDiveVal.institution || undefined,
+            deepDiveDate: deepDiveVal.date || undefined,
+            deepDiveGpa: deepDiveVal.gpa || undefined,
+            honours: deepDiveVal.honours || undefined,
+          })
+          break
+        }
+      }
     }
   }
 
-  return parseTilesToPortfolioContent(tiles || [])
+  return content
 }
 
 export function getSearchableContent(content: PortfolioContent): SearchResult[] {

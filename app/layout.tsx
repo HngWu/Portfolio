@@ -11,6 +11,7 @@ import { ThemeApplier } from "@/components/providers/ThemeApplier";
 import { ModeApplier } from "@/components/providers/ModeApplier";
 import { CursorProvider } from "@/components/providers/CursorProvider";
 import { getPortfolioContent, getSearchableContent } from "@/lib/content/portfolio";
+import { Navbar } from "@/components/nav/Navbar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -55,6 +56,7 @@ export default async function RootLayout({
         <PageEntryOverlay />
         <ModeTransitionOverlay />
         <CommandPalette initialContent={searchableContent} />
+        <Navbar />
         {children}
       </body>
     </html>
