@@ -1,9 +1,9 @@
 // @ts-nocheck
-declare module '../node_modules/three/build/three.module.js' {
+declare module 'three/build/three.module.js' {
   export * from 'three';
 }
 
-import * as THREE from '../node_modules/three/build/three.module.js';
+import * as THREE from 'three/build/three.module.js';
 
 class SafeClock {
   autoStart: boolean;
@@ -61,7 +61,7 @@ const THREE_MODIFIED = {
 };
 
 // Re-export everything from original three
-export * from '../node_modules/three/build/three.module.js';
+export * from 'three/build/three.module.js';
 
 // Explicitly override Clock and default exports
 export { SafeClock as Clock };
