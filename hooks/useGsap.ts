@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger"
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger)
+  gsap.config({ nullTargetWarn: false })
 }
 
 export const useGsap = (callback: () => void, dependencies: DependencyList = []) => {

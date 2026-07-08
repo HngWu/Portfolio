@@ -28,10 +28,17 @@ export function DetailShell({ typeLabel, title, descriptor, children, hideHero =
   //    frame behind the route swap, nothing can flash through. Set on mount and
   //    again whenever we re-enter a covered phase.
   React.useLayoutEffect(() => {
-    if (!shellRef.current) return
+    const shell = shellRef.current
+    if (!shell) return
     if (curtainState === "covering" || curtainState === "peak") {
-      gsap.set(shellRef.current.querySelectorAll(".reveal-item"), { opacity: 0 })
-      gsap.set(shellRef.current.querySelectorAll(".gild-text"), { clipPath: "inset(0 100% 0 0)" })
+      const items = shell.querySelectorAll(".reveal-item")
+      if (items.length > 0) {
+        gsap.set(items, { opacity: 0 })
+      }
+      const gilds = shell.querySelectorAll(".gild-text")
+      if (gilds.length > 0) {
+        gsap.set(gilds, { clipPath: "inset(0 100% 0 0)" })
+      }
     }
   }, [curtainState])
 
@@ -44,18 +51,24 @@ export function DetailShell({ typeLabel, title, descriptor, children, hideHero =
       "(prefers-reduced-motion: reduce)"
     ).matches
 
+    const shell = shellRef.current
+    if (!shell) return
+
+    const revealItems = shell.querySelectorAll(".reveal-item")
+
     // Respect the user setting — a simple fade, no blur/trace/gild.
     if (prefersReducedMotion) {
-      gsap.from(".reveal-item", { opacity: 0, duration: 0.4, stagger: 0.05 })
+      if (revealItems.length > 0) {
+        gsap.from(revealItems, { opacity: 0, duration: 0.4, stagger: 0.05 })
+      }
       return
     }
 
     // Origin point for the gold clip-path open (viewport coords). Falls back to
     // the shell's top-center when there's no captured tile (⌘K, refresh).
-    const shell = shellRef.current
     let cx = "50%"
     let cy = "0%"
-    if (shell && originRect) {
+    if (originRect) {
       const r = shell.getBoundingClientRect()
       cx = `${((originRect.left + originRect.width / 2 - r.left) / r.width) * 100}%`
       cy = `${((originRect.top + originRect.height / 2 - r.top) / r.height) * 100}%`
@@ -64,64 +77,72 @@ export function DetailShell({ typeLabel, title, descriptor, children, hideHero =
     if (mode === "quick") {
       // Golden Canvas reveal: open the page from the clicked tile via a
       // circle clip-path, coordinated with the canvas brush-edge ring.
-      if (shell) {
+      gsap.fromTo(
+        shell,
+        { clipPath: `circle(0% at ${cx} ${cy})` },
+        {
+          clipPath: `circle(150% at ${cx} ${cy})`,
+          duration: 0.9,
+          ease: "power3.out",
+          onComplete: () => {
+            gsap.set(shell, { clearProps: "clipPath" })
+          }
+        }
+      )
+      // Soft blur-to-focus + gilded headers.
+      if (revealItems.length > 0) {
+        gsap.from(revealItems, {
+          opacity: 0,
+          filter: "blur(8px)",
+          y: 16,
+          duration: 0.9,
+          stagger: 0.12,
+          ease: "expo.out",
+        })
+      }
+      // Gild-in the hero title via a gold-gradient clip-path width sweep
+      // (left → right), evoking gold leaf laid down.
+      const gildTexts = shell.querySelectorAll(".gild-text")
+      if (gildTexts.length > 0) {
         gsap.fromTo(
-          shell,
-          { clipPath: `circle(0% at ${cx} ${cy})` },
+          gildTexts,
+          { clipPath: "inset(0 100% 0 0)" },
           {
-            clipPath: `circle(150% at ${cx} ${cy})`,
-            duration: 0.9,
+            clipPath: "inset(0 0% 0 0)",
+            duration: 1.1,
+            delay: 0.25,
             ease: "power3.out",
-            onComplete: () => {
-              gsap.set(shell, { clearProps: "clipPath" })
-            }
+            stagger: 0.1,
           }
         )
       }
-      // Soft blur-to-focus + gilded headers.
-      gsap.from(".reveal-item", {
-        opacity: 0,
-        filter: "blur(8px)",
-        y: 16,
-        duration: 0.9,
-        stagger: 0.12,
-        ease: "expo.out",
-      })
-      // Gild-in the hero title via a gold-gradient clip-path width sweep
-      // (left → right), evoking gold leaf laid down.
-      gsap.fromTo(
-        ".gild-text",
-        { clipPath: "inset(0 100% 0 0)" },
-        {
-          clipPath: "inset(0 0% 0 0)",
-          duration: 1.1,
-          delay: 0.25,
-          ease: "power3.out",
-          stagger: 0.1,
-        }
-      )
     } else {
       // Hextech reveal: each item slides in with a blue vector-line trace
       // sweeping across its top border, then settles — like a blueprint load.
-      gsap.from(".reveal-item", {
-        opacity: 0,
-        y: 24,
-        duration: 0.55,
-        stagger: 0.08,
-        ease: "power2.out",
-      })
-      // Vector-trace the top edge of each card with a bright blue line.
-      gsap.fromTo(
-        ".reveal-item .trace-line",
-        { scaleX: 0 },
-        {
-          scaleX: 1,
-          duration: 0.5,
-          delay: 0.15,
-          ease: "power3.out",
+      if (revealItems.length > 0) {
+        gsap.from(revealItems, {
+          opacity: 0,
+          y: 24,
+          duration: 0.55,
           stagger: 0.08,
-        }
-      )
+          ease: "power2.out",
+        })
+      }
+      // Vector-trace the top edge of each card with a bright blue line.
+      const traceLines = shell.querySelectorAll(".reveal-item .trace-line")
+      if (traceLines.length > 0) {
+        gsap.fromTo(
+          traceLines,
+          { scaleX: 0 },
+          {
+            scaleX: 1,
+            duration: 0.5,
+            delay: 0.15,
+            ease: "power3.out",
+            stagger: 0.08,
+          }
+        )
+      }
     }
   }, [mode, curtainState])
 
