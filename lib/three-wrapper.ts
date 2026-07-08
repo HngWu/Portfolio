@@ -1,8 +1,4 @@
 // @ts-nocheck
-declare module 'three/build/three.module.js' {
-  export * from 'three';
-}
-
 import * as THREE from 'three/build/three.module.js';
 
 class SafeClock {
