@@ -54,42 +54,9 @@ export const useModeTransitionStore = create<ModeTransitionStore>((set, get) => 
   startTransition: (targetMode) => {
     const currentMode = useViewModeStore.getState().mode
     if (currentMode === targetMode) return
-    // Never overlap an in-flight transition; its sequence will settle to idle.
-    if (get().phase !== "idle") return
 
-    const direction: ModeTransitionDirection =
-      currentMode === "quick" ? "gold-to-blue" : "blue-to-gold"
-
-    clearTimers()
-    set({ phase: "covering", direction, pendingMode: targetMode })
-
-    phaseTimers.push(
-      // Peak: screen fully occluded — the canvas holds its brightest frame here.
-      window.setTimeout(() => {
-        if (get().phase === "covering") set({ phase: "peak" })
-      }, COVER_MS),
-
-      // Reveal: commit the mode while the overlay still covers, then unwind.
-      window.setTimeout(() => {
-        useViewModeStore.getState().setMode(targetMode)
-        set({ phase: "revealing" })
-      }, COVER_MS + PEAK_MS),
-
-      // Idle: teardown.
-      window.setTimeout(() => {
-        set({ phase: "idle", direction: null, pendingMode: null })
-        clearTimers()
-      }, COVER_MS + PEAK_MS + REVEAL_MS)
-    )
-
-    // Watchdog: if any phase ever stalls (rAF killed, tab backgrounded, etc.),
-    // snap back to idle so the UI can't freeze on a covered screen.
-    watchdog = window.setTimeout(() => {
-      if (get().phase !== "idle") {
-        clearTimers()
-        set({ phase: "idle", direction: null, pendingMode: null })
-      }
-    }, WATCHDOG_MS)
+    // Immediately commit the mode for direct 3D card flip transitions
+    useViewModeStore.getState().setMode(targetMode)
   },
 
   reset: () => {

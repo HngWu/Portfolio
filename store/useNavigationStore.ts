@@ -16,6 +16,8 @@ export interface OriginRect {
   bottom: number
 }
 
+export type CurtainState = 'idle' | 'covering' | 'holding' | 'peak' | 'revealing'
+
 interface NavigationStore {
   originTileId: string | null
   setOriginTileId: (id: string | null) => void
@@ -25,12 +27,12 @@ interface NavigationStore {
   setBentoTilesBounds: (bounds: Record<string, OriginRect> | null) => void
   /**
    * Page-curtain lifecycle.
-   *   idle → covering (canvas paints page A away) →
+   *   idle → covering (canvas paints page A away) → holding (continuous active loading phase) →
    *   peak (screen fully occluded; route swap happens here) →
    *   revealing (canvas unwinds back toward origin, exposing page B) → idle
    */
-  curtainState: 'idle' | 'covering' | 'peak' | 'revealing'
-  setCurtainState: (state: 'idle' | 'covering' | 'peak' | 'revealing') => void
+  curtainState: CurtainState
+  setCurtainState: (state: CurtainState) => void
   isPageLoaded: boolean
   setPageLoaded: (loaded: boolean) => void
 }

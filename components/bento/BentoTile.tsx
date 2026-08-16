@@ -13,6 +13,7 @@ import { motion } from "framer-motion"
 interface BentoTileProps {
   id: string
   size: string // Base size like '4x2'
+  index?: number
   href?: string
   glowColor?: "mint" | "blue" | "pink" | "amber" | "none"
   className?: string
@@ -31,6 +32,7 @@ interface BentoTileProps {
 export function BentoTile({
   id,
   size,
+  index = 0,
   href,
   glowColor = "none",
   className,
@@ -138,8 +140,14 @@ export function BentoTile({
       {...sortableProps}
     >
       <motion.div
-        animate={{ rotateY: isDeepDive ? 180 : 0 }}
-        transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+        animate={{ 
+          rotateY: isDeepDive ? 180 : 0,
+          z: isDeepDive ? [0, 24, 0] : [0, 24, 0]
+        }}
+        transition={{ 
+          rotateY: { duration: 0.7, delay: index * 0.04, ease: [0.34, 1.25, 0.64, 1] },
+          z: { duration: 0.7, delay: index * 0.04, ease: [0.34, 1.25, 0.64, 1] }
+        }}
         className={cn("relative w-full preserve-3d", isMobileOverride && !forceFullHeight ? "h-auto" : "h-full")}
       >
         {/* Front Face (Quick Pitch) */}

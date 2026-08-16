@@ -113,7 +113,12 @@ export function BentoGrid({
             className
           )}
         >
-          {children}
+          {React.Children.map(children, (child, index) => {
+            if (React.isValidElement(child)) {
+              return React.cloneElement(child, { index } as Record<string, unknown>)
+            }
+            return child
+          })}
         </div>
       </div>
     </div>

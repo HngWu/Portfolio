@@ -33,7 +33,7 @@
 import type { OriginRect } from "@/store/useNavigationStore"
 
 export type EntryMode = "quick" | "deep"
-export type EntryPhase = "cover" | "peak" | "reveal"
+export type EntryPhase = "cover" | "holding" | "peak" | "reveal"
 
 const GOLD = "#C9A227"
 const GOLD_BRIGHT = "#FFE875"
@@ -55,6 +55,7 @@ export interface EntryState {
   mode: EntryMode
   originX: number
   originY: number
+  radarAngle?: number
   particles: Particle[]
   /** pre-seeded angles for the geometric gold line strokes */
   strokes: { angle: number; offset: number; speed: number; len: number }[]
@@ -266,6 +267,18 @@ export function drawEntry(
   const oy = state.originY
   const maxR = Math.hypot(w, h)
 
+  if (state.phase === "holding") {
+    if (state.mode === "quick") {
+      drawGoldenHolding(ctx, state, ox, oy, maxR, w, h, dt, elapsed)
+    } else {
+      drawHextechHolding(ctx, state, ox, oy, maxR, w, h, dt, elapsed)
+    }
+    ctx.globalCompositeOperation = "source-over"
+    ctx.globalAlpha = 1
+    ctx.shadowBlur = 0
+    return true
+  }
+
   ctx.globalCompositeOperation = "source-over"
   if (state.phase === "reveal") {
     // Reveal: clear to *transparent* so page B shows through everywhere the
@@ -316,6 +329,143 @@ function drawPeak(ctx: CanvasRenderingContext2D, state: EntryState, w: number, h
   ctx.globalCompositeOperation = "source-over"
   ctx.globalAlpha = 1
   ctx.shadowBlur = 0
+}
+
+function drawGoldenHolding(
+  ctx: CanvasRenderingContext2D,
+  state: EntryState,
+  ox: number,
+  oy: number,
+  maxR: number,
+  w: number,
+  h: number,
+  dt: number,
+  elapsed: number
+) {
+  ctx.globalCompositeOperation = "source-over"
+  ctx.fillStyle = "rgba(5,5,5,1)"
+  ctx.fillRect(0, 0, w, h)
+
+  ctx.globalCompositeOperation = "lighter"
+
+  // Ambient gold core pulse (0.8Hz breathing glow)
+  const pulse = 0.35 + 0.25 * (0.5 + 0.5 * Math.sin((elapsed / 1000) * 0.8 * Math.PI * 2))
+  const g = ctx.createRadialGradient(ox, oy, 0, ox, oy, maxR * 1.15)
+  g.addColorStop(0, rgba(GOLD_BRIGHT, pulse))
+  g.addColorStop(0.4, rgba(GOLD, pulse * 0.7))
+  g.addColorStop(0.8, rgba(GOLD_SOFT, pulse * 0.25))
+  g.addColorStop(1, rgba(GOLD, 0))
+  ctx.fillStyle = g
+  ctx.fillRect(-maxR, -maxR, maxR * 3, maxR * 3)
+
+  // Orbiting geometric line strokes
+  ctx.save()
+  ctx.globalAlpha = 0.4
+  ctx.strokeStyle = GOLD_BRIGHT
+  ctx.lineWidth = 1.2
+  ctx.shadowBlur = 8
+  ctx.shadowColor = GOLD
+  const rotAngle = (elapsed / 1000) * 0.3
+  for (const s of state.strokes) {
+    const a = s.angle + rotAngle * s.speed
+    const baseR = s.offset * 0.9
+    const x1 = ox + Math.cos(a) * baseR
+    const y1 = oy + Math.sin(a) * baseR
+    const x2 = ox + Math.cos(a) * (baseR + s.len)
+    const y2 = oy + Math.sin(a) * (baseR + s.len)
+    ctx.beginPath()
+    ctx.moveTo(x1, y1)
+    ctx.lineTo(x2, y2)
+    ctx.stroke()
+  }
+  ctx.restore()
+
+  // Floating gold dust particles with sine wave turbulence
+  for (let i = 0; i < state.particles.length; i++) {
+    const part = state.particles[i]
+    part.x += Math.sin((elapsed / 1000) * 2.5 + i) * 15 * dt
+    part.y += part.vy * dt * 0.4
+    if (part.y < -20) part.y = h + 20
+    if (part.x < -20) part.x = w + 20
+    if (part.x > w + 20) part.x = -20
+
+    ctx.globalAlpha = part.life * 0.8
+    ctx.fillStyle = GOLD_BRIGHT
+    ctx.shadowBlur = 6
+    ctx.shadowColor = GOLD_BRIGHT
+    ctx.beginPath()
+    ctx.arc(part.x, part.y, part.size, 0, Math.PI * 2)
+    ctx.fill()
+  }
+}
+
+function drawHextechHolding(
+  ctx: CanvasRenderingContext2D,
+  state: EntryState,
+  ox: number,
+  oy: number,
+  maxR: number,
+  w: number,
+  h: number,
+  dt: number,
+  elapsed: number
+) {
+  ctx.globalCompositeOperation = "source-over"
+  ctx.fillStyle = "rgba(5,5,5,1)"
+  ctx.fillRect(0, 0, w, h)
+  ctx.fillStyle = rgba(BLUE_DEEP, 0.6)
+  ctx.fillRect(0, 0, w, h)
+
+  ctx.globalCompositeOperation = "lighter"
+
+  state.radarAngle = ((state.radarAngle ?? 0) + dt * 1.5) % (Math.PI * 2)
+  const rayR = maxR * 0.85
+  const endX = ox + Math.cos(state.radarAngle) * rayR
+  const endY = oy + Math.sin(state.radarAngle) * rayR
+
+  ctx.save()
+  ctx.globalAlpha = 0.5
+  ctx.strokeStyle = BLUE_BRIGHT
+  ctx.lineWidth = 1.5
+  ctx.shadowBlur = 12
+  ctx.shadowColor = BLUE_BRIGHT
+  ctx.beginPath()
+  ctx.moveTo(ox, oy)
+  ctx.lineTo(endX, endY)
+  ctx.stroke()
+  ctx.restore()
+
+  const pTick = (elapsed / 1000) % 1
+  for (const cell of state.matrix) {
+    drawHexLabel(ctx, cell.x, cell.y, cell.seed, pTick, 0.35)
+  }
+
+  const ringP = ((elapsed / 1000) % 1.2) / 1.2
+  const ringR = ringP * maxR * 0.95
+  ctx.save()
+  ctx.globalAlpha = (1 - ringP) * 0.7
+  ctx.strokeStyle = BLUE_BRIGHT
+  ctx.lineWidth = 2
+  ctx.shadowBlur = 14
+  ctx.shadowColor = BLUE_BRIGHT
+  ctx.beginPath()
+  ctx.arc(ox, oy, ringR, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.restore()
+
+  for (const part of state.particles) {
+    part.x += part.vx * dt * 0.3
+    part.y += part.vy * dt * 0.3 - 10 * dt
+    if (part.y < -20) part.y = h + 20
+
+    ctx.globalAlpha = part.life * 0.7
+    ctx.fillStyle = BLUE_BRIGHT
+    ctx.shadowBlur = 6
+    ctx.shadowColor = BLUE_BRIGHT
+    ctx.beginPath()
+    ctx.arc(part.x, part.y, part.size, 0, Math.PI * 2)
+    ctx.fill()
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────────────

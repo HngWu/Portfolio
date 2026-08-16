@@ -55,37 +55,60 @@ export function PageEntryOverlay() {
     return () => window.removeEventListener("popstate", handlePopState)
   }, [setCurtainState, setPageLoaded])
 
-  // 2. Watch pathname changes during covering to mark the new page as loaded
+  // 2. Watch pathname changes during transition to trigger double-rAF mount sync
   React.useEffect(() => {
-    if (curtainState === "covering") {
-      setPageLoaded(true)
+    let handle1: number | null = null
+    let handle2: number | null = null
+
+    if (curtainState === "covering" || curtainState === "holding") {
+      handle1 = requestAnimationFrame(() => {
+        handle2 = requestAnimationFrame(() => {
+          setPageLoaded(true)
+        })
+      })
+    }
+
+    return () => {
+      if (handle1 !== null) cancelAnimationFrame(handle1)
+      if (handle2 !== null) cancelAnimationFrame(handle2)
     }
   }, [pathname, curtainState, setPageLoaded])
 
-  // 3. Fallback timer: if new page content does not mount or swap, force reveal after 1.8s
+  // 3. Watchdog safety timer: if page swap takes too long, force reveal after 3000ms
   React.useEffect(() => {
     let timeoutId: number | null = null
 
-    if (curtainState === "covering") {
+    if (curtainState === "covering" || curtainState === "holding") {
       timeoutId = window.setTimeout(() => {
+        setPageLoaded(true)
         setCurtainState("revealing")
-      }, 1800)
+      }, 3000)
     }
 
     return () => {
       if (timeoutId) window.clearTimeout(timeoutId)
     }
-  }, [curtainState, setCurtainState])
+  }, [curtainState, setCurtainState, setPageLoaded])
 
-  // 4. covering → peak once the new page reports loaded. The canvas then holds
-  //    its peak frame while we advance to revealing.
+  // 4. Entrance duration timer (600ms): if cover entrance finishes and page isn't loaded yet, hold
   React.useEffect(() => {
-    if (curtainState === "covering" && isPageLoaded) {
+    if (curtainState !== "covering") return
+    const timer = window.setTimeout(() => {
+      if (!isPageLoaded) {
+        setCurtainState("holding")
+      }
+    }, 600)
+    return () => window.clearTimeout(timer)
+  }, [curtainState, isPageLoaded, setCurtainState])
+
+  // 5. covering / holding → peak once the new page reports loaded
+  React.useEffect(() => {
+    if ((curtainState === "covering" || curtainState === "holding") && isPageLoaded) {
       setCurtainState("peak")
     }
   }, [curtainState, isPageLoaded, setCurtainState])
 
-  // 5. peak → revealing after a short hold so the route swap is invisible.
+  // 6. peak → revealing after a short hold so the route swap is invisible.
   const PEAK_HOLD_MS = 90
   React.useEffect(() => {
     if (curtainState !== "peak") return
@@ -93,7 +116,7 @@ export function PageEntryOverlay() {
     return () => window.clearTimeout(t)
   }, [curtainState, setCurtainState])
 
-  // 6. Clean up transition parameters after revealing completes
+  // 7. Clean up transition parameters after revealing completes
   React.useEffect(() => {
     if (curtainState === "revealing") {
       const t = window.setTimeout(() => {
@@ -115,7 +138,7 @@ export function PageEntryOverlay() {
   }, [mode, originRect, bentoTilesBounds])
 
   // Mirror the current curtain state into the engine ref so the rAF loop can
-  // react to phase changes (cover→peak→reveal) without restarting. Written in
+  // react to phase changes (cover→holding→peak→reveal) without restarting. Written in
   // an effect rather than during render to satisfy react-hooks/refs.
   const phaseRef = React.useRef(curtainState)
   React.useEffect(() => {
@@ -164,6 +187,8 @@ export function PageEntryOverlay() {
       const enginePhase =
         storePhase === "covering"
           ? "cover"
+          : storePhase === "holding"
+          ? "holding"
           : storePhase === "peak"
           ? "peak"
           : storePhase === "revealing"
@@ -177,7 +202,7 @@ export function PageEntryOverlay() {
       }
 
       const alive = drawEntry(ctx, state, now, w, h)
-      if (alive || state.phase === "peak") {
+      if (alive || state.phase === "peak" || state.phase === "holding") {
         rafRef.current = requestAnimationFrame(loop)
       } else if (storePhase === "idle") {
         rafRef.current = null
