@@ -18,20 +18,19 @@ const LOCKOUT_DURATION_MS = 15 * 60 * 1000 // 15 minutes
 async function ensureInitialAdminUser() {
   const allUsers = getAllAdminUsersDb()
   if (allUsers.length === 0) {
-    const initialEmail = "admin@lume-glass.local"
-    const generatedPassword = crypto.randomBytes(8).toString("hex")
-    const { hash, salt } = await hashPassword(generatedPassword)
+    const initialEmail = process.env.INITIAL_ADMIN_EMAIL
+    const initialPassword = process.env.INITIAL_ADMIN_PASSWORD
+    if (!initialEmail || !initialPassword) {
+      console.warn("[SECURITY] No admin users exist. Set INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD in environment variables to bootstrap initial admin.")
+      return
+    }
+    const { hash, salt } = await hashPassword(initialPassword)
     createAdminUserDb({
-      email: initialEmail,
+      email: initialEmail.toLowerCase().trim(),
       password_hash: hash,
       salt: salt
     })
-    console.log("\n==================================================")
-    console.log("[SECURITY SETUP] Initial Admin User Created:")
-    console.log(`  Email: ${initialEmail}`)
-    console.log(`  Password: ${generatedPassword}`)
-    console.log("  Please log in and update your password at /admin/users.")
-    console.log("==================================================\n")
+    console.log(`[SECURITY SETUP] Initial Admin User Created: ${initialEmail}`)
   }
 }
 

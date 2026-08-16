@@ -2,9 +2,11 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { GlassCard } from "@/components/ui/GlassCard"
-import { ArrowLeft, Save, Plus, Trash2, Code2, ChevronDown, ChevronUp } from "lucide-react"
+import { ArrowLeft, Save } from "lucide-react"
 import { DetailedItemRow, DetailedItemInsert, DetailedItemUpdate } from "@/app/actions/detailed-items"
+import { BasicInfoFields } from "./form/BasicInfoFields"
+import { TypePayloadEditor } from "./form/TypePayloadEditor"
+import { RawJsonEditor } from "./form/RawJsonEditor"
 
 interface DetailedItemFormProps {
   initialData?: DetailedItemRow
@@ -156,307 +158,58 @@ export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemF
       )}
 
       <form onSubmit={handleFormSubmit} className="space-y-6">
-        <GlassCard className="p-6 space-y-6">
-          <h2 className="text-lg font-semibold text-white/90 border-b border-white/5 pb-3">Basic Information</h2>
+        <BasicInfoFields
+          type={type}
+          setType={setType}
+          customType={customType}
+          setCustomType={setCustomType}
+          itemTitle={itemTitle}
+          setItemTitle={setItemTitle}
+          subtitle={subtitle}
+          setSubtitle={setSubtitle}
+          dateRange={dateRange}
+          setDateRange={setDateRange}
+          orderVal={orderVal}
+          setOrderVal={setOrderVal}
+        />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs font-mono uppercase text-white/50 mb-2">Item Type</label>
-              <select
-                value={["project", "experience", "education"].includes(type) ? type : "custom"}
-                onChange={(e) => {
-                  const val = e.target.value
-                  setType(val)
-                  if (val !== "custom") setCustomType("")
-                }}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-              >
-                <option value="project">Project</option>
-                <option value="experience">Experience</option>
-                <option value="education">Education</option>
-                <option value="custom">Custom Type</option>
-              </select>
-            </div>
-
-            {type === "custom" && (
-              <div>
-                <label className="block text-xs font-mono uppercase text-white/50 mb-2">Custom Type Name</label>
-                <input
-                  type="text"
-                  value={customType}
-                  onChange={(e) => setCustomType(e.target.value)}
-                  placeholder="e.g. certification, award"
-                  required
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-mono uppercase text-white/50 mb-2">Title</label>
-              <input
-                type="text"
-                value={itemTitle}
-                onChange={(e) => setItemTitle(e.target.value)}
-                placeholder="Item Title (e.g. Software Engineer)"
-                required
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-mono uppercase text-white/50 mb-2">Subtitle / Subheading</label>
-              <input
-                type="text"
-                value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
-                placeholder="Company, institution, or description"
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-mono uppercase text-white/50 mb-2">Date Range</label>
-              <input
-                type="text"
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                placeholder="e.g. Apr 2025 - Mar 2026 or 2025"
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-mono uppercase text-white/50 mb-2">Display Order (order_val)</label>
-              <input
-                type="number"
-                value={orderVal}
-                onChange={(e) => setOrderVal(Number(e.target.value))}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-              />
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* Tailored Section */}
-        {!showRawJson && activeType === "experience" && (
-          <GlassCard className="p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-white/90 border-b border-white/5 pb-3">Experience Highlights</h2>
-
-            <div className="space-y-4">
-              <label className="block text-xs font-mono uppercase text-white/50">Quick-Pitch Bullet Highlights</label>
-              {expHighlights.map((hl, idx) => (
-                <div key={idx} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={hl}
-                    onChange={(e) => {
-                      const copy = [...expHighlights]
-                      copy[idx] = e.target.value
-                      setExpHighlights(copy)
-                    }}
-                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setExpHighlights(expHighlights.filter((_, i) => i !== idx))}
-                    className="p-2 text-red-400/60 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-xl"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => setExpHighlights([...expHighlights, ""])}
-                className="flex items-center gap-2 text-xs font-mono text-lume-primary bg-lume-primary/10 hover:bg-lume-primary/20 px-3 py-1.5 rounded-lg transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" /> Add Highlight
-              </button>
-            </div>
-
-            <div className="space-y-4 pt-4 border-t border-white/5">
-              <label className="block text-xs font-mono uppercase text-white/50">Deep-Dive Technical Highlights</label>
-              {expDeepHighlights.map((hl, idx) => (
-                <div key={idx} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={hl}
-                    onChange={(e) => {
-                      const copy = [...expDeepHighlights]
-                      copy[idx] = e.target.value
-                      setExpDeepHighlights(copy)
-                    }}
-                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setExpDeepHighlights(expDeepHighlights.filter((_, i) => i !== idx))}
-                    className="p-2 text-red-400/60 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-xl"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => setExpDeepHighlights([...expDeepHighlights, ""])}
-                className="flex items-center gap-2 text-xs font-mono text-lume-primary bg-lume-primary/10 hover:bg-lume-primary/20 px-3 py-1.5 rounded-lg transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" /> Add Deep-Dive Highlight
-              </button>
-            </div>
-          </GlassCard>
+        {!showRawJson && (
+          <TypePayloadEditor
+            activeType={activeType}
+            expHighlights={expHighlights}
+            setExpHighlights={setExpHighlights}
+            expDeepHighlights={expDeepHighlights}
+            setExpDeepHighlights={setExpDeepHighlights}
+            eduGpa={eduGpa}
+            setEduGpa={setEduGpa}
+            eduDegree={eduDegree}
+            setEduDegree={setEduDegree}
+            eduInstitution={eduInstitution}
+            setEduInstitution={setEduInstitution}
+            eduHonours={eduHonours}
+            setEduHonours={setEduHonours}
+            projTechStack={projTechStack}
+            setProjTechStack={setProjTechStack}
+            projGithubUrl={projGithubUrl}
+            setProjGithubUrl={setProjGithubUrl}
+            projLiveUrl={projLiveUrl}
+            setProjLiveUrl={setProjLiveUrl}
+            projFeatured={projFeatured}
+            setProjFeatured={setProjFeatured}
+            projNotes={projNotes}
+            setProjNotes={setProjNotes}
+          />
         )}
 
-        {!showRawJson && activeType === "education" && (
-          <GlassCard className="p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-white/90 border-b border-white/5 pb-3">Education Details</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-xs font-mono uppercase text-white/50 mb-2">GPA</label>
-                <input
-                  type="text"
-                  value={eduGpa}
-                  onChange={(e) => setEduGpa(e.target.value)}
-                  placeholder="e.g. 3.91"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-mono uppercase text-white/50 mb-2">Degree / Certificate</label>
-                <input
-                  type="text"
-                  value={eduDegree}
-                  onChange={(e) => setEduDegree(e.target.value)}
-                  placeholder="Diploma / Degree title"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-mono uppercase text-white/50 mb-2">Institution</label>
-                <input
-                  type="text"
-                  value={eduInstitution}
-                  onChange={(e) => setEduInstitution(e.target.value)}
-                  placeholder="School / Academy name"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-mono uppercase text-white/50 mb-2">Honours / Awards</label>
-                <input
-                  type="text"
-                  value={eduHonours}
-                  onChange={(e) => setEduHonours(e.target.value)}
-                  placeholder="Gold Medalist, Director's List, etc."
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-                />
-              </div>
-            </div>
-          </GlassCard>
-        )}
+        <RawJsonEditor
+          showRawJson={showRawJson}
+          setShowRawJson={setShowRawJson}
+          rawContent={rawContent}
+          setRawContent={setRawContent}
+          rawDeepDive={rawDeepDive}
+          setRawDeepDive={setRawDeepDive}
+        />
 
-        {!showRawJson && activeType === "project" && (
-          <GlassCard className="p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-white/90 border-b border-white/5 pb-3">Project Details</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className="block text-xs font-mono uppercase text-white/50 mb-2">Tech Stack (comma-separated)</label>
-                <input
-                  type="text"
-                  value={projTechStack}
-                  onChange={(e) => setProjTechStack(e.target.value)}
-                  placeholder="Next.js 16, Supabase, Tailwind CSS, Redis"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-mono uppercase text-white/50 mb-2">GitHub URL</label>
-                <input
-                  type="url"
-                  value={projGithubUrl}
-                  onChange={(e) => setProjGithubUrl(e.target.value)}
-                  placeholder="https://github.com/username/repo"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-mono uppercase text-white/50 mb-2">Live Demo URL</label>
-                <input
-                  type="url"
-                  value={projLiveUrl}
-                  onChange={(e) => setProjLiveUrl(e.target.value)}
-                  placeholder="https://demo.app"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50"
-                />
-              </div>
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="featured-check"
-                  checked={projFeatured}
-                  onChange={(e) => setProjFeatured(e.target.checked)}
-                  className="size-4 rounded border-white/10 bg-black/40 text-lume-primary focus:ring-0"
-                />
-                <label htmlFor="featured-check" className="text-sm font-medium text-white/90">
-                  Featured Project
-                </label>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-mono uppercase text-white/50 mb-2">Deep-Dive Notes</label>
-                <textarea
-                  value={projNotes}
-                  onChange={(e) => setProjNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Architecture notes, latency metrics, or internal details"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lume-primary/50 resize-y"
-                />
-              </div>
-            </div>
-          </GlassCard>
-        )}
-
-        {/* Raw JSON Toggle & Editor */}
-        <GlassCard className="p-6 space-y-4">
-          <button
-            type="button"
-            onClick={() => setShowRawJson(!showRawJson)}
-            className="flex items-center justify-between w-full text-left text-sm font-mono text-white/70 hover:text-white"
-          >
-            <div className="flex items-center gap-2">
-              <Code2 className="w-4 h-4 text-lume-primary" />
-              <span>Advanced Raw JSON Editors (content & deep_dive)</span>
-            </div>
-            {showRawJson ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-
-          {showRawJson && (
-            <div className="space-y-6 pt-4 border-t border-white/5">
-              <div>
-                <label className="block text-xs font-mono uppercase text-white/50 mb-2">Content JSON</label>
-                <textarea
-                  value={rawContent}
-                  onChange={(e) => setRawContent(e.target.value)}
-                  rows={6}
-                  className="w-full font-mono text-xs bg-black/60 border border-white/10 rounded-xl p-4 text-emerald-400 focus:outline-none focus:border-lume-primary/50"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono uppercase text-white/50 mb-2">Deep Dive JSON</label>
-                <textarea
-                  value={rawDeepDive}
-                  onChange={(e) => setRawDeepDive(e.target.value)}
-                  rows={6}
-                  className="w-full font-mono text-xs bg-black/60 border border-white/10 rounded-xl p-4 text-emerald-400 focus:outline-none focus:border-lume-primary/50"
-                />
-              </div>
-            </div>
-          )}
-        </GlassCard>
-
-        {/* Submit Actions */}
         <div className="flex justify-end gap-4 pt-4">
           <button
             type="button"
