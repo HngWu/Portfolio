@@ -34,7 +34,7 @@ export default function LoginPage() {
               required
               name="email"
               type="email"
-              placeholder="admin@example.com"
+              placeholder="admin@lume-glass.local"
               className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white outline-none focus:border-lume-primary transition-colors"
             />
           </div>

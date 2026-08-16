@@ -1,16 +1,15 @@
-import { createClient } from "@/lib/supabase/server"
+import { getTilesDb, getTilesByTypeDb } from "@/lib/db"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { LayoutGrid, Briefcase, Settings2, Activity } from "lucide-react"
 
 export default async function AdminDashboard() {
-  const supabase = await createClient()
+  const tiles = getTilesDb()
+  const configTiles = getTilesByTypeDb("config")
   
-  const { data: tiles } = await supabase.from("tiles").select("id, type, is_hidden")
-  const { count: configCount } = await supabase.from("config").select("*", { count: 'exact', head: true })
-
-  const totalTiles = tiles?.filter(t => t.type !== 'config').length || 0
-  const visibleTiles = tiles?.filter(t => !t.is_hidden && t.type !== 'config').length || 0
-  const totalProjects = tiles?.filter(t => t.type === 'project').length || 0
+  const totalTiles = tiles.filter(t => t.type !== 'config').length
+  const visibleTiles = tiles.filter(t => !t.is_hidden && t.type !== 'config').length
+  const totalProjects = tiles.filter(t => t.type === 'project').length
+  const configCount = configTiles.length
 
   return (
     <div className="space-y-6">
@@ -48,7 +47,7 @@ export default async function AdminDashboard() {
           </div>
           <div>
             <div className="text-sm font-mono text-white/50 uppercase">System Config</div>
-            <div className="text-2xl font-medium text-white/90">{configCount || 0}</div>
+            <div className="text-2xl font-medium text-white/90">{configCount}</div>
             <div className="text-xs text-white/40 mt-1">Active global variables</div>
           </div>
         </GlassCard>
@@ -63,15 +62,15 @@ export default async function AdminDashboard() {
           <div className="space-y-4">
             <div className="flex justify-between items-center p-4 bg-white/[0.02] rounded-xl border border-white/5">
               <span className="text-sm text-white/60">Database Connection</span>
-              <span className="text-xs font-mono text-lume-primary">Operational</span>
+              <span className="text-xs font-mono text-lume-primary">Local SQLite (Operational)</span>
             </div>
             <div className="flex justify-between items-center p-4 bg-white/[0.02] rounded-xl border border-white/5">
-              <span className="text-sm text-white/60">Edge Functions</span>
-              <span className="text-xs font-mono text-lume-primary">Active</span>
+              <span className="text-sm text-white/60">Engine Mode</span>
+              <span className="text-xs font-mono text-lume-primary">Embedded Node</span>
             </div>
             <div className="flex justify-between items-center p-4 bg-white/[0.02] rounded-xl border border-white/5">
-              <span className="text-sm text-white/60">Storage Quota</span>
-              <span className="text-xs font-mono text-white/40">1.2GB / 5GB</span>
+              <span className="text-sm text-white/60">Data Store Path</span>
+              <span className="text-xs font-mono text-white/40">data/portfolio.db</span>
             </div>
           </div>
         </GlassCard>

@@ -1,7 +1,7 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { getTilesByTypeDb, updateTileDb, createTileDb } from "@/lib/db"
 
 export interface ConfigItem {
   key: string
@@ -9,53 +9,32 @@ export interface ConfigItem {
 }
 
 export async function getConfig(): Promise<ConfigItem[]> {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from("tiles")
-    .select("content")
-    .eq("type", "config")
-    .single()
-  
-  if (error) {
-    if (error.code === 'PGRST116') { // Not found
-      return []
-    }
-    throw error
+  const tiles = getTilesByTypeDb("config")
+  if (tiles.length === 0) {
+    return []
   }
 
-  const content = data.content as Record<string, unknown>
+  const content = (tiles[0].content || {}) as Record<string, unknown>
   return Object.entries(content).map(([key, value]) => ({ key, value }))
 }
 
 export async function updateConfig(key: string, value: unknown) {
-  const supabase = await createClient()
-  
-  const { data: existing } = await supabase
-    .from("tiles")
-    .select("id, content")
-    .eq("type", "config")
-    .single()
+  const tiles = getTilesByTypeDb("config")
+  const existing = tiles[0]
 
   if (existing) {
     const newContent = {
       ...(existing.content as object),
       [key]: value
-    }
-    const { error } = await supabase
-      .from("tiles")
-      .update({ content: newContent })
-      .eq("id", existing.id)
-    if (error) throw error
+    } as any
+    updateTileDb(existing.id, { content: newContent })
   } else {
-    const { error } = await supabase
-      .from("tiles")
-      .insert({
-        type: "config",
-        size: "0x0",
-        is_hidden: true,
-        content: { [key]: value }
-      })
-    if (error) throw error
+    createTileDb({
+      type: "config",
+      size: "0x0",
+      is_hidden: true,
+      content: { [key]: value } as any
+    })
   }
 
   revalidatePath("/")

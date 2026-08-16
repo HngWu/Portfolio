@@ -4,13 +4,15 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutGrid, Briefcase, Settings, Globe, LogOut, LayoutDashboard } from "lucide-react"
+import { LayoutGrid, Briefcase, Settings, Globe, LogOut, LayoutDashboard, ListTree, ShieldCheck } from "lucide-react"
 import { logout } from "@/app/actions/auth"
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Tiles", href: "/admin/tiles", icon: LayoutGrid },
   { label: "Projects", href: "/admin/projects", icon: Briefcase },
+  { label: "Detailed Items", href: "/admin/detailed-items", icon: ListTree },
+  { label: "Admins", href: "/admin/users", icon: ShieldCheck },
   { label: "Config", href: "/admin/config", icon: Settings },
   { label: "Site Preview", href: "/", icon: Globe },
 ]

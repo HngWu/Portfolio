@@ -1,7 +1,7 @@
-import { createClient } from "@/lib/supabase/server"
 import { parseTileContent, parseTileDeepDive } from "@/lib/tiles/schemas"
 import type { Database } from "@/types/supabase"
 import type { SearchResult } from "@/lib/search"
+import { getTilesDb, getDetailedItemsDb } from "@/lib/db"
 
 type Tile = Database["public"]["Tables"]["tiles"]["Row"]
 
@@ -220,29 +220,18 @@ export function parseTilesToPortfolioContent(tiles: Tile[]): PortfolioContent {
 }
 
 export async function getPortfolioContent(): Promise<PortfolioContent> {
-  const supabase = await createClient()
-  
-  const [tilesRes, detailedRes] = await Promise.all([
-    supabase.from("tiles").select("*").order("order_val", { ascending: true }),
-    supabase.from("detailed_items").select("*").order("order_val", { ascending: true })
-  ])
+  const tilesData = getTilesDb()
+  const detailedData = getDetailedItemsDb()
 
-  if (tilesRes.error) {
-    console.error("Error fetching portfolio content (tiles) from Supabase:", tilesRes.error)
-  }
-  if (detailedRes.error) {
-    console.error("Error fetching portfolio content (detailed_items) from Supabase:", detailedRes.error)
-  }
-
-  const content = parseTilesToPortfolioContent(tilesRes.data || [])
+  const content = parseTilesToPortfolioContent(tilesData || [])
 
   // Populate projects, experience, and education from detailed_items if available
-  if (detailedRes.data && detailedRes.data.length > 0) {
+  if (detailedData && detailedData.length > 0) {
     content.projects = []
     content.experience = []
     content.education = []
 
-    for (const item of detailedRes.data) {
+    for (const item of detailedData) {
       switch (item.type) {
         case "project": {
           const contentVal = (item.content || {}) as any
@@ -353,4 +342,3 @@ export function getSearchableContent(content: PortfolioContent): SearchResult[] 
 
   return list
 }
-

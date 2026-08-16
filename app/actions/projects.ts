@@ -1,7 +1,7 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { getTilesByTypeDb, getTileByIdDb, updateTileDb, deleteTileDb, createTileDb } from "@/lib/db"
 
 export interface ProjectContent {
   name: string
@@ -18,18 +18,10 @@ export interface Project extends ProjectContent {
 }
 
 export async function getProjects(): Promise<Project[]> {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from("tiles")
-    .select("*")
-    .eq("type", "project")
-    .order("order_val", { ascending: true })
+  const tiles = getTilesByTypeDb("project")
   
-  if (error) throw error
-  
-  // Transform tile row to project-like structure for the admin UI
-  return (data || []).map(tile => {
-    const content = tile.content as unknown as ProjectContent
+  return tiles.map(tile => {
+    const content = (tile.content || {}) as unknown as ProjectContent
     return {
       id: tile.id,
       name: content.name || "Untitled Project",
@@ -44,10 +36,7 @@ export async function getProjects(): Promise<Project[]> {
 }
 
 export async function updateProject(id: string, updates: Partial<ProjectContent> & { order_val?: number }) {
-  const supabase = await createClient()
-  
-  // Fetch existing tile to get current content
-  const { data: tile } = await supabase.from("tiles").select("content").eq("id", id).single()
+  const tile = getTileByIdDb(id)
   if (!tile) throw new Error("Tile not found")
 
   const newContent = {
@@ -55,33 +44,24 @@ export async function updateProject(id: string, updates: Partial<ProjectContent>
     ...updates
   }
 
-  const { error } = await supabase
-    .from("tiles")
-    .update({ 
-      content: newContent,
-      order_val: updates.order_val 
-    })
-    .eq("id", id)
+  updateTileDb(id, {
+    content: newContent as any,
+    order_val: updates.order_val !== undefined ? updates.order_val : tile.order_val
+  })
     
-  if (error) throw error
-  
   revalidatePath("/")
   revalidatePath("/admin/projects")
   revalidatePath("/admin/tiles")
 }
 
 export async function deleteProject(id: string) {
-  const supabase = await createClient()
-  const { error } = await supabase.from("tiles").delete().eq("id", id)
-  if (error) throw error
+  deleteTileDb(id)
   revalidatePath("/")
   revalidatePath("/admin/projects")
   revalidatePath("/admin/tiles")
 }
 
 export async function createProject(project: ProjectContent & { order_val?: number }) {
-  const supabase = await createClient()
-  
   const content = {
     name: project.name,
     description: project.description,
@@ -91,15 +71,13 @@ export async function createProject(project: ProjectContent & { order_val?: numb
     featured: project.featured
   }
 
-  const { error } = await supabase.from("tiles").insert({
+  createTileDb({
     type: "project",
     size: "4x3",
-    content,
+    content: content as any,
     order_val: project.order_val || 0
   })
 
-  if (error) throw error
-  
   revalidatePath("/")
   revalidatePath("/admin/projects")
   revalidatePath("/admin/tiles")
