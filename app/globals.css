@@ -25,20 +25,12 @@
 
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --ease-out-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --animate-liquid-1: liquid-1 20s infinite alternate;
   --animate-liquid-2: liquid-2 25s infinite alternate-reverse;
   --animate-shimmer: shimmer 1.2s ease-in-out 2 forwards;
   --animate-border-beam: border-beam-rotate 4s linear infinite;
   --animate-border-beam-fast: border-beam-rotate 2s linear infinite;
   --animate-shimmer-pulse: shimmer-pulse-wave 1.5s linear infinite;
-  --animate-organic-morph: organic-morph 8s ease-in-out infinite alternate;
-
-  @keyframes organic-morph {
-    0% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: rotate(0deg) scale(0.95); }
-    50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; transform: rotate(180deg) scale(1.08); }
-    100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: rotate(360deg) scale(0.95); }
-  }
 
   @keyframes liquid-1 {
     0% { transform: translate(0, 0) scale(1); }

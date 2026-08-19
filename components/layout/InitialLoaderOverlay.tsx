@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState, useRef } from "react"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
-import { useViewModeStore } from "@/store/useViewModeStore"
 import { usePathname } from "next/navigation"
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 
 function MatrixRain() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -77,7 +76,6 @@ function MatrixRain() {
 
 export function InitialLoaderOverlay() {
   const pathname = usePathname()
-  const mode = useViewModeStore((s) => s.mode)
   const progress = useSiteLoaderStore((s) => s.progress)
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
   const setProgress = useSiteLoaderStore((s) => s.setProgress)
@@ -85,14 +83,7 @@ export function InitialLoaderOverlay() {
   const setBootFinished = useSiteLoaderStore((s) => s.setBootFinished)
   const markModelReady = useSiteLoaderStore((s) => s.markModelReady)
 
-  const shouldReduceMotion = useReducedMotion()
   const [finishedSequence, setFinishedSequence] = useState(false)
-
-  // Mode Theme Mapping
-  const isGold = mode === "quick"
-  const primaryColor = isGold ? "#C9A227" : "#4A8FFF"
-  const secondaryColor = isGold ? "#FFB44A" : "#4AFFB4"
-  const modeGlyph = isGold ? "ᚠ" : "ᚦ"
 
   // 1. Auto-resolve 3D model loading on subpages or after 3.0s fail-safe timeout
   useEffect(() => {
@@ -183,7 +174,7 @@ export function InitialLoaderOverlay() {
               "polygon(50% 49%, 50% 49%, 50% 51%, 50% 51%)",
             ],
             opacity: 0,
-            transition: { duration: 0.75, ease: [0.16, 1, 0.3, 1] }
+            transition: { duration: 0.75, ease: [0.76, 0, 0.24, 1] }
           }}
           className="fixed inset-0 bg-[#050505] z-[10002] flex items-center justify-center p-4 font-mono select-none"
         >
@@ -193,109 +184,57 @@ export function InitialLoaderOverlay() {
           {/* Retro scanlines overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(74,255,180,0.02),rgba(74,143,255,0.01))] bg-[size:100%_4px,6px_100%] pointer-events-none opacity-80" />
           
-          <motion.div
-            initial={{ scale: 0.88, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 1.08, opacity: 0 }}
-            transition={{
-              type: "spring",
-              stiffness: 220,
-              damping: 20,
-            }}
-            className="relative z-10 flex flex-col items-center gap-8 max-w-sm w-full"
-          >
-            {/* Mode-Aware Ambient Glow Background */}
-            <div 
-              className={`absolute w-52 h-52 blur-3xl pointer-events-none transition-colors duration-500 ${
-                shouldReduceMotion ? 'opacity-30 rounded-full' : 'animate-organic-morph opacity-50'
-              }`}
-              style={{
-                background: `radial-gradient(circle, ${primaryColor}40 0%, ${secondaryColor}20 60%, transparent 100%)`
-              }}
-            />
-
-            {/* Mode-Aware Arcane Constellation Engine */}
-            <div className="relative w-52 h-52 flex items-center justify-center">
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
-                <defs>
-                  <linearGradient id="constellationGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor={primaryColor} />
-                    <stop offset="100%" stopColor={secondaryColor} />
-                  </linearGradient>
-                </defs>
-
-                {/* Laser Beams connecting Outer Nodes to Core */}
-                <line x1="100" y1="25" x2="100" y2="78" stroke="url(#constellationGrad)" strokeWidth="2" strokeDasharray="50" strokeDashoffset={50 - (50 * progress) / 100} opacity="0.85" />
-                <line x1="175" y1="100" x2="122" y2="100" stroke="url(#constellationGrad)" strokeWidth="2" strokeDasharray="50" strokeDashoffset={50 - (50 * progress) / 100} opacity="0.85" />
-                <line x1="100" y1="175" x2="100" y2="122" stroke="url(#constellationGrad)" strokeWidth="2" strokeDasharray="50" strokeDashoffset={50 - (50 * progress) / 100} opacity="0.85" />
-                <line x1="25" y1="100" x2="78" y2="100" stroke="url(#constellationGrad)" strokeWidth="2" strokeDasharray="50" strokeDashoffset={50 - (50 * progress) / 100} opacity="0.85" />
-
-                {/* Outer Star Nodes */}
-                <circle cx="100" cy="25" r="5" fill={primaryColor} style={{ filter: `drop-shadow(0 0 8px ${primaryColor})` }} />
-                <circle cx="175" cy="100" r="5" fill={secondaryColor} style={{ filter: `drop-shadow(0 0 8px ${secondaryColor})` }} />
-                <circle cx="100" cy="175" r="5" fill={primaryColor} style={{ filter: `drop-shadow(0 0 8px ${primaryColor})` }} />
-                <circle cx="25" cy="100" r="5" fill={secondaryColor} style={{ filter: `drop-shadow(0 0 8px ${secondaryColor})` }} />
-              </svg>
-
-              {/* Orbiting Rune Ring */}
-              <motion.div 
-                className="absolute w-28 h-28 rounded-full border border-dashed pointer-events-none transition-colors duration-500"
-                style={{ borderColor: `${primaryColor}60` }}
-                animate={shouldReduceMotion ? {} : { rotate: -360 }}
-                transition={shouldReduceMotion ? {} : { duration: 12, ease: "linear", repeat: Infinity }}
+          <div className="relative z-10 flex flex-col items-center gap-8 max-w-sm w-full">
+            {/* Runic Prism Engine Graphic */}
+            <div className="relative w-36 h-36 flex items-center justify-center">
+              {/* Outer Counter-Clockwise Ring */}
+              <div 
+                className="absolute w-32 h-32 rounded-full border-2 border-dashed border-[#4AFFB4]/60 animate-spin" 
+                style={{ animationDuration: '7s' }} 
+              />
+              
+              {/* Inner Clockwise Ring */}
+              <div 
+                className="absolute w-20 h-20 rounded-full border border-[#4A8FFF]/80 animate-spin" 
+                style={{ animationDuration: '4s', animationDirection: 'reverse' }} 
               />
 
-              {/* Central Prismatic Gem Core */}
-              <motion.div 
-                className="w-10 h-10 rounded-sm shadow-2xl flex items-center justify-center font-bold text-white text-base select-none transition-colors duration-500"
-                style={{
-                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                  boxShadow: `0 0 30px ${primaryColor}99`
-                }}
-                animate={
-                  shouldReduceMotion
-                    ? { opacity: [0.6, 1, 0.6] }
-                    : { rotate: [45, 225, 405], scale: [0.95, 1.08, 0.95] }
-                }
-                transition={
-                  shouldReduceMotion
-                    ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
-                    : { duration: 4, repeat: Infinity, ease: [0.16, 1, 0.3, 1] }
-                }
-              >
-                <span className="-rotate-45">{modeGlyph}</span>
-              </motion.div>
+              {/* Orbiting Rune Glyphs */}
+              <div className="absolute inset-0 flex items-center justify-between px-1 text-[10px] text-[#4AFFB4]/70 font-bold pointer-events-none">
+                <span>ᚠ</span>
+                <span>ᚨ</span>
+              </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-between py-1 text-[10px] text-[#4A8FFF]/70 font-bold pointer-events-none">
+                <span>ᚢ</span>
+                <span>ᚦ</span>
+              </div>
+
+              {/* Central Glowing Diamond Core */}
+              <div className="w-8 h-8 rotate-45 bg-gradient-to-br from-[#4AFFB4] to-[#4A8FFF] rounded-sm shadow-[0_0_25px_#4AFFB4] animate-pulse" />
             </div>
 
             {/* Kinetic Progress & Label */}
             <div className="flex flex-col items-center gap-3 w-full">
-              <div className="flex items-center justify-between w-full text-xs uppercase tracking-widest text-white/70">
-                <span className="flex items-center gap-2 font-semibold">
-                  <span className="size-1.5 rounded-full animate-pulse" style={{ backgroundColor: primaryColor }} />
-                  {isGold ? "GOLD CORE IGNITING" : "BLUEPRINT CORE COMPILING"}
+              <div className="flex items-center justify-between w-full text-xs uppercase tracking-widest text-white/60">
+                <span className="flex items-center gap-2">
+                  <span className="size-1.5 rounded-full bg-[#4AFFB4] animate-pulse" />
+                  INITIALIZING CORE
                 </span>
-                <span className="font-bold transition-colors duration-300" style={{ color: primaryColor }}>{progress}%</span>
+                <span className="text-[#4AFFB4] font-bold">{progress}%</span>
               </div>
 
-              {/* Mode-Aware Liquid Progress Bar */}
+              {/* Liquid Gradient Progress Bar */}
               <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden relative backdrop-blur-sm">
                 <motion.div
-                  className="h-full rounded-full transition-colors duration-500"
-                  style={{ 
-                    background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`,
-                    boxShadow: `0 0 14px ${primaryColor}80` 
-                  }}
+                  className="h-full bg-gradient-to-r from-[#4AFFB4] to-[#4A8FFF] rounded-full"
                   initial={{ width: "0%" }}
                   animate={{ width: `${progress}%` }}
-                  transition={
-                    shouldReduceMotion
-                      ? { duration: 0.1 }
-                      : { type: "spring", stiffness: 200, damping: 25 }
-                  }
+                  transition={{ ease: "easeOut", duration: 0.15 }}
+                  style={{ boxShadow: "0 0 12px rgba(74, 255, 180, 0.4)" }}
                 />
               </div>
             </div>
-          </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
