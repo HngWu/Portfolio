@@ -8,6 +8,7 @@ interface SiteLoaderState {
   markModelReady: () => void
   setBootFinished: (finished: boolean) => void
   setProgress: (progress: number) => void
+  forceComplete: () => void
 }
 
 export const useSiteLoaderStore = create<SiteLoaderState>()((set, get) => ({
@@ -27,5 +28,8 @@ export const useSiteLoaderStore = create<SiteLoaderState>()((set, get) => ({
     const { progress } = get()
     if (p <= progress) return // Prevent backward progress
     set({ progress: p })
+  },
+  forceComplete: () => {
+    set({ progress: 100, isModelReady: true, isBootFinished: true, isLoaded: true })
   }
 }))

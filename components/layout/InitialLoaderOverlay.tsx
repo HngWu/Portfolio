@@ -4,18 +4,6 @@ import React, { useEffect, useState, useRef } from "react"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { GlassCard } from "@/components/ui/GlassCard"
-
-const BOOT_LOG_TEMPLATES = [
-  "HEX_DECRYPTOR: LUME-GLASS PORTFOLIO MODULE [ACTIVE]",
-  "SECURITY PROTOCOLS LOADED (LEVEL 9 BYPASS)",
-  "ACQUIRING SUPABASE SECURE DATABASE NODE CONNECTION...",
-  "ESTABLISHED NODE: DB_CONN_OK",
-  "PARSING BENTO CELL DATA MATRIX: 12 TILES DETECTED",
-  "ESTABLISHING WEBGL VIEWPORT VIEW...",
-  "RESOLVING RUNIC TELEMETRY KEY DICTIONARY [ᚠ, ᚢ, ᚦ, ᚨ]...",
-  "COMPILING INTERACTIVE LAYER GRAPHENE SHADERS...",
-]
 
 function MatrixRain() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -95,18 +83,42 @@ export function InitialLoaderOverlay() {
   const setBootFinished = useSiteLoaderStore((s) => s.setBootFinished)
   const markModelReady = useSiteLoaderStore((s) => s.markModelReady)
 
-  // Auto-resolve 3D model loading on subpages where PolyhedronCanvas is not rendered
+  const [finishedSequence, setFinishedSequence] = useState(false)
+
+  // 1. Auto-resolve 3D model loading on subpages or after 3.0s fail-safe timeout
   useEffect(() => {
     if (pathname && pathname !== "/") {
       markModelReady()
+      return
     }
+
+    // Fail-safe 3-second fallback timer if WebGL rAF loop stalls in inactive background tab
+    const fallbackTimer = setTimeout(() => {
+      if (!useSiteLoaderStore.getState().isModelReady) {
+        markModelReady()
+      }
+    }, 3000)
+
+    return () => clearTimeout(fallbackTimer)
   }, [pathname, markModelReady])
 
-  const [logs, setLogs] = useState<string[]>([])
-  const [logIndex, setLogIndex] = useState(0)
-  const [finishedSequence, setFinishedSequence] = useState(false)
+  // 2. Active resync on tab visibility change (Fix for inactive tab bug)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        if (!useSiteLoaderStore.getState().isLoaded) {
+          markModelReady()
+          setProgress(100)
+          setBootFinished(true)
+        }
+      }
+    }
 
-  // 1. Progress Simulation (Fires steady interval; no-op when complete)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
+  }, [markModelReady, setProgress, setBootFinished])
+
+  // 3. Steady progress simulation
   useEffect(() => {
     if (finishedSequence) return
 
@@ -116,52 +128,29 @@ export function InitialLoaderOverlay() {
         clearInterval(interval)
         return
       }
-      setProgress(Math.min(90, current + Math.floor(Math.random() * 6) + 3))
-    }, 120)
+      setProgress(Math.min(90, current + Math.floor(Math.random() * 8) + 4))
+    }, 100)
 
     return () => clearInterval(interval)
   }, [setProgress, finishedSequence])
 
-  // 2. Typewriter Log Sequence (Independent typing ticker)
-  useEffect(() => {
-    if (logIndex >= BOOT_LOG_TEMPLATES.length) return
-
-    const delay = 160 + Math.random() * 100
-    const timer = setTimeout(() => {
-      setLogs((prev) => [...prev, `[ RUN ] ${BOOT_LOG_TEMPLATES[logIndex]}`])
-      setLogIndex((prev) => prev + 1)
-    }, delay)
-
-    return () => clearTimeout(timer)
-  }, [logIndex])
-
-  // 3. Success Trigger (Fires once ready condition is satisfied)
+  // 4. Success Trigger & Discharge Sequence
   useEffect(() => {
     if (finishedSequence) return
 
-    const logsDone = logIndex === BOOT_LOG_TEMPLATES.length
-    if (logsDone && isModelReady && progress >= 90) {
+    if (isModelReady && progress >= 90) {
       setFinishedSequence(true)
       
       const successSequence = async () => {
-        setLogs((prev) => [...prev, "[ OK ] WEBGL RENDERING CONTEXT ATTACHED"])
-        setProgress(95)
-        await new Promise((r) => setTimeout(r, 200))
-        
-        setLogs((prev) => [...prev, "[ OK ] HEXCORE 3x3 MATRIX FULLY COMPILED"])
         setProgress(100)
-        await new Promise((r) => setTimeout(r, 200))
-        
-        setLogs((prev) => [...prev, "[ OK ] DISCHARGE COMMENCING. RELEASING RECOILS..."])
-        await new Promise((r) => setTimeout(r, 300))
-        
+        await new Promise((r) => setTimeout(r, 350))
         setBootFinished(true)
       }
       successSequence()
     }
-  }, [logIndex, isModelReady, progress, setProgress, setBootFinished, finishedSequence])
+  }, [isModelReady, progress, setProgress, setBootFinished, finishedSequence])
 
-  // 4. Prevent scrollbar issues during loading
+  // 5. Prevent scrollbar issues during loading
   useEffect(() => {
     if (!isLoaded) {
       document.body.style.overflow = "hidden"
@@ -185,7 +174,7 @@ export function InitialLoaderOverlay() {
               "polygon(50% 49%, 50% 49%, 50% 51%, 50% 51%)",
             ],
             opacity: 0,
-            transition: { duration: 0.85, ease: [0.76, 0, 0.24, 1] }
+            transition: { duration: 0.75, ease: [0.76, 0, 0.24, 1] }
           }}
           className="fixed inset-0 bg-[#050505] z-[10002] flex items-center justify-center p-4 font-mono select-none"
         >
@@ -195,55 +184,57 @@ export function InitialLoaderOverlay() {
           {/* Retro scanlines overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(74,255,180,0.02),rgba(74,143,255,0.01))] bg-[size:100%_4px,6px_100%] pointer-events-none opacity-80" />
           
-          <GlassCard
-            interactive={false}
-            glowColor="none"
-            className="w-full max-w-xl p-8 flex flex-col gap-6 relative overflow-hidden"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/5 pb-4 text-[10px] uppercase tracking-widest text-white/40">
-              <span className="flex items-center gap-2">
-                <span className="size-2 rounded-full bg-[#4AFFB4] animate-pulse" />
-                SYSTEM BOOTLOADER
-              </span>
-              <span>v1.6.0</span>
+          <div className="relative z-10 flex flex-col items-center gap-8 max-w-sm w-full">
+            {/* Runic Prism Engine Graphic */}
+            <div className="relative w-36 h-36 flex items-center justify-center">
+              {/* Outer Counter-Clockwise Ring */}
+              <div 
+                className="absolute w-32 h-32 rounded-full border-2 border-dashed border-[#4AFFB4]/60 animate-spin" 
+                style={{ animationDuration: '7s' }} 
+              />
+              
+              {/* Inner Clockwise Ring */}
+              <div 
+                className="absolute w-20 h-20 rounded-full border border-[#4A8FFF]/80 animate-spin" 
+                style={{ animationDuration: '4s', animationDirection: 'reverse' }} 
+              />
+
+              {/* Orbiting Rune Glyphs */}
+              <div className="absolute inset-0 flex items-center justify-between px-1 text-[10px] text-[#4AFFB4]/70 font-bold pointer-events-none">
+                <span>ᚠ</span>
+                <span>ᚨ</span>
+              </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-between py-1 text-[10px] text-[#4A8FFF]/70 font-bold pointer-events-none">
+                <span>ᚢ</span>
+                <span>ᚦ</span>
+              </div>
+
+              {/* Central Glowing Diamond Core */}
+              <div className="w-8 h-8 rotate-45 bg-gradient-to-br from-[#4AFFB4] to-[#4A8FFF] rounded-sm shadow-[0_0_25px_#4AFFB4] animate-pulse" />
             </div>
 
-            {/* Scrolling Logs */}
-            <div className="h-48 overflow-y-auto flex flex-col gap-1.5 text-xs text-white/60 text-left scrollbar-custom">
-              {logs.map((log, index) => (
-                <div key={index} className="flex gap-2">
-                  <span className="text-[#4AFFB4] font-bold">
-                    {log.startsWith("[ OK ]") ? "[ OK ]" : "[ RUN ]"}
-                  </span>
-                  <span className="text-white/80">{log.slice(log.indexOf("]") + 2)}</span>
-                </div>
-              ))}
-              {logIndex === BOOT_LOG_TEMPLATES.length && !isModelReady && (
-                <div className="flex gap-2 animate-pulse">
-                  <span className="text-[#4A8FFF] font-bold">[ WAIT ]</span>
-                  <span className="text-white/50">COMPILING 3D TEXTURES & SHADERS...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Progress Container */}
-            <div className="flex flex-col gap-2 pt-2">
-              <div className="flex justify-between text-[10px] uppercase tracking-wider text-white/50">
-                <span>COMPILING MATRIX</span>
+            {/* Kinetic Progress & Label */}
+            <div className="flex flex-col items-center gap-3 w-full">
+              <div className="flex items-center justify-between w-full text-xs uppercase tracking-widest text-white/60">
+                <span className="flex items-center gap-2">
+                  <span className="size-1.5 rounded-full bg-[#4AFFB4] animate-pulse" />
+                  INITIALIZING CORE
+                </span>
                 <span className="text-[#4AFFB4] font-bold">{progress}%</span>
               </div>
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden relative">
+
+              {/* Liquid Gradient Progress Bar */}
+              <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden relative backdrop-blur-sm">
                 <motion.div
-                  className="h-full bg-[#4AFFB4] rounded-full"
+                  className="h-full bg-gradient-to-r from-[#4AFFB4] to-[#4A8FFF] rounded-full"
                   initial={{ width: "0%" }}
                   animate={{ width: `${progress}%` }}
-                  transition={{ ease: "easeOut", duration: 0.2 }}
-                  style={{ boxShadow: "0 0 12px rgba(74, 255, 180, 0.15)" }}
+                  transition={{ ease: "easeOut", duration: 0.15 }}
+                  style={{ boxShadow: "0 0 12px rgba(74, 255, 180, 0.4)" }}
                 />
               </div>
             </div>
-          </GlassCard>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
