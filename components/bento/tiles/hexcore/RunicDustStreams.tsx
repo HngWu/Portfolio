@@ -172,12 +172,19 @@ export const RunicDustStreams = ({ mode, count = 1500 }: { mode: 'quick-pitch' |
         0.05
       );
 
-      let speedFactor = 0.3;
+      let speedFactor = 0.3 * (sharedSpellState.pulseScale || 1.0);
       if (sharedSpellState.lockdown) speedFactor = 0.0;
-      else if (sharedSpellState.ignite) speedFactor = 1.2;
+      else if (sharedSpellState.ignite) speedFactor = 1.4;
       materialRef.current.uniforms.uSpeed.value = THREE.MathUtils.lerp(
         materialRef.current.uniforms.uSpeed.value,
         speedFactor,
+        delta * 6.0
+      );
+
+      const targetSize = 15.0 * (sharedSpellState.pulseScale || 1.0);
+      materialRef.current.uniforms.uSize.value = THREE.MathUtils.lerp(
+        materialRef.current.uniforms.uSize.value,
+        targetSize,
         delta * 6.0
       );
     }

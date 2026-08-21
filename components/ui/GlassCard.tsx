@@ -88,7 +88,7 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
         {/* Shine/Refraction Effect */}
         <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none bg-gradient-to-br from-white/5 via-transparent to-transparent" />
 
-        <div className="relative z-10 h-full">
+        <div className="relative z-10 h-full w-full flex flex-col">
           {children}
         </div>
       </div>

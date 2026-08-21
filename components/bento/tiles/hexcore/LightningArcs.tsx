@@ -17,7 +17,7 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
   const lineRef = useRef<THREE.LineSegments>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const [active, setActive] = useState(false);
-  const triggerTimer = useRef(0);
+  const triggerTimer = useRef(1.0);
   const arcDuration = useRef(0);
   const maxSegments = 32;
   const numArcs = 12; // Doubled from 6
@@ -135,11 +135,11 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
 
     triggerTimer.current += delta;
     const activeSpell = sharedSpellState.lightning || sharedSpellState.ignite;
-    const interval = activeSpell ? 0.15 : (mode === 'quick-pitch' ? 0.8 : 0.5);
-    const maxDuration = activeSpell ? 0.22 : (mode === 'quick-pitch' ? 0.5 : 0.35);
+    const interval = activeSpell ? 0.15 : 0.85;
+    const maxDuration = activeSpell ? 0.22 : 0.40;
 
     if (!active && triggerTimer.current > interval) {
-      const probability = activeSpell ? 0.98 : 0.80;
+      const probability = activeSpell ? 0.95 : 0.70;
       if (Math.random() < probability && ringARef.current && ringBRef.current) {
         setActive(true);
         arcDuration.current = 0;
@@ -265,7 +265,9 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
       materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime();
       const targetBlend = mode === 'quick-pitch' ? 0.0 : 1.0;
       materialRef.current.uniforms.uModeBlend.value = THREE.MathUtils.lerp(materialRef.current.uniforms.uModeBlend.value, targetBlend, 0.08);
-      materialRef.current.uniforms.uGlowIntensity.value = active ? (1.0 - arcDuration.current / maxDuration) * THREE.MathUtils.lerp(3.5, 6.0, targetBlend) : 0.0;
+      const pulseMult = (sharedSpellState.pulseScale || 1.0);
+      const baseGlow = activeSpell ? THREE.MathUtils.lerp(3.0, 4.5, targetBlend) : THREE.MathUtils.lerp(1.8, 2.6, targetBlend);
+      materialRef.current.uniforms.uGlowIntensity.value = active ? (1.0 - arcDuration.current / maxDuration) * baseGlow * pulseMult : 0.0;
     }
   });
 

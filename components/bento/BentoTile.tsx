@@ -27,6 +27,7 @@ interface BentoTileProps {
   layout?: boolean | "position" | "size"
   noPadding?: boolean
   forceFullHeight?: boolean
+  disableHoverScale?: boolean
 }
 
 export function BentoTile({
@@ -46,6 +47,7 @@ export function BentoTile({
   layout = true,
   noPadding = false,
   forceFullHeight = false,
+  disableHoverScale = false,
 }: BentoTileProps) {
   const { navigateWithTransition } = usePageTransition()
   const { ref, onMouseMove, onMouseLeave } = useTilt()
@@ -120,7 +122,7 @@ export function BentoTile({
     <motion.div
       data-id={id}
       layout={isMobileOverride ? false : layout}
-      whileHover={!sortableProps ? { scale: 1.01, translateY: -4 } : undefined}
+      whileHover={!sortableProps && !disableHoverScale ? { scale: 1.01, translateY: -4 } : undefined}
       transition={{ 
         layout: { duration: 0.6, ease: [0.4, 0, 0.2, 1] },
         scale: { duration: 0.4, ease: "easeOut" },
@@ -151,7 +153,7 @@ export function BentoTile({
         className={cn("relative w-full preserve-3d", isMobileOverride && !forceFullHeight ? "h-auto" : "h-full")}
       >
         {/* Front Face (Quick Pitch) */}
-        <div className={cn("backface-hidden z-10 w-full", isMobileOverride && !forceFullHeight ? (isDeepDive ? "absolute inset-0 h-0 overflow-hidden" : "relative h-auto") : "absolute inset-0 h-full")}>
+        <div className={cn("backface-hidden z-10 w-full", isMobileOverride && !forceFullHeight ? (isDeepDive ? "absolute inset-0 h-0 overflow-hidden w-full" : "relative h-auto w-full") : "absolute inset-0 h-full w-full")}>
           <GlassCard
             ref={ref}
             onMouseMove={onMouseMove}
@@ -161,7 +163,7 @@ export function BentoTile({
             interactive={!isDragging}
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
-              "flex flex-col",
+              "flex flex-col w-full",
               isMobileOverride && !forceFullHeight ? "h-auto" : "h-full",
               isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
               className

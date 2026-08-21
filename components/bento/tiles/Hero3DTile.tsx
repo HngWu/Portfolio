@@ -26,16 +26,17 @@ export function Hero3DTile({ id, size, isDragging, sortableProps }: { id: string
     <BentoTile 
       id={id} 
       size={size} 
-      className="p-0 bg-transparent overflow-hidden h-full" 
+      className="p-0 bg-transparent overflow-hidden h-full w-full" 
       isDragging={isDragging} 
       sortableProps={sortableProps}
       canDeepDive={false}
       canMorph={false}
       noPadding={true}
       forceFullHeight={true}
+      disableHoverScale={true}
     >
       <div 
-        className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none rounded-2xl overflow-hidden"
+        className="w-full h-full min-h-full flex items-center justify-center pointer-events-none rounded-2xl overflow-hidden"
         onMouseEnter={() => !isDisabled && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -44,7 +45,7 @@ export function Hero3DTile({ id, size, isDragging, sortableProps }: { id: string
              <div className="size-20 rounded-full border-2 border-lume-primary/10 animate-pulse" />
           </div>
         ) : (
-          <div className="w-full h-full relative pointer-events-auto rounded-2xl overflow-hidden">
+          <div className="w-full h-full min-h-full relative pointer-events-auto rounded-2xl overflow-hidden">
             <PolyhedronCanvas isHovered={isHovered} isDeepDive={isDeepDive} />
           </div>
         )}

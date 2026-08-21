@@ -21,29 +21,52 @@ export function BentoGrid({
   const prevIgnited = React.useRef(isIgnited)
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
 
-  // Handle initial bento stagger entrance
+  // Handle initial bento radial shockwave entrance
   React.useEffect(() => {
     if (!gridRef.current) return
     const tiles = gridRef.current.querySelectorAll('[data-id]')
 
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
     if (!isLoaded) {
-      gsap.set(tiles, { opacity: 0, y: 32, scale: 0.95 })
+      if (prefersReduced) {
+        gsap.set(tiles, { opacity: 0 })
+      } else {
+        gsap.set(tiles, { opacity: 0, y: 20, scale: 0.93, filter: "brightness(1.5) blur(4px)" })
+      }
     } else {
-      gsap.fromTo(tiles,
-        { opacity: 0, y: 32, scale: 0.95 },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.95,
-          stagger: {
-            amount: 0.35,
-            grid: "auto",
-            from: "center"
-          },
-          ease: "power2.out"
-        }
-      )
+      if (prefersReduced) {
+        gsap.to(tiles, { opacity: 1, duration: 0.35 })
+      } else {
+        gsap.fromTo(
+          tiles,
+          { opacity: 0, y: 20, scale: 0.93, filter: "brightness(1.5) blur(4px)" },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            filter: "brightness(1) blur(0px)",
+            duration: 0.85,
+            stagger: {
+              amount: 0.42,
+              grid: "auto",
+              from: "center"
+            },
+            ease: "power2.out",
+            onStart: function () {
+              const target = this.targets()[0] as HTMLElement
+              if (target) {
+                target.style.boxShadow = "0 0 24px rgba(74, 255, 180, 0.28)"
+                setTimeout(() => {
+                  target.style.boxShadow = ""
+                }, 600)
+              }
+            }
+          }
+        )
+      }
     }
   }, [isLoaded])
 

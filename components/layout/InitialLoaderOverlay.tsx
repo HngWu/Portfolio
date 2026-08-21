@@ -4,75 +4,12 @@ import React, { useEffect, useState, useRef } from "react"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-
-function MatrixRain() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-
-    const fontSize = 14
-    let columns = Math.floor(canvas.width / 20)
-    // Initialize columns at random heights above the screen to stagger them from start
-    let yPositions = Array.from({ length: columns }, () => Math.random() * -canvas.height)
-    const chars = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ01"
-
-    const draw = () => {
-      ctx.fillStyle = "rgba(5, 5, 5, 0.08)"
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-      // Use custom font, falling back to monospace
-      ctx.font = `${fontSize}px 'NotoSansRunic-Regular', monospace`
-      ctx.fillStyle = "rgba(74, 255, 180, 0.15)"
-
-      for (let i = 0; i < yPositions.length; i++) {
-        const char = chars[Math.floor(Math.random() * chars.length)]
-        const x = i * 20
-        const y = yPositions[i]
-
-        ctx.fillText(char, x, y)
-
-        // Reset if it goes below screen or randomized threshold, adding small probability
-        if (y > canvas.height && Math.random() > 0.975) {
-          yPositions[i] = 0
-        } else {
-          yPositions[i] += 20
-        }
-      }
-    }
-
-    const interval = setInterval(draw, 33)
-
-    const handleResize = () => {
-      const oldColumns = columns
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-      columns = Math.floor(canvas.width / 20)
-      
-      // Scale array size to match new column count
-      if (columns > oldColumns) {
-        const extra = Array.from({ length: columns - oldColumns }, () => Math.random() * -canvas.height)
-        yPositions.push(...extra)
-      } else if (columns < oldColumns) {
-        yPositions.splice(columns)
-      }
-    }
-    window.addEventListener("resize", handleResize)
-
-    return () => {
-      clearInterval(interval)
-      window.removeEventListener("resize", handleResize)
-    }
-  }, [])
-
-  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none opacity-40" />
-}
+import {
+  initGyroscope,
+  drawGyroscope,
+  triggerShockwave,
+  type GyroscopeState
+} from "./gyroscope-engine"
 
 export function InitialLoaderOverlay() {
   const pathname = usePathname()
@@ -84,25 +21,94 @@ export function InitialLoaderOverlay() {
   const markModelReady = useSiteLoaderStore((s) => s.markModelReady)
 
   const [finishedSequence, setFinishedSequence] = useState(false)
+  const [isOvercharging, setIsOvercharging] = useState(false)
 
-  // 1. Auto-resolve 3D model loading on subpages or after 3.0s fail-safe timeout
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const stateRef = useRef<GyroscopeState | null>(null)
+  const rafRef = useRef<number | null>(null)
+
+  // 1. Canvas Lifecycle & rAF Loop
+  useEffect(() => {
+    if (isLoaded) return
+
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (prefersReduced) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const updateCanvasDimensions = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const w = window.innerWidth
+      const h = window.innerHeight
+      canvas.width = Math.floor(w * dpr)
+      canvas.height = Math.floor(h * dpr)
+      canvas.style.width = `${w}px`
+      canvas.style.height = `${h}px`
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+
+    updateCanvasDimensions()
+    stateRef.current = initGyroscope(window.innerWidth, window.innerHeight)
+
+    const handleResize = () => {
+      updateCanvasDimensions()
+    }
+    window.addEventListener("resize", handleResize)
+
+    const loop = (now: number) => {
+      if (!stateRef.current) return
+      const currentProgress = useSiteLoaderStore.getState().progress
+      const currentModelReady = useSiteLoaderStore.getState().isModelReady
+      const overcharging = isOvercharging || currentProgress >= 95
+
+      drawGyroscope(
+        ctx,
+        stateRef.current,
+        currentProgress,
+        currentModelReady,
+        overcharging,
+        now,
+        window.innerWidth,
+        window.innerHeight
+      )
+
+      rafRef.current = requestAnimationFrame(loop)
+    }
+
+    rafRef.current = requestAnimationFrame(loop)
+
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+      window.removeEventListener("resize", handleResize)
+    }
+  }, [isLoaded, isOvercharging])
+
+  // 2. Auto-resolve 3D model loading on subpages or after 3.0s fail-safe timeout
   useEffect(() => {
     if (pathname && pathname !== "/") {
       markModelReady()
       return
     }
 
-    // Fail-safe 3-second fallback timer if WebGL rAF loop stalls in inactive background tab
+    // Fail-safe 4.5-second fallback timer if WebGL loop stalls
     const fallbackTimer = setTimeout(() => {
       if (!useSiteLoaderStore.getState().isModelReady) {
         markModelReady()
       }
-    }, 3000)
+    }, 4500)
 
     return () => clearTimeout(fallbackTimer)
   }, [pathname, markModelReady])
 
-  // 2. Active resync on tab visibility change (Fix for inactive tab bug)
+  // 3. Active resync on tab visibility change
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
@@ -118,39 +124,53 @@ export function InitialLoaderOverlay() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
   }, [markModelReady, setProgress, setBootFinished])
 
-  // 3. Steady progress simulation
+  // 4. Smooth steady progress simulation (graceful 2.4s - 3.0s pacing)
   useEffect(() => {
     if (finishedSequence) return
 
     const interval = setInterval(() => {
       const current = useSiteLoaderStore.getState().progress
-      if (current >= 90) {
+      if (current >= 92) {
         clearInterval(interval)
         return
       }
-      setProgress(Math.min(90, current + Math.floor(Math.random() * 8) + 4))
-    }, 100)
+      // Smooth micro-increments of 1-3% every 50ms
+      const increment = current < 40 ? 2 : current < 75 ? 2 : 1
+      setProgress(Math.min(92, current + increment))
+    }, 50)
 
     return () => clearInterval(interval)
   }, [setProgress, finishedSequence])
 
-  // 4. Success Trigger & Discharge Sequence
+  // 5. Success Trigger & Supernova Shockwave Sequence
   useEffect(() => {
     if (finishedSequence) return
 
     if (isModelReady && progress >= 90) {
       setFinishedSequence(true)
-      
+      setIsOvercharging(true)
+
       const successSequence = async () => {
         setProgress(100)
-        await new Promise((r) => setTimeout(r, 350))
+        
+        // Trigger explosive shockwave on canvas
+        if (stateRef.current) {
+          triggerShockwave(
+            stateRef.current,
+            window.innerWidth / 2,
+            window.innerHeight / 2 - 40
+          )
+        }
+
+        // Brief hold for shockwave expansion and singularity flare
+        await new Promise((r) => setTimeout(r, 450))
         setBootFinished(true)
       }
       successSequence()
     }
   }, [isModelReady, progress, setProgress, setBootFinished, finishedSequence])
 
-  // 5. Prevent scrollbar issues during loading
+  // 6. Prevent scrollbar issues during loading
   useEffect(() => {
     if (!isLoaded) {
       document.body.style.overflow = "hidden"
@@ -162,79 +182,83 @@ export function InitialLoaderOverlay() {
     }
   }, [isLoaded])
 
+  // Determine dynamic telemetry string based on current boot milestone
+  const telemetryMessage =
+    progress < 30
+      ? "INITIALIZING RUNIC ENGINE"
+      : progress < 65
+      ? "SYNCHRONIZING HEXCORE MATRIX"
+      : progress < 90
+      ? "COMPILING PBR SHADERS"
+      : "LOCKING SINGULARITY // READY"
+
   return (
     <AnimatePresence>
       {!isLoaded && (
         <motion.div
           initial={{ opacity: 1 }}
           exit={{
-            clipPath: [
-              "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
-              "polygon(0% 49%, 100% 49%, 100% 51%, 0% 51%)",
-              "polygon(50% 49%, 50% 49%, 50% 51%, 50% 51%)",
-            ],
             opacity: 0,
-            transition: { duration: 0.75, ease: [0.76, 0, 0.24, 1] }
+            scale: 1.06,
+            filter: "brightness(1.6) blur(6px)",
+            transition: { duration: 0.55, ease: [0.76, 0, 0.24, 1] }
           }}
-          className="fixed inset-0 bg-[#050505] z-[10002] flex items-center justify-center p-4 font-mono select-none"
+          className="fixed inset-0 bg-[#050505] z-[10002] flex flex-col items-center justify-center p-4 font-mono select-none overflow-hidden"
         >
-          {/* Matrix Rain Background */}
-          <MatrixRain />
+          {/* Gyroscope & Shockwave 2D Canvas */}
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 pointer-events-none z-0"
+            aria-hidden
+          />
 
-          {/* Retro scanlines overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(74,255,180,0.02),rgba(74,143,255,0.01))] bg-[size:100%_4px,6px_100%] pointer-events-none opacity-80" />
-          
-          <div className="relative z-10 flex flex-col items-center gap-8 max-w-sm w-full">
-            {/* Runic Prism Engine Graphic */}
-            <div className="relative w-36 h-36 flex items-center justify-center">
-              {/* Outer Counter-Clockwise Ring */}
-              <div 
-                className="absolute w-32 h-32 rounded-full border-2 border-dashed border-[#4AFFB4]/60 animate-spin" 
-                style={{ animationDuration: '7s' }} 
-              />
-              
-              {/* Inner Clockwise Ring */}
-              <div 
-                className="absolute w-20 h-20 rounded-full border border-[#4A8FFF]/80 animate-spin" 
-                style={{ animationDuration: '4s', animationDirection: 'reverse' }} 
-              />
+          {/* Retro subtle scanline texture */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.3)_50%),linear-gradient(90deg,rgba(74,255,180,0.015),rgba(201,162,39,0.01))] bg-[size:100%_4px,6px_100%] pointer-events-none opacity-60 z-10" />
 
-              {/* Orbiting Rune Glyphs */}
-              <div className="absolute inset-0 flex items-center justify-between px-1 text-[10px] text-[#4AFFB4]/70 font-bold pointer-events-none">
-                <span>ᚠ</span>
-                <span>ᚨ</span>
-              </div>
-              <div className="absolute inset-0 flex flex-col items-center justify-between py-1 text-[10px] text-[#4A8FFF]/70 font-bold pointer-events-none">
-                <span>ᚢ</span>
-                <span>ᚦ</span>
-              </div>
+          {/* Center Gyroscope Spacer */}
+          <div className="w-64 h-64 sm:w-80 sm:h-80 pointer-events-none relative z-10" />
 
-              {/* Central Glowing Diamond Core */}
-              <div className="w-8 h-8 rotate-45 bg-gradient-to-br from-[#4AFFB4] to-[#4A8FFF] rounded-sm shadow-[0_0_25px_#4AFFB4] animate-pulse" />
-            </div>
-
-            {/* Kinetic Progress & Label */}
-            <div className="flex flex-col items-center gap-3 w-full">
-              <div className="flex items-center justify-between w-full text-xs uppercase tracking-widest text-white/60">
-                <span className="flex items-center gap-2">
-                  <span className="size-1.5 rounded-full bg-[#4AFFB4] animate-pulse" />
-                  INITIALIZING CORE
+          {/* Kinetic Progress & Telemetry HUD */}
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="relative z-20 flex flex-col items-center gap-3.5 max-w-sm w-full mt-2 px-2"
+          >
+            {/* Telemetry Header */}
+            <div className="flex items-center justify-between w-full text-[11px] uppercase tracking-wider text-white/70">
+              <span className="flex items-center gap-2 font-mono">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4AFFB4] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4AFFB4]" />
                 </span>
-                <span className="text-[#4AFFB4] font-bold">{progress}%</span>
-              </div>
-
-              {/* Liquid Gradient Progress Bar */}
-              <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden relative backdrop-blur-sm">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-[#4AFFB4] to-[#4A8FFF] rounded-full"
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ ease: "easeOut", duration: 0.15 }}
-                  style={{ boxShadow: "0 0 12px rgba(74, 255, 180, 0.4)" }}
-                />
-              </div>
+                <span className="text-white/80 font-medium">{telemetryMessage}</span>
+              </span>
+              <span className="text-[#FFE875] font-bold tracking-widest">{progress}%</span>
             </div>
-          </div>
+
+            {/* Liquid Lume Gradient Progress Bar */}
+            <div className="h-2 w-full bg-white/[0.06] border border-white/[0.08] rounded-full overflow-hidden relative backdrop-blur-md shadow-inner">
+              <motion.div
+                className="h-full bg-gradient-to-r from-[#4AFFB4] via-[#4A8FFF] to-[#FFE875] rounded-full relative"
+                initial={{ width: "0%" }}
+                animate={{ width: `${progress}%` }}
+                transition={{ ease: "easeOut", duration: 0.15 }}
+                style={{
+                  boxShadow: "0 0 16px rgba(74, 255, 180, 0.6), inset 0 0 8px rgba(255, 232, 117, 0.4)"
+                }}
+              >
+                {/* Leading Edge Spark */}
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white shadow-[0_0_8px_#ffffff]" />
+              </motion.div>
+            </div>
+
+            {/* Secondary Sub-Telemetry Footnote */}
+            <div className="flex items-center justify-between w-full text-[9px] uppercase tracking-widest text-white/30 font-mono">
+              <span>LUME-GLASS ENGINE // v2.4</span>
+              <span>SYS.OK</span>
+            </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
