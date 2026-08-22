@@ -36,7 +36,7 @@ export function Hero3DTile({ id, size, isDragging, sortableProps }: { id: string
       disableHoverScale={true}
     >
       <div 
-        className="w-full h-full min-h-full flex items-center justify-center pointer-events-none rounded-2xl overflow-hidden"
+        className="w-full h-full relative pointer-events-auto overflow-hidden"
         onMouseEnter={() => !isDisabled && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -45,9 +45,7 @@ export function Hero3DTile({ id, size, isDragging, sortableProps }: { id: string
              <div className="size-20 rounded-full border-2 border-lume-primary/10 animate-pulse" />
           </div>
         ) : (
-          <div className="w-full h-full min-h-full relative pointer-events-auto rounded-2xl overflow-hidden">
-            <PolyhedronCanvas isHovered={isHovered} isDeepDive={isDeepDive} />
-          </div>
+          <PolyhedronCanvas isHovered={isHovered} isDeepDive={isDeepDive} />
         )}
       </div>
     </BentoTile>

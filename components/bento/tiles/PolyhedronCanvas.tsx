@@ -1563,7 +1563,7 @@ function PyramidFragment({
   useFrame((state, rawDelta) => {
     const delta = Math.min(rawDelta, 0.1)
     // Proximity swell & magnetic repulsion calculation based on pointer raycast (Zero-Allocation)
-    let proximityFactor = 0.0
+    const proximityFactor = 0.0
     const tiltOffsetQuat = _scratchQuat2.identity()
 
     currentProximity.current = THREE.MathUtils.lerp(currentProximity.current, proximityFactor, delta * 8.0)
@@ -2023,6 +2023,7 @@ export default function PolyhedronCanvas({
         camera={{ position: [0, 0, 12], fov: 35 }}
         dpr={isMobile ? Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 2, 1.5) : [1, 2]}
         gl={{ alpha: true }}
+        resize={{ offsetSize: true }}
         style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, pointerEvents: 'auto' }}
       >
         <ambientLight intensity={0.36} />
