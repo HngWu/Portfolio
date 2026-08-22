@@ -18,7 +18,6 @@ export default async function DashboardLayout({
 
   const { valid } = await validateSession(token)
   if (!valid) {
-    cookieStore.delete("admin_session")
     redirect("/admin/login")
   }
 

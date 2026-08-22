@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import path from 'path'
 import fs from 'fs'
+import os from 'os'
 import { randomUUID } from 'crypto'
 import type { Database as DatabaseTypes } from '@/types/supabase'
 
@@ -35,13 +36,35 @@ let dbInstance: InstanceType<typeof Database> | null = null
 
 export function getDb(): InstanceType<typeof Database> {
   if (!dbInstance) {
-    const dataDir = path.join(process.cwd(), 'data')
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true })
+    const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
+    let dbPath: string
+
+    if (isServerless) {
+      const tmpDir = os.tmpdir()
+      dbPath = path.join(tmpDir, 'portfolio.db')
+      const sourceDbPath = path.join(process.cwd(), 'data', 'portfolio.db')
+
+      if (!fs.existsSync(dbPath) && fs.existsSync(sourceDbPath)) {
+        try {
+          fs.copyFileSync(sourceDbPath, dbPath)
+        } catch (e) {
+          console.warn("[DB] Failed to copy seed portfolio.db to /tmp:", e)
+        }
+      }
+    } else {
+      const dataDir = path.join(process.cwd(), 'data')
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true })
+      }
+      dbPath = path.join(dataDir, 'portfolio.db')
     }
-    const dbPath = path.join(dataDir, 'portfolio.db')
+
     dbInstance = new Database(dbPath)
-    dbInstance.pragma('journal_mode = WAL')
+    try {
+      dbInstance.pragma('journal_mode = WAL')
+    } catch {
+      // In certain environments/filesystems WAL might not be supported, ignore gracefully
+    }
     initSchema(dbInstance)
   }
   return dbInstance

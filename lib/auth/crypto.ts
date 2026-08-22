@@ -5,7 +5,7 @@ const scryptAsync = promisify(crypto.scrypt)
 
 const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET || 'lume_glass_portfolio_encryption_master_key_32bytes!'
 
-function getMasterKey(): Buffer {
+export function getMasterKey(): Buffer {
   return crypto.createHash('sha256').update(ENCRYPTION_SECRET).digest()
 }
 

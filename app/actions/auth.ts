@@ -16,21 +16,25 @@ const MAX_FAILED_ATTEMPTS = 5
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000 // 15 minutes
 
 async function ensureInitialAdminUser() {
-  const allUsers = getAllAdminUsersDb()
-  if (allUsers.length === 0) {
-    const initialEmail = process.env.INITIAL_ADMIN_EMAIL
-    const initialPassword = process.env.INITIAL_ADMIN_PASSWORD
-    if (!initialEmail || !initialPassword) {
-      console.warn("[SECURITY] No admin users exist. Set INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD in environment variables to bootstrap initial admin.")
-      return
+  try {
+    const allUsers = getAllAdminUsersDb()
+    if (allUsers.length === 0) {
+      const initialEmail = process.env.INITIAL_ADMIN_EMAIL
+      const initialPassword = process.env.INITIAL_ADMIN_PASSWORD
+      if (!initialEmail || !initialPassword) {
+        console.warn("[SECURITY] No admin users exist. Set INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD in environment variables to bootstrap initial admin.")
+        return
+      }
+      const { hash, salt } = await hashPassword(initialPassword)
+      createAdminUserDb({
+        email: initialEmail.toLowerCase().trim(),
+        password_hash: hash,
+        salt: salt
+      })
+      console.log(`[SECURITY SETUP] Initial Admin User Created: ${initialEmail}`)
     }
-    const { hash, salt } = await hashPassword(initialPassword)
-    createAdminUserDb({
-      email: initialEmail.toLowerCase().trim(),
-      password_hash: hash,
-      salt: salt
-    })
-    console.log(`[SECURITY SETUP] Initial Admin User Created: ${initialEmail}`)
+  } catch (e) {
+    console.warn("[SECURITY SETUP] Unable to initialize admin user:", e)
   }
 }
 
@@ -94,7 +98,7 @@ export async function login(formData: FormData) {
   cookieStore.set("admin_session", rawSessionToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7 // 7 days
   })
