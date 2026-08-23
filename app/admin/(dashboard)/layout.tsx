@@ -3,6 +3,9 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { validateSession } from "@/lib/auth/session"
 import { AdminSidebar } from "@/components/admin/AdminSidebar"
+import { AdminHeader } from "@/components/admin/AdminHeader"
+import { ToastContainer } from "@/components/admin/Toast"
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog"
 
 export default async function DashboardLayout({
   children,
@@ -22,11 +25,18 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a]">
+    <div className="flex min-h-screen bg-[#070707] text-white selection:bg-lume-primary/30 selection:text-white">
       <AdminSidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col min-w-0">
+        <AdminHeader />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl w-full mx-auto">
+          {children}
+        </main>
+      </div>
+
+      {/* Global Feedback Overlays */}
+      <ToastContainer />
+      <ConfirmDialog />
     </div>
   )
 }

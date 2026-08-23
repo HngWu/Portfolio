@@ -1,12 +1,15 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { login } from "@/app/actions/auth"
 import { GlassCard } from "@/components/ui/GlassCard"
+import { Layers, ArrowLeft, Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react"
 
 export default function LoginPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [isPending, setIsPending] = React.useState(false)
+  const [showPassword, setShowPassword] = React.useState(false)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -23,48 +26,91 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <GlassCard className="w-full max-w-md p-8">
-        <h1 className="text-2xl font-display text-white/90 mb-6 text-center">Admin Login</h1>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-mono text-white/40 uppercase tracking-widest">Email</label>
-            <input
-              required
-              name="email"
-              type="email"
-              placeholder="admin@example.com"
-              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white outline-none focus:border-lume-primary transition-colors"
-            />
+    <main className="min-h-screen flex items-center justify-center p-4 bg-[#070707] relative overflow-hidden">
+      {/* Background Decorative Glow */}
+      <div className="absolute -top-40 left-1/2 -translate-x-1/2 size-[600px] bg-lume-primary/[0.04] rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute -bottom-40 left-1/3 size-[500px] bg-blue-500/[0.03] rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="w-full max-w-md space-y-6 relative z-10 animate-in fade-in duration-300">
+        {/* Back Link */}
+        <div>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-mono text-white/40 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Return to Portfolio</span>
+          </Link>
+        </div>
+
+        <GlassCard className="p-8 space-y-6 bg-white/[0.02] border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl rounded-3xl">
+          <div className="text-center space-y-2">
+            <div className="size-12 rounded-2xl bg-lume-primary/10 border border-lume-primary/30 flex items-center justify-center text-lume-primary mx-auto shadow-[0_0_20px_rgba(74,255,180,0.15)]">
+              <Layers className="size-6" />
+            </div>
+            <h1 className="text-2xl font-display text-white tracking-tight">Admin Console</h1>
+            <p className="text-xs text-white/50 font-mono">Sign in to manage portfolio content</p>
           </div>
           
-          <div className="space-y-2">
-            <label className="text-xs font-mono text-white/40 uppercase tracking-widest">Password</label>
-            <input
-              required
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white outline-none focus:border-lume-primary transition-colors"
-            />
-          </div>
-
-          {error && (
-            <div className="text-red-500 text-xs font-mono bg-red-500/10 p-2 rounded">
-              {error}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">
+                Email Address
+              </label>
+              <input
+                required
+                name="email"
+                type="email"
+                placeholder="admin@example.com"
+                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/20 outline-none focus:border-lume-primary/50 transition-colors font-mono"
+              />
             </div>
-          )}
+            
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">
+                Access Password
+              </label>
+              <div className="relative">
+                <input
+                  required
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="w-full bg-black/60 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-xs text-white placeholder:text-white/20 outline-none focus:border-lume-primary/50 transition-colors font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/40 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+            </div>
 
-          <button
-            disabled={isPending}
-            type="submit"
-            className="w-full bg-white/10 hover:bg-white/20 text-white font-medium py-3 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50"
-          >
-            {isPending ? "Signing in..." : "Login"}
-          </button>
-        </form>
-      </GlassCard>
+            {error && (
+              <div className="text-red-400 text-xs font-mono bg-red-500/10 border border-red-500/20 p-3 rounded-xl animate-in fade-in duration-200">
+                {error}
+              </div>
+            )}
+
+            <button
+              disabled={isPending}
+              type="submit"
+              className="w-full bg-lume-primary text-black font-bold py-3 rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(74,255,180,0.25)] flex items-center justify-center gap-2 mt-2 hover:bg-lume-primary/90"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="size-4 animate-spin text-black" />
+                  <span>Authenticating...</span>
+                </>
+              ) : (
+                <span>Access Dashboard</span>
+              )}
+            </button>
+          </form>
+        </GlassCard>
+      </div>
     </main>
   )
 }

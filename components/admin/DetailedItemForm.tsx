@@ -2,11 +2,12 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Save } from "lucide-react"
+import { ArrowLeft, Save, Sparkles } from "lucide-react"
 import { DetailedItemRow, DetailedItemInsert, DetailedItemUpdate } from "@/app/actions/detailed-items"
 import { BasicInfoFields } from "./form/BasicInfoFields"
 import { TypePayloadEditor } from "./form/TypePayloadEditor"
 import { RawJsonEditor } from "./form/RawJsonEditor"
+import { useToastStore } from "@/store/useToastStore"
 
 interface DetailedItemFormProps {
   initialData?: DetailedItemRow
@@ -16,8 +17,8 @@ interface DetailedItemFormProps {
 
 export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemFormProps) {
   const router = useRouter()
+  const { addToast } = useToastStore()
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
 
   const [type, setType] = React.useState<string>(initialData?.type || "project")
   const [customType, setCustomType] = React.useState<string>(
@@ -84,7 +85,6 @@ export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemF
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    setError(null)
 
     try {
       let finalContent: any = {}
@@ -125,37 +125,34 @@ export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemF
         deep_dive: finalDeepDive
       })
 
+      addToast("Entry saved successfully", "success")
       router.push("/admin/detailed-items")
+      router.refresh()
     } catch (err: any) {
-      setError(err?.message || "Failed to save item. Check JSON formatting if using raw editor.")
+      addToast(err?.message || "Failed to save entry. Check JSON formatting.", "error")
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto pb-20 animate-in fade-in duration-300">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3.5">
           <button
             type="button"
             onClick={() => router.push("/admin/detailed-items")}
-            className="p-2 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-xl transition-all"
+            className="p-2.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-xl transition-all"
+            title="Back to Detailed Items"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="size-4" />
           </button>
           <div>
-            <h1 className="text-2xl font-display text-white/90">{title}</h1>
-            <p className="text-sm text-white/50">Manage detailed resume and portfolio database entry.</p>
+            <h1 className="text-xl sm:text-2xl font-display text-white">{title}</h1>
+            <p className="text-xs text-white/50 mt-0.5">Manage detailed resume, education, or project database entry.</p>
           </div>
         </div>
       </div>
-
-      {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm">
-          {error}
-        </div>
-      )}
 
       <form onSubmit={handleFormSubmit} className="space-y-6">
         <BasicInfoFields
@@ -210,21 +207,21 @@ export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemF
           setRawDeepDive={setRawDeepDive}
         />
 
-        <div className="flex justify-end gap-4 pt-4">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
           <button
             type="button"
             onClick={() => router.push("/admin/detailed-items")}
-            className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white/70 rounded-xl text-sm font-medium transition-all"
+            className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-xl text-xs font-semibold transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-6 py-2.5 bg-lume-primary text-black font-semibold rounded-xl hover:bg-lume-primary/90 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 bg-lume-primary text-black font-bold rounded-xl hover:bg-lume-primary/90 transition-all active:scale-95 disabled:opacity-50 text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(74,255,180,0.25)]"
           >
-            <Save className="w-4 h-4" />
-            {isSubmitting ? "Saving..." : "Save Entry"}
+            <Save className="size-3.5" />
+            <span>{isSubmitting ? "Saving..." : "Save Entry"}</span>
           </button>
         </div>
       </form>
