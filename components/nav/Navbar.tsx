@@ -14,7 +14,7 @@ export function Navbar() {
     <motion.header
       initial={{ opacity: 0, y: -24 }}
       animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : -24 }}
-      transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+      transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1], delay: 0.28 }}
       className="fixed top-6 left-6 right-6 z-50 flex justify-between items-center pointer-events-none select-none"
     >
       {/* Brand Logo / Home Link */}

@@ -21,10 +21,11 @@ export function BentoGrid({
   const prevIgnited = React.useRef(isIgnited)
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
 
-  // Handle initial bento radial shockwave entrance
+  // Handle initial bento radial shockwave entrance from Hero Tile origin
   React.useEffect(() => {
     if (!gridRef.current) return
-    const tiles = gridRef.current.querySelectorAll('[data-id]')
+    const tiles = Array.from(gridRef.current.querySelectorAll('[data-id]')) as HTMLElement[]
+    if (tiles.length === 0) return
 
     const prefersReduced =
       typeof window !== "undefined" &&
@@ -34,15 +35,23 @@ export function BentoGrid({
       if (prefersReduced) {
         gsap.set(tiles, { opacity: 0 })
       } else {
-        gsap.set(tiles, { opacity: 0, y: 20, scale: 0.93, filter: "brightness(1.5) blur(4px)" })
+        gsap.set(tiles, { opacity: 0, y: 24, scale: 0.94, filter: "brightness(1.5) blur(6px)" })
       }
     } else {
       if (prefersReduced) {
         gsap.to(tiles, { opacity: 1, duration: 0.35 })
       } else {
+        // Find hero tile index to serve as the epicenter of the radial wave
+        let heroIndex = tiles.findIndex(t => 
+          t.getAttribute('data-id')?.includes('hero') || 
+          t.getAttribute('data-id')?.includes('polyhedron') ||
+          t.querySelector('canvas')
+        )
+        if (heroIndex === -1) heroIndex = 0
+
         gsap.fromTo(
           tiles,
-          { opacity: 0, y: 20, scale: 0.93, filter: "brightness(1.5) blur(4px)" },
+          { opacity: 0, y: 24, scale: 0.94, filter: "brightness(1.5) blur(6px)" },
           {
             opacity: 1,
             y: 0,
@@ -50,18 +59,20 @@ export function BentoGrid({
             filter: "brightness(1) blur(0px)",
             duration: 0.85,
             stagger: {
-              amount: 0.42,
-              grid: "auto",
-              from: "center"
+              amount: 0.38,
+              from: heroIndex,
+              grid: "auto"
             },
-            ease: "power2.out",
+            ease: "power3.out",
             onStart: function () {
               const target = this.targets()[0] as HTMLElement
               if (target) {
-                target.style.boxShadow = "0 0 24px rgba(74, 255, 180, 0.28)"
+                target.style.boxShadow = "0 0 35px rgba(74, 255, 180, 0.38)"
+                target.style.borderColor = "rgba(74, 255, 180, 0.6)"
                 setTimeout(() => {
                   target.style.boxShadow = ""
-                }, 600)
+                  target.style.borderColor = ""
+                }, 650)
               }
             }
           }

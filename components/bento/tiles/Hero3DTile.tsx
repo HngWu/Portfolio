@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { BentoTile } from "../BentoTile"
 import dynamic from "next/dynamic"
 import { useViewModeStore } from "@/store/useViewModeStore"
+import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 
 // Non-SSR dynamic import to prevent WebGL initialization errors
 const PolyhedronCanvas = dynamic(() => import("./PolyhedronCanvas"), { 
@@ -20,7 +21,27 @@ export function Hero3DTile({ id, size, isDragging, sortableProps }: { id: string
   const [isHovered, setIsHovered] = useState(false)
   const mode = useViewModeStore((state) => state.mode)
   const isDeepDive = mode === "deep"
-  const isDisabled = !!sortableProps || !!isDragging;
+  const isDisabled = !!sortableProps || !!isDragging
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const setHeroAnchorRect = useSiteLoaderStore((s) => s.setHeroAnchorRect)
+
+  useEffect(() => {
+    const updateAnchor = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        setHeroAnchorRect({
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+          width: rect.width,
+          height: rect.height
+        })
+      }
+    }
+
+    updateAnchor()
+    window.addEventListener("resize", updateAnchor)
+    return () => window.removeEventListener("resize", updateAnchor)
+  }, [setHeroAnchorRect])
 
   return (
     <BentoTile 
@@ -36,6 +57,7 @@ export function Hero3DTile({ id, size, isDragging, sortableProps }: { id: string
       disableHoverScale={true}
     >
       <div 
+        ref={containerRef}
         className="w-full h-full relative pointer-events-auto overflow-hidden"
         onMouseEnter={() => !isDisabled && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}

@@ -40,7 +40,8 @@ export const sharedSpellState = {
   isHit: false,
   modeProgress: 0.0, // 0 for quick pitch (gold), 1 for deep dive (default indigo)
   scrollProgress: 0.0,
-  assemblyProgress: 1.0
+  assemblyProgress: 1.0,
+  isVisible: true
 }
 
 if (typeof window !== 'undefined') {
@@ -175,7 +176,9 @@ float fbm(vec3 p) {
   float v = 0.0;
   float a = 0.5;
   vec3 shift = vec3(100.0);
-  for (int i = 0; i < 3; ++i) {
+  int octaves = (uLowPowerMode > 0.5) ? 2 : 4;
+  for (int i = 0; i < 4; ++i) {
+    if (i >= octaves) break;
     v += a * snoise(p);
     p = p * 2.0 + shift;
     a *= 0.5;
@@ -317,88 +320,104 @@ function makeRectangularTorus(
 /**
  * CUSTOM PLASMA ENERGY HEART SHADER - ARCANE DOMAIN-WARPED FBM
  */
+export const DomainWarpPlasmaShader = {
+  vertexShader: `
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec3 vWorldPosition;
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vViewPosition = -mvPosition.xyz;
+      vNormal = normalize(normalMatrix * normal);
+      vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `,
+  fragmentShader: `
+    uniform float uTime;
+    uniform float uGlowIntensity;
+    uniform float uHoverActive;
+    uniform float uIgniteActive;
+    uniform float uLockdownActive;
+    uniform float uModeProgress;
+    uniform float uHeartbeatPulse;
+    uniform float uLowPowerMode;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec3 vWorldPosition;
+    varying vec2 vUv;
+
+    ${FBM_DOMAIN_WARPING_GLSL}
+
+    void main() {
+      // Mode interpolation: Quick Pitch (0.0, Gold theme) vs Deep Dive (1.0, Default Arcane)
+      vec3 colorVoidBase  = vec3(0.09, 0.03, 0.18); // Arcane Deep Violet
+      vec3 colorTealBase  = vec3(0.02, 0.94, 0.70); // Arcane Electric Teal
+      vec3 colorWhiteBase = vec3(1.0, 1.0, 1.0);
+
+      vec3 colorVoidGold  = vec3(0.18, 0.08, 0.0);  // Warm Gold Void
+      vec3 colorTealGold  = vec3(1.0, 0.73, 0.08);  // Shiny Yellow Gold
+
+      vec3 colorVoid  = mix(colorVoidGold, colorVoidBase, uModeProgress);
+      vec3 colorTeal  = mix(colorTealGold, colorTealBase, uModeProgress);
+      vec3 colorWhite = colorWhiteBase;
+
+      if (uIgniteActive > 0.5) {
+        colorVoid  = vec3(0.18, 0.01, 0.01); // Dark Magma
+        colorTeal  = vec3(1.0, 0.47, 0.0);   // Smoldering Gold/Orange
+      } else if (uLockdownActive > 0.5) {
+        colorVoid  = vec3(0.06, 0.08, 0.14); // Low-power Slate Blue
+        colorTeal  = vec3(0.48, 0.27, 0.05); // Dim Amber
+      }
+
+      // Domain-warped FBM liquid energy simulation
+      float warp = domainWarpNoise(vWorldPosition * 2.2, uTime * 0.85);
+      
+      // Multi-zone color blending (Void -> Midtone -> Electric Corona)
+      float mix1 = smoothstep(-0.35, 0.35, warp);
+      vec3 mixColor = mix(colorVoid, colorTeal, mix1);
+      
+      // Smooth Fresnel energy corona without sudden white flare
+      vec3 normal = normalize(vNormal);
+      vec3 viewDir = normalize(vViewPosition);
+      float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 2.8);
+      mixColor = mix(mixColor, colorWhite, fresnel * 0.5 * uHeartbeatPulse);
+      
+      // Lissajous Energy Filaments in UV Space
+      float fil1 = sin(vUv.x * 28.0 + sin(uTime * 1.8)) * cos(vUv.y * 28.0 - cos(uTime * 1.8));
+      float fil2 = sin(vUv.y * 38.0 - uTime * 2.2) * cos(vUv.x * 18.0 + uTime * 1.2);
+      float filament = pow(abs(fil1 * fil2), 3.2) * 0.35;
+      vec3 filamentColor = (uIgniteActive > 0.5) ? vec3(1.0, 0.9, 0.4) : mix(vec3(1.0, 0.88, 0.5), vec3(0.8, 0.95, 1.0), uModeProgress);
+      mixColor += filament * filamentColor;
+
+      // Emanating radial halo wave rings
+      float dist = length(vViewPosition.xy);
+      float ringWave = sin(dist * 14.0 - uTime * 6.0) * 0.5 + 0.5;
+      float ring = pow(ringWave, 8.0) * 0.15 * (1.0 - clamp(dist / 3.0, 0.0, 1.0));
+      mixColor += ring * colorTeal;
+
+      float finalGlow = uGlowIntensity * uHeartbeatPulse;
+      gl_FragColor = vec4(mixColor * finalGlow, 0.96);
+    }
+  `,
+  uniforms: {
+    uTime: { value: 0 },
+    uGlowIntensity: { value: 1.4 },
+    uHoverActive: { value: 0 },
+    uIgniteActive: { value: 0 },
+    uLockdownActive: { value: 0 },
+    uModeProgress: { value: 0.0 },
+    uHeartbeatPulse: { value: 1.0 },
+    uLowPowerMode: { value: 0.0 }
+  }
+}
+
 function createPlasmaMaterial() {
   return new THREE.ShaderMaterial({
-    vertexShader: `
-      varying vec3 vNormal;
-      varying vec3 vViewPosition;
-      varying vec3 vWorldPosition;
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        vViewPosition = -mvPosition.xyz;
-        vNormal = normalize(normalMatrix * normal);
-        vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
-        gl_Position = projectionMatrix * mvPosition;
-      }
-    `,
-    fragmentShader: `
-      uniform float uTime;
-      uniform float uGlowIntensity;
-      uniform float uHoverActive;
-      uniform float uIgniteActive;
-      uniform float uLockdownActive;
-      uniform float uModeProgress;
-      uniform float uHeartbeatPulse;
-      varying vec3 vNormal;
-      varying vec3 vViewPosition;
-      varying vec3 vWorldPosition;
-      varying vec2 vUv;
-
-      ${FBM_DOMAIN_WARPING_GLSL}
-
-      void main() {
-        // Mode interpolation: Quick Pitch (0.0, Gold theme) vs Deep Dive (1.0, Default Arcane)
-        vec3 colorVoidBase  = vec3(0.09, 0.03, 0.18); // Arcane Deep Violet
-        vec3 colorTealBase  = vec3(0.02, 0.94, 0.70); // Arcane Electric Teal
-        vec3 colorWhiteBase = vec3(1.0, 1.0, 1.0);
-
-        vec3 colorVoidGold  = vec3(0.18, 0.08, 0.0);  // Warm Gold Void
-        vec3 colorTealGold  = vec3(1.0, 0.73, 0.08);  // Shiny Yellow Gold
-
-        vec3 colorVoid  = mix(colorVoidGold, colorVoidBase, uModeProgress);
-        vec3 colorTeal  = mix(colorTealGold, colorTealBase, uModeProgress);
-        vec3 colorWhite = colorWhiteBase;
-
-        if (uIgniteActive > 0.5) {
-          colorVoid  = vec3(0.18, 0.01, 0.01); // Dark Magma
-          colorTeal  = vec3(1.0, 0.47, 0.0);   // Smoldering Gold/Orange
-        } else if (uLockdownActive > 0.5) {
-          colorVoid  = vec3(0.06, 0.08, 0.14); // Low-power Slate Blue
-          colorTeal  = vec3(0.48, 0.27, 0.05); // Dim Amber
-        }
-
-        // Domain-warped FBM liquid energy simulation
-        float warp = domainWarpNoise(vWorldPosition * 2.2, uTime * 0.85);
-        
-        // Multi-zone color blending (Void -> Midtone -> Electric Corona)
-        float mix1 = smoothstep(-0.35, 0.35, warp);
-        vec3 mixColor = mix(colorVoid, colorTeal, mix1);
-        
-        // Smooth Fresnel energy corona without sudden white flare
-        vec3 normal = normalize(vNormal);
-        vec3 viewDir = normalize(vViewPosition);
-        float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 2.8);
-        mixColor = mix(mixColor, colorWhite, fresnel * 0.5 * uHeartbeatPulse);
-        
-        // Lissajous Energy Filaments in UV Space
-        float fil1 = sin(vUv.x * 28.0 + sin(uTime * 1.8)) * cos(vUv.y * 28.0 - cos(uTime * 1.8));
-        float fil2 = sin(vUv.y * 38.0 - uTime * 2.2) * cos(vUv.x * 18.0 + uTime * 1.2);
-        float filament = pow(abs(fil1 * fil2), 3.2) * 0.35;
-        vec3 filamentColor = (uIgniteActive > 0.5) ? vec3(1.0, 0.9, 0.4) : mix(vec3(1.0, 0.88, 0.5), vec3(0.8, 0.95, 1.0), uModeProgress);
-        mixColor += filament * filamentColor;
-
-        // Emanating radial halo wave rings
-        float dist = length(vViewPosition.xy);
-        float ringWave = sin(dist * 14.0 - uTime * 6.0) * 0.5 + 0.5;
-        float ring = pow(ringWave, 8.0) * 0.15 * (1.0 - clamp(dist / 3.0, 0.0, 1.0));
-        mixColor += ring * colorTeal;
-
-        float finalGlow = uGlowIntensity * uHeartbeatPulse;
-        gl_FragColor = vec4(mixColor * finalGlow, 0.96);
-      }
-    `,
+    vertexShader: DomainWarpPlasmaShader.vertexShader,
+    fragmentShader: DomainWarpPlasmaShader.fragmentShader,
     uniforms: {
       uTime: { value: 0 },
       uGlowIntensity: { value: 1.4 },
@@ -406,7 +425,8 @@ function createPlasmaMaterial() {
       uIgniteActive: { value: 0 },
       uLockdownActive: { value: 0 },
       uModeProgress: { value: 0.0 },
-      uHeartbeatPulse: { value: 1.0 }
+      uHeartbeatPulse: { value: 1.0 },
+      uLowPowerMode: { value: 0.0 }
     },
     transparent: true
   })
@@ -452,10 +472,10 @@ function createEdgeGlowMaterial() {
         if (uLockdown > 0.5) opacity *= 0.25;
 
         // Multiply col by an HDR multiplier so it glows brilliantly under Bloom
-        float glowIntensity = (1.6 + uHover * 0.8) * uPulseScale;
+        float glowIntensity = (1.15 + uHover * 0.25) * uPulseScale;
         if (uIgnite > 0.5) glowIntensity *= 1.5;
 
-        gl_FragColor = vec4(col * glowIntensity, opacity);
+        gl_FragColor = vec4(col * glowIntensity, opacity * 0.82);
       }
     `,
     uniforms: {
@@ -521,9 +541,9 @@ const SuspendedRunesShader = {
       vec3 viewDir = normalize(vViewPosition);
       float fresnel = pow(max(dot(normal, viewDir), 0.0), 2.5);
       
-      vec3 glowColor = uRuneColor * (1.2 + uHoverActive * 0.8) * uPulseScale;
+      vec3 glowColor = uRuneColor * (0.95 + uHoverActive * 0.3) * uPulseScale;
       vec3 finalColor = glowColor * runeMask * fresnel;
-      float alpha = clamp(runeMask * fresnel * 0.95, 0.0, 1.0);
+      float alpha = clamp(runeMask * fresnel * 0.90, 0.0, 1.0);
       
       gl_FragColor = vec4(finalColor, alpha);
     }
@@ -554,6 +574,7 @@ function GravityParticles() {
   }, [])
 
   useFrame((_state, rawDelta) => {
+    if (!sharedSpellState.isVisible || (typeof document !== 'undefined' && document.hidden)) return
     const delta = Math.min(rawDelta, 0.1)
     const active = sharedSpellState.antigravity
     if (pointsRef.current) {
@@ -599,6 +620,12 @@ function GravityParticles() {
     }
     return new THREE.CanvasTexture(canvas)
   }, [])
+
+  useEffect(() => {
+    return () => {
+      dustTex.dispose()
+    }
+  }, [dustTex])
 
   return (
     <points ref={pointsRef}>
@@ -675,6 +702,7 @@ function LightningArcs({
   const numPaths = 16 // Increased from 8
   
   useFrame(() => {
+    if (!sharedSpellState.isVisible || (typeof document !== 'undefined' && document.hidden)) return
     const active = sharedSpellState.lightning
     
     // Check Detonation Act (0.0 to 0.25 scroll) using the centralized scroll progress
@@ -777,10 +805,12 @@ function LightningArcs({
 function PolyhedronScene({ 
   isHovered, 
   isDeepDive, 
+  isVisibleRef,
   onHoverFragment 
 }: { 
   isHovered: boolean, 
   isDeepDive: boolean,
+  isVisibleRef?: React.RefObject<boolean>,
   onHoverFragment: (rune: string | null, name: string | null, desc: string | null) => void 
 }) {
   const groupRef = useRef<THREE.Group>(null)
@@ -943,6 +973,59 @@ function PolyhedronScene({
     shared: sharedMaterial
   })
 
+  // Concept 1: 54-Pyramid Magnetic Snap Assembly & Core Plasma Ignition Bloom
+  const loaderPhase = useSiteLoaderStore((s) => s.phase)
+  const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
+
+  useEffect(() => {
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+    if (prefersReduced || useSiteLoaderStore.getState().isLoaded) {
+      sharedSpellState.assemblyProgress = 1.0
+      return
+    }
+
+    // Set to zero dispersal initially when loading
+    sharedSpellState.assemblyProgress = 0.0
+  }, [])
+
+  useEffect(() => {
+    if (loaderPhase === "igniting" || (isLoaded && sharedSpellState.assemblyProgress < 0.99)) {
+      const prefersReduced =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+      if (prefersReduced) {
+        sharedSpellState.assemblyProgress = 1.0
+        return
+      }
+
+      // Magnetic snap assembly of 54 pyramids from zero-G dispersal
+      gsap.to(sharedSpellState, {
+        assemblyProgress: 1.0,
+        duration: 0.65,
+        ease: "expo.out",
+        overwrite: "auto"
+      })
+
+      // Core plasma heart bloom ignition flare
+      if (materialsRef.current?.core?.uniforms?.uGlowIntensity) {
+        gsap.fromTo(
+          materialsRef.current.core.uniforms.uGlowIntensity,
+          { value: 4.5 },
+          {
+            value: 1.05,
+            duration: 0.55,
+            ease: "sine.inOut",
+            overwrite: "auto"
+          }
+        )
+      }
+    }
+  }, [loaderPhase, isLoaded])
+
   // Clean up materials and geometries on unmount to prevent leaks
   useEffect(() => {
     return () => {
@@ -1026,12 +1109,46 @@ function PolyhedronScene({
 
   const currentMagneticTilt = useRef(new THREE.Euler(0, 0, 0))
 
+  // Lightweight rolling frame-time tracker for adaptive performance watchdog
+  const fpsTrackerRef = useRef({
+    frameCount: 0,
+    elapsedTime: 0,
+    isLowPower: false
+  })
+
   useFrame((state, rawDelta) => {
+    if ((isVisibleRef && !isVisibleRef.current) || !sharedSpellState.isVisible || (typeof document !== 'undefined' && document.hidden)) {
+      return
+    }
     const delta = Math.min(rawDelta, 0.1)
     const t = state.clock.getElapsedTime()
 
     // Pull directly from materialsRef.current to modify without React linter immutability triggers
     const mats = materialsRef.current
+
+    // Adaptive performance watchdog: 2-second sampling window
+    const tracker = fpsTrackerRef.current
+    tracker.frameCount++
+    tracker.elapsedTime += delta
+
+    if (tracker.elapsedTime >= 2.0) {
+      const averageFps = tracker.frameCount / tracker.elapsedTime
+      // If client GPU struggles below 42 FPS, dynamically activate low-power shader mode
+      if (averageFps < 42) {
+        tracker.isLowPower = true
+      }
+      tracker.frameCount = 0
+      tracker.elapsedTime = 0
+    }
+
+    const targetLowPower = tracker.isLowPower ? 1.0 : 0.0
+    if (mats.core?.uniforms?.uLowPowerMode) {
+      mats.core.uniforms.uLowPowerMode.value = THREE.MathUtils.lerp(
+        mats.core.uniforms.uLowPowerMode.value,
+        targetLowPower,
+        delta * 3.0
+      )
+    }
 
     // 1. Smooth mode transition logic: Quick Pitch (isDeepDive=false -> Gold) to Deep Dive (isDeepDive=true -> Indigo PBR)
     const targetMode = isDeepDive ? 1.0 : 0.0
@@ -1236,9 +1353,8 @@ function PolyhedronScene({
         ref.current.position.lerp(_gyroZero, delta * 6.0)
       }
 
-      // Volumetric core shatter scale effect (Concentric rings micro-swell)
-      const targetScale = 1.0 + sharedSpellState.shatterProgress * 0.18
-      ref.current.scale.setScalar(targetScale)
+      // Concentric rings stay fixed at 1.0 (no expansion on hover)
+      ref.current.scale.setScalar(1.0)
     })
 
     // Update concentric ring text colors dynamically to match their emissive shader colors
@@ -1255,20 +1371,18 @@ function PolyhedronScene({
       }
     })
 
-
-
-    // Core smooth scale & steady luminosity
+    // Core smooth scale & steady luminosity (toned down for sleek cinematic look)
     if (coreRef.current) {
       let corePulse = 1.0
       
       if (sharedSpellState.ignite) {
         corePulse = 1.10 + Math.sin(t * 18.0) * 0.15
-        mats.core.uniforms.uGlowIntensity.value = 3.8 + Math.sin(t * 18.0) * 0.8
+        mats.core.uniforms.uGlowIntensity.value = 3.2 + Math.sin(t * 18.0) * 0.6
       } else if (sharedSpellState.lockdown) {
         corePulse = 0.88
         mats.core.uniforms.uGlowIntensity.value = 0.35
       } else {
-        mats.core.uniforms.uGlowIntensity.value = 1.4
+        mats.core.uniforms.uGlowIntensity.value = 1.05
       }
 
       coreRef.current.scale.setScalar(0.72 * corePulse * sharedSpellState.pulseScale)
@@ -1278,10 +1392,10 @@ function PolyhedronScene({
     let targetTiltX = 0
     let targetTiltY = 0
     if (isHovered || isDeepDive) {
-      targetTiltX = pointer.y * 0.32 // Pitch up/down
-      targetTiltY = pointer.x * 0.38 // Yaw left/right
-      mats.core.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.core.uniforms.uHoverActive.value, 1.0, delta * 6.0)
-      mats.edge.uniforms.uHover.value = THREE.MathUtils.lerp(mats.edge.uniforms.uHover.value, 1.0, delta * 6.0)
+      targetTiltX = pointer.y * 0.28 // Pitch up/down
+      targetTiltY = pointer.x * 0.32 // Yaw left/right
+      mats.core.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.core.uniforms.uHoverActive.value, 0.0, delta * 6.0)
+      mats.edge.uniforms.uHover.value = THREE.MathUtils.lerp(mats.edge.uniforms.uHover.value, 0.0, delta * 6.0)
     } else {
       mats.core.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.core.uniforms.uHoverActive.value, 0.0, delta * 6.0)
       mats.edge.uniforms.uHover.value = THREE.MathUtils.lerp(mats.edge.uniforms.uHover.value, 0.0, delta * 6.0)
@@ -1323,7 +1437,7 @@ function PolyhedronScene({
           <primitive object={coreMaterial} attach="material" />
         </mesh>
 
-        <pointLight ref={coreLightRef} intensity={28} color="#4AFFB4" distance={8} />
+        <pointLight ref={coreLightRef} intensity={14} color="#4AFFB4" distance={8} />
 
 
 
@@ -1554,6 +1668,13 @@ function PyramidFragment({
     return { geometry: geo, edgeGeo: new THREE.EdgesGeometry(geo), runeData }
   }, [data])
 
+  useEffect(() => {
+    return () => {
+      geometry.dispose()
+      edgeGeo.dispose()
+    }
+  }, [geometry, edgeGeo])
+
   const currentRuneColor = useRef(new THREE.Color("#ffb44a"))
 
   const floatHashX = useMemo(() => (Math.abs(Math.sin(data.center.x * 12.9898 + data.center.y * 78.233)) * 43758.5453) % (Math.PI * 2), [data.center])
@@ -1561,6 +1682,7 @@ function PyramidFragment({
   const floatHashZ = useMemo(() => (Math.abs(Math.sin(data.center.z * 71.182 + data.center.x * 93.412)) * 43758.5453) % (Math.PI * 2), [data.center])
 
   useFrame((state, rawDelta) => {
+    if (!sharedSpellState.isVisible || (typeof document !== 'undefined' && document.hidden)) return
     const delta = Math.min(rawDelta, 0.1)
     // Proximity swell & magnetic repulsion calculation based on pointer raycast (Zero-Allocation)
     const proximityFactor = 0.0
@@ -1568,8 +1690,8 @@ function PyramidFragment({
 
     currentProximity.current = THREE.MathUtils.lerp(currentProximity.current, proximityFactor, delta * 8.0)
 
-    // Base expansion - constant size without expanding or swelling on hover
-    const baseExpansion = isDeepDive ? 0.32 : 0.24
+    // Base expansion - constant compact size without expanding or swelling on hover
+    const baseExpansion = isDeepDive ? 0.26 : 0.20
     let targetExp = baseExpansion
 
     // Recoil Snap-back interpolation logic for clicks
@@ -1842,6 +1964,7 @@ export default function PolyhedronCanvas({
   isDeepDive?: boolean 
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const isVisibleRef = useRef(true)
   const [ready, setReady] = useState(true)
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
   
@@ -1853,6 +1976,46 @@ export default function PolyhedronCanvas({
   }>({ rune: null, runeName: null, loreDesc: null })
 
   const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    let isIntersecting = true
+    let isTabActive = typeof document !== "undefined" ? !document.hidden : true
+
+    const updateVisibility = () => {
+      const visible = isIntersecting && isTabActive
+      isVisibleRef.current = visible
+      sharedSpellState.isVisible = visible
+    }
+
+    const handleVisibilityChange = () => {
+      isTabActive = typeof document !== "undefined" ? !document.hidden : true
+      updateVisibility()
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    const el = containerRef.current
+    let observer: IntersectionObserver | null = null
+
+    if (el && typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          isIntersecting = entry.isIntersecting
+          updateVisibility()
+        },
+        { threshold: 0.05 }
+      )
+      observer.observe(el)
+    }
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      if (observer && el) {
+        observer.unobserve(el)
+        observer.disconnect()
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const checkMobile = () => {
@@ -2021,32 +2184,33 @@ export default function PolyhedronCanvas({
     <div ref={containerRef} className="w-full h-full relative overflow-hidden">
       <Canvas 
         camera={{ position: [0, 0, 12], fov: 35 }}
-        dpr={isMobile ? Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 2, 1.5) : [1, 2]}
+        dpr={isMobile ? 1.0 : [1, 1.5]}
         gl={{ alpha: true }}
         resize={{ offsetSize: true }}
         style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, pointerEvents: 'auto' }}
       >
-        <ambientLight intensity={0.36} />
-        <pointLight position={[10, 10, 10]} intensity={1.8} />
-        <directionalLight position={[-10, 8, -5]} intensity={1.0} color="#ffffff" />
+        <ambientLight intensity={0.24} />
+        <pointLight position={[10, 10, 10]} intensity={1.2} />
+        <directionalLight position={[-10, 8, -5]} intensity={0.7} color="#ffffff" />
         
         <Suspense fallback={null}>
           <PolyhedronScene 
             isHovered={isHovered} 
             isDeepDive={isDeepDive} 
+            isVisibleRef={isVisibleRef}
             onHoverFragment={(rune, name, desc) => {
               setHud({ rune, runeName: name, loreDesc: desc })
             }}
           />
         </Suspense>
 
-        {/* Volumetric Bloom Postprocessing - Enabled on both mobile and desktop, calibrated for optimal elegance */}
+        {/* Volumetric Bloom Postprocessing - Calibrated for sleek cinematic balance */}
         <EffectComposer multisampling={isMobile ? 4 : 8}>
           <Bloom 
-            luminanceThreshold={0.06} 
+            luminanceThreshold={0.08} 
             luminanceSmoothing={0.80} 
             mipmapBlur 
-            intensity={0.75}
+            intensity={0.55}
           />
         </EffectComposer>
       </Canvas>

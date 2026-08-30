@@ -10,7 +10,23 @@ export interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
-  ({ className, glowColor = "none", interactive = true, children, ...props }, ref) => {
+  (
+    {
+      className,
+      glowColor = "none",
+      interactive = true,
+      children,
+      onMouseEnter,
+      onMouseMove,
+      onMouseLeave,
+      ...props
+    },
+    ref
+  ) => {
+    const [isHovered, setIsHovered] = React.useState(false)
+    const localRef = React.useRef<HTMLDivElement | null>(null)
+    const rectRef = React.useRef<DOMRect | null>(null)
+
     const mouseX = useMotionValue(0)
     const mouseY = useMotionValue(0)
 
@@ -18,18 +34,54 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
     const x = useSpring(mouseX, springConfig)
     const y = useSpring(mouseY, springConfig)
 
+    React.useEffect(() => {
+      const handleResize = () => {
+        if (localRef.current && isHovered) {
+          rectRef.current = localRef.current.getBoundingClientRect()
+        }
+      }
+
+      window.addEventListener("resize", handleResize)
+      return () => {
+        window.removeEventListener("resize", handleResize)
+      }
+    }, [isHovered])
+
+    const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+      setIsHovered(true)
+      rectRef.current = e.currentTarget.getBoundingClientRect()
+      onMouseEnter?.(e)
+    }
+
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
       if (interactive) {
-        const rect = e.currentTarget.getBoundingClientRect()
+        if (!rectRef.current) {
+          rectRef.current = e.currentTarget.getBoundingClientRect()
+        }
+        const rect = rectRef.current
         mouseX.set(e.clientX - rect.left)
         mouseY.set(e.clientY - rect.top)
       }
-      props.onMouseMove?.(e)
+      onMouseMove?.(e)
     }
 
     const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
-      props.onMouseLeave?.(e)
+      setIsHovered(false)
+      rectRef.current = null
+      onMouseLeave?.(e)
     }
+
+    const setRefs = React.useCallback(
+      (node: HTMLDivElement | null) => {
+        localRef.current = node
+        if (typeof ref === "function") {
+          ref(node)
+        } else if (ref) {
+          ref.current = node
+        }
+      },
+      [ref]
+    )
 
     const glowClasses = {
       mint: "hover:border-[rgba(74,255,180,0.3)] shadow-[0_0_40px_rgba(74,255,180,0.05)]",
@@ -49,13 +101,15 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
 
     return (
       <div
-        ref={ref}
+        ref={setRefs}
+        onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         className={cn(
           "relative group bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden",
           "shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]",
           "transition-all duration-500",
+          "transform-gpu backface-hidden",
           glowClasses[glowColor],
           className
         )}
@@ -64,7 +118,7 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
         {/* Liquid Glass Background Layer */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
           {/* Base Noise/Grain */}
-          <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+          <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay bg-[url('/assets/noise.svg')]" />
           
           {/* Dynamic Interactive Glow */}
           {interactive && (
@@ -79,10 +133,12 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
           )}
 
           {/* Animated Liquid Blobs */}
-          <div className="absolute inset-0 opacity-20 filter blur-[80px] pointer-events-none text-lume-primary">
-            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-current opacity-20 animate-liquid-1" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-lume-secondary/20 animate-liquid-2" />
-          </div>
+          {isHovered && (
+            <div className="absolute inset-0 opacity-20 filter blur-[80px] pointer-events-none text-lume-primary">
+              <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-current opacity-20 animate-liquid-1" />
+              <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-lume-secondary/20 animate-liquid-2" />
+            </div>
+          )}
         </div>
 
         {/* Shine/Refraction Effect */}

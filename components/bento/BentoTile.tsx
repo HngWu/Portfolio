@@ -50,7 +50,7 @@ export function BentoTile({
   disableHoverScale = false,
 }: BentoTileProps) {
   const { navigateWithTransition } = usePageTransition()
-  const { ref, onMouseMove, onMouseLeave } = useTilt()
+  const { ref, onMouseEnter, onMouseMove, onMouseLeave } = useTilt()
   const mode = useViewModeStore((state) => state.mode)
   const isDeepDive = mode === "deep" && canDeepDive
   const forceMobile = React.useContext(ForceMobileContext)
@@ -156,6 +156,7 @@ export function BentoTile({
         <div className={cn("backface-hidden z-10 w-full", isMobileOverride && !forceFullHeight ? (isDeepDive ? "absolute inset-0 h-0 overflow-hidden w-full" : "relative h-auto w-full") : "absolute inset-0 h-full w-full")}>
           <GlassCard
             ref={ref}
+            onMouseEnter={onMouseEnter}
             onMouseMove={onMouseMove}
             onMouseLeave={onMouseLeave}
             glowColor={glowColor}

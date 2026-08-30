@@ -8,6 +8,7 @@ import {
   initGyroscope,
   drawGyroscope,
   triggerShockwave,
+  triggerImplosion,
   type GyroscopeState
 } from "./gyroscope-engine"
 
@@ -27,10 +28,8 @@ export function InitialLoaderOverlay() {
   const stateRef = useRef<GyroscopeState | null>(null)
   const rafRef = useRef<number | null>(null)
 
-  // 1. Canvas Lifecycle & rAF Loop
+  // 1. Canvas Lifecycle & rAF Loop (runs until component unmounts from DOM)
   useEffect(() => {
-    if (isLoaded) return
-
     const prefersReduced =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -89,9 +88,9 @@ export function InitialLoaderOverlay() {
       }
       window.removeEventListener("resize", handleResize)
     }
-  }, [isLoaded, isOvercharging])
+  }, [isOvercharging])
 
-  // 2. Auto-resolve 3D model loading on subpages or after 3.0s fail-safe timeout
+  // 2. Auto-resolve 3D model loading on subpages or after fail-safe timeout
   useEffect(() => {
     if (pathname && pathname !== "/") {
       markModelReady()
@@ -108,23 +107,7 @@ export function InitialLoaderOverlay() {
     return () => clearTimeout(fallbackTimer)
   }, [pathname, markModelReady])
 
-  // 3. Active resync on tab visibility change
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        if (!useSiteLoaderStore.getState().isLoaded) {
-          markModelReady()
-          setProgress(100)
-          setBootFinished(true)
-        }
-      }
-    }
-
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
-  }, [markModelReady, setProgress, setBootFinished])
-
-  // 4. Smooth steady progress simulation (graceful 2.4s - 3.0s pacing)
+  // 3. Smooth steady progress simulation (~1.5s total load pacing)
   useEffect(() => {
     if (finishedSequence) return
 
@@ -134,15 +117,21 @@ export function InitialLoaderOverlay() {
         clearInterval(interval)
         return
       }
-      // Smooth micro-increments of 1-3% every 50ms
-      const increment = current < 40 ? 2 : current < 75 ? 2 : 1
+      // Smooth micro-increments of 2-3% every 35ms
+      const increment = current < 40 ? 3 : current < 75 ? 2 : 1
       setProgress(Math.min(92, current + increment))
-    }, 50)
+    }, 35)
 
     return () => clearInterval(interval)
   }, [setProgress, finishedSequence])
 
-  // 5. Success Trigger & Supernova Shockwave Sequence
+  const phase = useSiteLoaderStore((s) => s.phase)
+  const heroAnchorRect = useSiteLoaderStore((s) => s.heroAnchorRect)
+  const startTransition = useSiteLoaderStore((s) => s.startTransition)
+  const triggerIgnition = useSiteLoaderStore((s) => s.triggerIgnition)
+  const completeTransition = useSiteLoaderStore((s) => s.completeTransition)
+
+  // 5. Concept 1: Singularity Implosion & Arcane Handoff Sequence
   useEffect(() => {
     if (finishedSequence) return
 
@@ -150,29 +139,63 @@ export function InitialLoaderOverlay() {
       setFinishedSequence(true)
       setIsOvercharging(true)
 
+      const prefersReduced =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
       const successSequence = async () => {
         setProgress(100)
-        
-        // Trigger explosive shockwave on canvas
-        if (stateRef.current) {
-          triggerShockwave(
-            stateRef.current,
-            window.innerWidth / 2,
-            window.innerHeight / 2 - 40
-          )
+
+        if (prefersReduced || (pathname && pathname !== "/")) {
+          // Instant graceful bypass for reduced motion or subpages
+          triggerIgnition()
+          completeTransition()
+          return
         }
 
-        // Brief hold for shockwave expansion and singularity flare
-        await new Promise((r) => setTimeout(r, 450))
-        setBootFinished(true)
+        // 1. Calculate trajectory anchor coordinates for 3D Hero tile
+        const w = window.innerWidth
+        const h = window.innerHeight
+        let targetX = w < 768 ? w * 0.5 : w * 0.28
+        let targetY = w < 768 ? h * 0.42 : h * 0.36
+
+        if (heroAnchorRect) {
+          targetX = heroAnchorRect.x
+          targetY = heroAnchorRect.y
+        }
+
+        // 2. Trigger inward singularity implosion and high-velocity beam in 2D engine
+        if (stateRef.current) {
+          triggerImplosion(stateRef.current, targetX, targetY)
+        }
+        startTransition()
+
+        // 3. Beam arrival at 3D Hero Tile (~280ms): Ignite HexCore & Bento induction
+        await new Promise((r) => setTimeout(r, 280))
+        triggerIgnition()
+
+        // 4. Settle transition after radial wave completes (~550ms later)
+        await new Promise((r) => setTimeout(r, 550))
+        completeTransition()
       }
+
       successSequence()
     }
-  }, [isModelReady, progress, setProgress, setBootFinished, finishedSequence])
+  }, [
+    isModelReady,
+    progress,
+    pathname,
+    heroAnchorRect,
+    setProgress,
+    startTransition,
+    triggerIgnition,
+    completeTransition,
+    finishedSequence
+  ])
 
   // 6. Prevent scrollbar issues during loading
   useEffect(() => {
-    if (!isLoaded) {
+    if (phase === "booting") {
       document.body.style.overflow = "hidden"
     } else {
       document.body.style.overflow = ""
@@ -180,7 +203,7 @@ export function InitialLoaderOverlay() {
     return () => {
       document.body.style.overflow = ""
     }
-  }, [isLoaded])
+  }, [phase])
 
   // Determine dynamic telemetry string based on current boot milestone
   const telemetryMessage =
@@ -192,38 +215,48 @@ export function InitialLoaderOverlay() {
       ? "COMPILING PBR SHADERS"
       : "LOCKING SINGULARITY // READY"
 
+  if (phase === "settled") return null
+
   return (
-    <AnimatePresence>
-      {!isLoaded && (
-        <motion.div
-          initial={{ opacity: 1 }}
-          exit={{
-            opacity: 0,
-            scale: 1.06,
-            filter: "brightness(1.6) blur(6px)",
-            transition: { duration: 0.55, ease: [0.76, 0, 0.24, 1] }
-          }}
-          className="fixed inset-0 bg-[#050505] z-[10002] flex flex-col items-center justify-center p-4 font-mono select-none overflow-hidden"
-        >
-          {/* Gyroscope & Shockwave 2D Canvas */}
-          <canvas
-            ref={canvasRef}
-            className="absolute inset-0 pointer-events-none z-0"
-            aria-hidden
-          />
+    <div className="fixed inset-0 z-[10002] font-mono select-none overflow-hidden pointer-events-none">
+      {/* 1. Backdrop Veil: Starts opaque dark, dissolves immediately when implosion starts */}
+      <motion.div
+        initial={{ opacity: 1 }}
+        animate={{
+          opacity: phase === "booting" ? 1 : 0
+        }}
+        transition={{
+          duration: 0.45,
+          ease: [0.22, 1, 0.36, 1]
+        }}
+        className="absolute inset-0 bg-[#050505] z-0 pointer-events-auto"
+      />
 
-          {/* Retro subtle scanline texture */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.3)_50%),linear-gradient(90deg,rgba(74,255,180,0.015),rgba(201,162,39,0.01))] bg-[size:100%_4px,6px_100%] pointer-events-none opacity-60 z-10" />
+      {/* 2. Gyroscope, Singularity Implosion & Arcane Handoff 2D Canvas */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 pointer-events-none z-10"
+        aria-hidden
+      />
 
-          {/* Center Gyroscope Spacer */}
-          <div className="w-64 h-64 sm:w-80 sm:h-80 pointer-events-none relative z-10" />
+      {/* 3. Retro subtle scanline texture */}
+      <motion.div 
+        animate={{ opacity: phase === "booting" ? 0.6 : 0 }}
+        transition={{ duration: 0.35 }}
+        className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.3)_50%),linear-gradient(90deg,rgba(74,255,180,0.015),rgba(201,162,39,0.01))] bg-[size:100%_4px,6px_100%] pointer-events-none z-10" 
+      />
 
-          {/* Kinetic Progress & Telemetry HUD */}
+      {/* 4. Center Gyroscope Spacer */}
+      <div className="w-64 h-64 sm:w-80 sm:h-80 pointer-events-none relative z-10 mx-auto my-auto" />
+
+      {/* 5. Kinetic Progress & Telemetry HUD */}
+      <AnimatePresence>
+        {phase === "booting" && (
           <motion.div 
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="relative z-20 flex flex-col items-center gap-3.5 max-w-sm w-full mt-2 px-2"
+            exit={{ opacity: 0, y: -20, scale: 0.95, filter: "blur(6px)", transition: { duration: 0.25 } }}
+            className="absolute inset-x-0 bottom-24 sm:bottom-28 z-20 flex flex-col items-center gap-3.5 max-w-sm mx-auto px-4 pointer-events-none"
           >
             {/* Telemetry Header */}
             <div className="flex items-center justify-between w-full text-[11px] uppercase tracking-wider text-white/70">
@@ -259,8 +292,8 @@ export function InitialLoaderOverlay() {
               <span>SYS.OK</span>
             </div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }

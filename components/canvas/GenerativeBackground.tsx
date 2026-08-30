@@ -1,7 +1,7 @@
 "use client"
 
 import { Canvas, useFrame } from "@react-three/fiber"
-import { useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import * as THREE from "three"
 import { useViewModeStore } from "@/store/useViewModeStore"
 
@@ -16,6 +16,18 @@ const MODE_COLOR: Record<"quick" | "deep", string> = {
 function Scene() {
   const count = 1500
   const mode = useViewModeStore((s) => s.mode)
+  const isVisibleRef = useRef(true)
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      isVisibleRef.current = !document.hidden
+    }
+    handleVisibilityChange()
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
+  }, [])
 
   // Use a deterministic pseudo-random generator to satisfy React's purity rules
   // Simple LCG (Linear Generator)
@@ -41,6 +53,9 @@ function Scene() {
   const materialRef = useRef<THREE.PointsMaterial>(null)
 
   useFrame(() => {
+    if (!isVisibleRef.current || (typeof document !== "undefined" && document.hidden)) {
+      return
+    }
     const time = performance.now() / 1000
     if (pointsRef.current) {
       pointsRef.current.rotation.y = time * 0.05
@@ -74,7 +89,7 @@ function Scene() {
 export function GenerativeBackground() {
   return (
     <div className="fixed inset-0 z-[-10] opacity-[0.05] pointer-events-none">
-      <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
+      <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={1.0}>
         <Scene />
       </Canvas>
     </div>
