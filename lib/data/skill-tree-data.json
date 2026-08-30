@@ -1,0 +1,172 @@
+{
+  "categories": [
+    {
+      "id": "core",
+      "label": "Core Curriculum",
+      "color": "#4AFFB4"
+    },
+    {
+      "id": "specialization",
+      "label": "Specialization",
+      "color": "#4A8FFF"
+    },
+    {
+      "id": "elective",
+      "label": "Electives & Innovation",
+      "color": "#C9A227"
+    },
+    {
+      "id": "certification",
+      "label": "Certifications",
+      "color": "#FF4A8F"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "core-cs",
+      "label": "Core CS & Algorithms",
+      "tier": 1,
+      "category": "core",
+      "status": "mastered",
+      "icon": "terminal",
+      "description": "Foundational computer science, algorithmic complexity, data structures, and low-level computational principles.",
+      "skills": ["Data Structures", "Algorithms", "Discrete Math", "OOP", "C++ / Java"],
+      "linkedProject": {
+        "title": "TriviaDuel",
+        "url": "/projects/triviaduel",
+        "description": "Real-time multiplayer trivia platform with resilient AI generation.",
+        "badge": "Full-Stack & Algorithms"
+      }
+    },
+    {
+      "id": "web-architecture",
+      "label": "Modern Web Architecture",
+      "tier": 2,
+      "category": "specialization",
+      "status": "mastered",
+      "icon": "layers",
+      "description": "Production web application architecture, Next.js App Router, SSR/ISR pipelines, and cinematic glassmorphism UI.",
+      "skills": ["Next.js 16", "React 19", "TypeScript", "Tailwind CSS v4", "Zustand"],
+      "linkedProject": {
+        "title": "LumeGlass Portfolio",
+        "url": "/projects/lumeglassportfolio",
+        "description": "Cinematic, dark minimalist portfolio showing modern animations and 3D visual elements.",
+        "badge": "Web Architecture"
+      }
+    },
+    {
+      "id": "enterprise-backend",
+      "label": "Enterprise Backend Systems",
+      "tier": 2,
+      "category": "core",
+      "status": "mastered",
+      "icon": "server",
+      "description": "Robust enterprise microservices, relational database design, connection pooling, and high-throughput REST APIs.",
+      "skills": ["Java Spring Boot", "MariaDB", "PostgreSQL", "Liquibase", "Redis Caching"]
+    },
+    {
+      "id": "cloud-devops",
+      "label": "Cloud & DevOps Infrastructure",
+      "tier": 3,
+      "category": "certification",
+      "status": "mastered",
+      "icon": "cloud",
+      "description": "Container orchestration, automated CI/CD deployment pipelines, OpenShift infrastructure, and cloud telemetry.",
+      "skills": ["Docker", "Kubernetes", "OpenShift", "Jenkins CI/CD", "Linux Admin"]
+    },
+    {
+      "id": "creative-tech",
+      "label": "Creative Tech & 3D WebGL",
+      "tier": 3,
+      "category": "elective",
+      "status": "mastered",
+      "icon": "sparkles",
+      "description": "Real-time 3D graphics, procedural shader development, volumetric rendering, and physics simulations.",
+      "skills": ["Three.js", "React Three Fiber", "GLSL Shaders", "GSAP 3", "WebGL"],
+      "linkedProject": {
+        "title": "Arcturus Engine",
+        "url": "/projects/arcturusengine",
+        "description": "WebGL-based real-time voxel graphics engine featuring volumetric lighting.",
+        "badge": "3D Graphics"
+      }
+    },
+    {
+      "id": "distributed-systems",
+      "label": "Distributed Systems & DB Engines",
+      "tier": 4,
+      "category": "specialization",
+      "status": "in-progress",
+      "icon": "cpu",
+      "description": "Consensus protocols, Raft state machines, LSM-tree storage engines, and partition tolerance in distributed nodes.",
+      "skills": ["Distributed Consensus", "Raft", "LSM-Trees", "gRPC", "Concurrency"],
+      "linkedProject": {
+        "title": "Chronos DB",
+        "url": "https://github.com",
+        "description": "High-throughput time-series and key-value distributed storage engine with Raft replication.",
+        "badge": "Distributed Systems"
+      }
+    },
+    {
+      "id": "ai-agentic-systems",
+      "label": "AI & Agentic Architectures",
+      "tier": 4,
+      "category": "elective",
+      "status": "in-progress",
+      "icon": "brain",
+      "description": "Autonomous multi-agent swarms, tool-calling pipelines, structured cognitive loops, and embedding-backed vector search.",
+      "skills": ["Multi-Agent Orchestration", "Tool Calling", "Vector Embeddings", "RAG", "MCP Protocol"]
+    },
+    {
+      "id": "quantum-security",
+      "label": "Post-Quantum Cryptography",
+      "tier": 5,
+      "category": "specialization",
+      "status": "locked",
+      "icon": "lock",
+      "description": "Lattice-based cryptography algorithms (Kyber / Dilithium), quantum resistance protocols, and zero-knowledge verification.",
+      "skills": ["Kyber & Dilithium", "Lattice Cryptography", "Zero Knowledge Proofs", "Security Auditing"]
+    }
+  ],
+  "edges": [
+    {
+      "from": "core-cs",
+      "to": "web-architecture"
+    },
+    {
+      "from": "core-cs",
+      "to": "enterprise-backend"
+    },
+    {
+      "from": "web-architecture",
+      "to": "creative-tech"
+    },
+    {
+      "from": "enterprise-backend",
+      "to": "cloud-devops"
+    },
+    {
+      "from": "enterprise-backend",
+      "to": "distributed-systems"
+    },
+    {
+      "from": "cloud-devops",
+      "to": "distributed-systems"
+    },
+    {
+      "from": "web-architecture",
+      "to": "ai-agentic-systems"
+    },
+    {
+      "from": "creative-tech",
+      "to": "ai-agentic-systems"
+    },
+    {
+      "from": "distributed-systems",
+      "to": "quantum-security"
+    },
+    {
+      "from": "ai-agentic-systems",
+      "to": "quantum-security"
+    }
+  ]
+}

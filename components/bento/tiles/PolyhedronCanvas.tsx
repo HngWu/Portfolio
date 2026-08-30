@@ -1,7 +1,7 @@
 "use client"
 
-import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber"
-import React, { Suspense, useRef, useMemo, useState, useEffect } from "react"
+import { Canvas, useFrame, ThreeEvent, useThree } from "@react-three/fiber"
+import React, { Suspense, useRef, useMemo, useState, useEffect, useContext } from "react"
 import { Float, Text } from "@react-three/drei"
 import * as THREE from "three"
 import { EffectComposer, Bloom } from "@react-three/postprocessing"
@@ -12,6 +12,7 @@ import { RingLightningArcs } from "./hexcore/LightningArcs"
 import { useIgniteStore } from "@/store/useIgniteStore"
 import { useModeTransitionStore } from "@/store/useModeTransitionStore"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
+import { ForceMobileContext } from "@/components/bento/ForceMobileContext"
 
 // Ancient runes for a mystical high-tech look
 const RUNES = ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ", "ᛇ", "ᛈ", "ᛉ", "ᛊ", "ᛏ", "ᛒ", "ᛖ", "ᛗ", "ᛚ", "ᛜ", "ᛞ", "ᛟ"]
@@ -806,11 +807,13 @@ function PolyhedronScene({
   isHovered, 
   isDeepDive, 
   isVisibleRef,
+  isEffectiveMobile,
   onHoverFragment 
 }: { 
   isHovered: boolean, 
   isDeepDive: boolean,
   isVisibleRef?: React.RefObject<boolean>,
+  isEffectiveMobile?: boolean,
   onHoverFragment: (rune: string | null, name: string | null, desc: string | null) => void 
 }) {
   const groupRef = useRef<THREE.Group>(null)
@@ -1288,10 +1291,11 @@ function PolyhedronScene({
 
     // Stable camera positioning with dynamic viewport-based zoom scaling to prevent horizontal clipping on narrow mobile devices
     const aspect = state.size.width / state.size.height
+    const baseZ = isEffectiveMobile ? 14.2 : 12.0
     if (aspect < 0.85) {
-      camera.position.z = Math.max(12.0, 10.2 / aspect)
+      camera.position.z = Math.max(baseZ, (baseZ * 0.85) / aspect)
     } else {
-      camera.position.z = 12.0
+      camera.position.z = baseZ
     }
 
     // Gyroscopic Motion Resonance: Precession, Cursor Slerp and Harmonic Local Spin
@@ -1956,6 +1960,20 @@ function PyramidFragment({
 /**
  * CONTAINER AND RENDER EXPORT
  */
+function CameraController({ isEffectiveMobile }: { isEffectiveMobile: boolean }) {
+  const { camera, size } = useThree()
+
+  useEffect(() => {
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.aspect = size.width / size.height
+      camera.position.z = isEffectiveMobile ? 14.2 : 12
+      camera.updateProjectionMatrix()
+    }
+  }, [camera, size.width, size.height, isEffectiveMobile])
+
+  return null
+}
+
 export default function PolyhedronCanvas({ 
   isHovered = false, 
   isDeepDive = false 
@@ -1967,6 +1985,7 @@ export default function PolyhedronCanvas({
   const isVisibleRef = useRef(true)
   const [ready, setReady] = useState(true)
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
+  const forceMobile = useContext(ForceMobileContext)
   
   // Tooltip HUD Overlay state
   const [hud, setHud] = useState<{
@@ -1976,6 +1995,7 @@ export default function PolyhedronCanvas({
   }>({ rune: null, runeName: null, loreDesc: null })
 
   const [isMobile, setIsMobile] = useState(false)
+  const isEffectiveMobile = isMobile || forceMobile
 
   useEffect(() => {
     let isIntersecting = true
@@ -2019,12 +2039,26 @@ export default function PolyhedronCanvas({
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+      const isWindowMobile = typeof window !== "undefined" && window.innerWidth < 768
+      const isContainerMobile = containerRef.current ? containerRef.current.clientWidth < 480 : false
+      setIsMobile(isWindowMobile || isContainerMobile)
     }
     checkMobile()
     window.addEventListener("resize", checkMobile)
+
+    let resizeObserver: ResizeObserver | null = null
+    if (containerRef.current && typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        checkMobile()
+      })
+      resizeObserver.observe(containerRef.current)
+    }
+
     return () => {
       window.removeEventListener("resize", checkMobile)
+      if (resizeObserver) {
+        resizeObserver.disconnect()
+      }
     }
   }, [])
 
@@ -2183,12 +2217,13 @@ export default function PolyhedronCanvas({
   return (
     <div ref={containerRef} className="w-full h-full relative overflow-hidden">
       <Canvas 
-        camera={{ position: [0, 0, 12], fov: 35 }}
-        dpr={isMobile ? 1.0 : [1, 1.5]}
+        camera={{ position: [0, 0, isEffectiveMobile ? 14.2 : 12], fov: 35 }}
+        dpr={isEffectiveMobile ? 1.0 : [1, 1.5]}
         gl={{ alpha: true }}
         resize={{ offsetSize: true }}
         style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, pointerEvents: 'auto' }}
       >
+        <CameraController isEffectiveMobile={isEffectiveMobile} />
         <ambientLight intensity={0.24} />
         <pointLight position={[10, 10, 10]} intensity={1.2} />
         <directionalLight position={[-10, 8, -5]} intensity={0.7} color="#ffffff" />
@@ -2198,6 +2233,7 @@ export default function PolyhedronCanvas({
             isHovered={isHovered} 
             isDeepDive={isDeepDive} 
             isVisibleRef={isVisibleRef}
+            isEffectiveMobile={isEffectiveMobile}
             onHoverFragment={(rune, name, desc) => {
               setHud({ rune, runeName: name, loreDesc: desc })
             }}
@@ -2205,7 +2241,7 @@ export default function PolyhedronCanvas({
         </Suspense>
 
         {/* Volumetric Bloom Postprocessing - Calibrated for sleek cinematic balance */}
-        <EffectComposer multisampling={isMobile ? 4 : 8}>
+        <EffectComposer multisampling={isEffectiveMobile ? 0 : 4}>
           <Bloom 
             luminanceThreshold={0.08} 
             luminanceSmoothing={0.80} 

@@ -10,7 +10,6 @@ import {
   RotateCcw, 
   Check, 
   Loader2, 
-  MousePointer2, 
   Settings2, 
   EyeOff, 
   Eye,
@@ -23,13 +22,13 @@ import {
   ArrowDown, 
   Sparkles,
   Layers,
-  Filter,
+  Box,
   X
 } from "lucide-react"
 import { Database } from "@/types/supabase"
-import { BentoGrid } from "@/components/bento/BentoGrid"
 import { TileRenderer } from "@/components/bento/TileRenderer"
 import { ForceMobileContext } from "@/components/bento/ForceMobileContext"
+import { Render3DContext, Render3DMode } from "@/components/bento/Render3DContext"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { useToastStore } from "@/store/useToastStore"
 import { useConfirmStore } from "@/store/useConfirmStore"
@@ -81,6 +80,7 @@ export default function TilesPage() {
   const [initialTiles, setInitialTiles] = React.useState<TileRowType[]>([])
   const [viewType, setViewType] = React.useState<'canvas' | 'list'>('canvas')
   const [layoutMode, setLayoutMode] = React.useState<'desktop' | 'mobile'>('desktop')
+  const [render3DMode, setRender3DMode] = React.useState<Render3DMode>('live')
   const [activeId, setActiveId] = React.useState<UniqueIdentifier | null>(null)
   const [isSaving, setIsSaving] = React.useState(false)
   const [saveStatus, setSaveStatus] = React.useState<'idle' | 'saving' | 'success'>('idle')
@@ -112,12 +112,9 @@ export default function TilesPage() {
 
   React.useEffect(() => {
     let isMounted = true
-    const timer = setTimeout(() => {
-      load(isMounted)
-    }, 0)
+    load(isMounted)
     return () => { 
       isMounted = false
-      clearTimeout(timer)
     }
   }, [load])
 
@@ -125,7 +122,12 @@ export default function TilesPage() {
     if (layoutMode === 'mobile') {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
-  }, [layoutMode])
+    // Smoothly notify Three.js / WebGL canvas to recalibrate aspect ratio
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'))
+    }, 60)
+    return () => clearTimeout(timer)
+  }, [layoutMode, render3DMode])
 
   const sortedTiles = React.useMemo(() => {
     return [...tiles].sort((a, b) => {
@@ -374,24 +376,56 @@ export default function TilesPage() {
               <span className="hidden sm:inline">Mobile</span>
             </button>
           </div>
+
+          {/* Mode 3: 3D Model Display Toggle (Live 3D vs Blueprint Template) */}
+          <div className="flex p-1 bg-black/40 border border-white/10 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setRender3DMode('live')}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-medium rounded-lg transition-all",
+                render3DMode === 'live'
+                  ? "bg-emerald-500/20 text-emerald-400 shadow-sm border border-emerald-500/30 font-semibold"
+                  : "text-white/40 hover:text-white"
+              )}
+              title="Render interactive 3D WebGL model"
+            >
+              <Box className="size-3.5 text-lume-primary" />
+              <span className="hidden sm:inline">Live 3D</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setRender3DMode('template')}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-medium rounded-lg transition-all",
+                render3DMode === 'template'
+                  ? "bg-white/10 text-white shadow-sm border border-white/10"
+                  : "text-white/40 hover:text-white"
+              )}
+              title="Render lightweight wireframe blueprint template"
+            >
+              <Layers className="size-3.5 text-blue-400" />
+              <span className="hidden sm:inline">Blueprint</span>
+            </button>
+          </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative min-w-[220px]">
-          <Search className="size-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+        {/* Search Bar - 42px height with clear focus ring */}
+        <div className="relative min-w-[240px] sm:min-w-[280px]">
+          <Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tiles by ID or type..."
-            className="w-full bg-black/50 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-lume-primary/50 transition-colors font-mono"
+            placeholder="Search tiles by ID, type, content..."
+            className="w-full h-[42px] bg-black/50 border border-white/10 rounded-xl pl-10 pr-9 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-mono"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white transition-colors"
             >
-              <X className="size-3" />
+              <X className="size-3.5" />
             </button>
           )}
         </div>
@@ -421,37 +455,79 @@ export default function TilesPage() {
       {/* View 1: Canvas Grid Editor */}
       {viewType === 'canvas' ? (
         <section className="space-y-4">
-          <div className="relative w-full border border-white/5 rounded-3xl bg-[#050505] min-h-[850px] overflow-visible p-4 sm:p-8 md:p-12 shadow-[0_0_100px_rgba(0,0,0,0.8)]">
+          <div className="relative w-full border border-white/5 rounded-3xl bg-[#050505] min-h-[850px] overflow-visible p-6 sm:p-8 md:p-10 shadow-[0_0_100px_rgba(0,0,0,0.8)]">
+            {/* Canvas Header with Viewport Telemetry Badge */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 mb-6 border-b border-white/5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/10 text-xs font-mono text-white/80">
+                  <span className={cn(
+                    "size-2 rounded-full animate-pulse",
+                    layoutMode === 'desktop' ? "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]" : "bg-lume-primary shadow-[0_0_8px_rgba(74,255,180,0.6)]"
+                  )} />
+                  <span>
+                    {layoutMode === 'desktop'
+                      ? "Desktop (1400px Max • 12-Column Grid)"
+                      : "Mobile (420px Device • 2-Column Grid)"}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] font-mono text-white/40">
+                <Sparkles className="size-3 text-lume-primary/60" />
+                <span>Live Canvas Simulation (Drag to Reorder)</span>
+              </div>
+            </div>
+
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
             >
-              <div className={cn(
-                "w-full transition-all duration-500",
-                layoutMode === 'mobile' 
-                  ? "max-w-[480px] mx-auto border border-white/10 p-5 rounded-[40px] bg-black/60 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative ring-8 ring-white/5 min-h-[750px]" 
-                  : "h-fit"
-              )}>
-                <ForceMobileContext.Provider value={layoutMode === 'mobile'}>
-                  <SortableContext items={displayedTiles.map(t => t.id)} strategy={rectSortingStrategy}>
-                    <BentoGrid className={cn(layoutMode === 'mobile' && "max-w-[480px]")}>
-                      {displayedTiles.map((tile, index) => (
-                        <SortablePreviewTile 
-                          key={tile.id} 
-                          tile={{ 
-                            ...tile, 
-                            order_val: layoutMode === 'desktop' ? index + 1 : tile.order_val,
-                            order_val_mobile: layoutMode === 'mobile' ? index + 1 : tile.order_val_mobile
-                          }} 
-                          onClick={() => router.push(`/admin/tiles/${tile.id}`)}
-                        />
-                      ))}
-                    </BentoGrid>
-                  </SortableContext>
-                </ForceMobileContext.Provider>
-              </div>
+              <Render3DContext.Provider value={render3DMode}>
+                {layoutMode === 'desktop' ? (
+                  /* Desktop Canvas: 1:1 with Home Page 12-column grid */
+                  <div className="max-w-[1400px] mx-auto w-full transition-all duration-300">
+                    <ForceMobileContext.Provider value={false}>
+                      <SortableContext items={displayedTiles.map(t => t.id)} strategy={rectSortingStrategy}>
+                        <div className="grid grid-cols-12 auto-rows-[minmax(60px,auto)] grid-flow-dense gap-3 xl:gap-4 max-w-[1400px] mx-auto w-full">
+                          {displayedTiles.map((tile, index) => (
+                            <SortablePreviewTile 
+                              key={tile.id} 
+                              tile={{ 
+                                ...tile, 
+                                order_val: index + 1,
+                              }} 
+                              allTiles={tiles}
+                              onClick={() => router.push(`/admin/tiles/${tile.id}`)}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </ForceMobileContext.Provider>
+                  </div>
+                ) : (
+                  /* Mobile Simulation Frame: 420px max centered frame with 2-column grid */
+                  <div className="max-w-[420px] mx-auto p-4 rounded-[36px] bg-black/70 border border-white/10 ring-4 ring-white/5 shadow-2xl transition-all duration-300">
+                    <ForceMobileContext.Provider value={true}>
+                      <SortableContext items={displayedTiles.map(t => t.id)} strategy={rectSortingStrategy}>
+                        <div className="grid grid-cols-2 auto-rows-[minmax(60px,auto)] grid-flow-dense gap-2 w-full">
+                          {displayedTiles.map((tile, index) => (
+                            <SortablePreviewTile 
+                              key={tile.id} 
+                              tile={{ 
+                                ...tile, 
+                                order_val_mobile: index + 1,
+                              }} 
+                              allTiles={tiles}
+                              onClick={() => router.push(`/admin/tiles/${tile.id}`)}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </ForceMobileContext.Provider>
+                  </div>
+                )}
+              </Render3DContext.Provider>
 
               <DragOverlay dropAnimation={{
                 sideEffects: defaultDropAnimationSideEffects({
@@ -459,9 +535,11 @@ export default function TilesPage() {
                 }),
               }}>
                 {activeTile ? (
-                  <div className={cn("opacity-90 cursor-grabbing h-full w-full shadow-2xl", getSizeClasses(activeTile.size, false, layoutMode === 'mobile'))}>
-                    <TileRenderer tile={activeTile} isDragging={true} />
-                  </div>
+                  <Render3DContext.Provider value="template">
+                    <div className={cn("opacity-90 cursor-grabbing h-full w-full shadow-2xl pointer-events-none", getSizeClasses(activeTile.size, false, layoutMode === 'mobile'))}>
+                      <TileRenderer tile={activeTile} isDragging={true} allTiles={tiles} />
+                    </div>
+                  </Render3DContext.Provider>
                 ) : null}
               </DragOverlay>
             </DndContext>
@@ -470,34 +548,52 @@ export default function TilesPage() {
       ) : (
         /* View 2: Compact Touch-Friendly Reorder List */
         <section className="space-y-3">
+          {/* List View Viewport Indicator */}
+          <div className="flex items-center justify-between gap-3 px-1 py-1">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/10 text-xs font-mono text-white/80">
+              <span className={cn(
+                "size-2 rounded-full animate-pulse",
+                layoutMode === 'desktop' ? "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]" : "bg-lume-primary shadow-[0_0_8px_rgba(74,255,180,0.6)]"
+              )} />
+              <span>
+                {layoutMode === 'desktop'
+                  ? "Desktop Ordering Sequence"
+                  : "Mobile Ordering Sequence"}
+              </span>
+            </div>
+            <div className="text-[11px] font-mono text-white/40">
+              {displayedTiles.length} {displayedTiles.length === 1 ? 'tile' : 'tiles'} listed
+            </div>
+          </div>
+
           {displayedTiles.map((tile, index) => (
             <GlassCard
               key={tile.id}
-              className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-lume-primary/30 transition-all duration-300"
+              className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-lume-primary/30 transition-all duration-300"
             >
-              <div className="flex items-center gap-3 overflow-hidden">
+              <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
                 {/* Stepper Buttons (Up/Down) for Touch Reordering */}
-                <div className="flex flex-col gap-1 shrink-0">
+                <div className="flex flex-col gap-1.5 shrink-0 mr-1 sm:mr-2">
                   <button
                     onClick={() => handleMoveItem(tile.id, 'up')}
                     disabled={index === 0}
-                    className="p-1 rounded-md bg-white/5 hover:bg-white/10 text-white/50 hover:text-white disabled:opacity-20 transition-all"
+                    className="p-1.5 sm:p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 transition-all active:scale-95"
                     title="Move Up"
                   >
-                    <ArrowUp className="size-3" />
+                    <ArrowUp className="size-3.5" />
                   </button>
                   <button
                     onClick={() => handleMoveItem(tile.id, 'down')}
                     disabled={index === displayedTiles.length - 1}
-                    className="p-1 rounded-md bg-white/5 hover:bg-white/10 text-white/50 hover:text-white disabled:opacity-20 transition-all"
+                    className="p-1.5 sm:p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 transition-all active:scale-95"
                     title="Move Down"
                   >
-                    <ArrowDown className="size-3" />
+                    <ArrowDown className="size-3.5" />
                   </button>
                 </div>
 
                 {/* Order Number Badge */}
-                <div className="size-9 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center font-mono text-xs font-bold text-white/70 shrink-0">
+                <div className="size-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center font-mono text-xs font-bold text-white/70 shrink-0">
                   #{layoutMode === 'mobile' ? (tile.order_val_mobile || index + 1) : (tile.order_val || index + 1)}
                 </div>
 
@@ -527,7 +623,7 @@ export default function TilesPage() {
               </div>
 
               {/* Action Buttons: Toggle Visibility + Edit */}
-              <div className="flex items-center justify-end gap-2 border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0">
+              <div className="flex items-center justify-end gap-2 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
                 <button
                   type="button"
                   onClick={() => handleToggleHidden(tile.id)}
@@ -546,7 +642,7 @@ export default function TilesPage() {
                 <button
                   type="button"
                   onClick={() => router.push(`/admin/tiles/${tile.id}`)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-lume-primary/10 hover:bg-lume-primary/20 text-lume-primary border border-lume-primary/20 rounded-xl text-xs font-semibold transition-all"
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-lume-primary/10 hover:bg-lume-primary/20 text-lume-primary border border-lume-primary/20 rounded-xl text-xs font-semibold transition-all active:scale-95"
                 >
                   <Settings2 className="size-3.5" />
                   <span>Edit Content</span>
@@ -566,7 +662,7 @@ export default function TilesPage() {
 
       {/* Floating Action Bar */}
       <div className={cn(
-        "fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] transition-all duration-500 flex flex-wrap items-center justify-center gap-2 sm:gap-3 p-2 sm:p-2.5 bg-black/80 border border-white/15 backdrop-blur-3xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] max-w-[95vw] w-fit",
+        "fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] transition-all duration-300 ease-out flex flex-wrap items-center justify-center gap-2 sm:gap-3 p-2.5 sm:p-3 px-4 sm:px-5 bg-black/80 border border-white/15 backdrop-blur-3xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] max-w-[95vw] w-fit",
         (hasChanges || saveStatus !== 'idle') ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
       )}>
         <div className="flex items-center gap-2.5 px-3 sm:px-4 py-1.5 border-r border-white/10">
@@ -584,7 +680,7 @@ export default function TilesPage() {
         {saveStatus === 'idle' && (
           <button 
             onClick={handleDiscardChanges}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs text-white/50 hover:text-white hover:bg-white/5 rounded-xl transition-all font-semibold uppercase tracking-wider"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs text-white/50 hover:text-white hover:bg-white/5 rounded-xl transition-all font-semibold uppercase tracking-wider active:scale-95"
           >
             <RotateCcw className="size-3.5" />
             <span className="hidden sm:inline">Discard</span>
@@ -622,44 +718,60 @@ export default function TilesPage() {
 interface SortablePreviewTileProps {
   tile: TileRowType;
   onClick: () => void;
+  allTiles?: TileRowType[];
 }
 
-function SortablePreviewTile({ tile, onClick }: SortablePreviewTileProps) {
+function SortablePreviewTile({ tile, onClick, allTiles }: SortablePreviewTileProps) {
   const forceMobile = React.useContext(ForceMobileContext)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tile.id })
-  const sortableProps = {
-    ref: setNodeRef, ...attributes, ...listeners,
-    style: {
-      transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-      transition, zIndex: isDragging ? 100 : undefined,
-    },
-    onClick: () => {
-      onClick()
-    }
+  
+  const style = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transition,
+    zIndex: isDragging ? 100 : undefined,
   }
 
   return (
-    <div className={cn(
-      "relative group/tile h-full cursor-pointer", 
-      getSizeClasses(tile.size, false, forceMobile),
-      tile.is_hidden && "opacity-40 grayscale-[0.5]"
-    )}>
-      <TileRenderer tile={tile} isDragging={isDragging} sortableProps={sortableProps} />
+    <div 
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        "relative group/tile h-full cursor-grab active:cursor-grabbing select-none", 
+        getSizeClasses(tile.size, false, forceMobile),
+        tile.is_hidden && "opacity-40 grayscale-[0.5]"
+      )}
+    >
+      <TileRenderer tile={tile} isDragging={isDragging} allTiles={allTiles} />
       
       {/* Hidden Indicator */}
       {tile.is_hidden && (
-        <div className="absolute top-4 left-4 p-1.5 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg backdrop-blur-md z-20 flex items-center gap-1.5 px-2.5">
+        <div className="absolute top-4 left-4 p-1.5 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg backdrop-blur-md z-20 flex items-center gap-1.5 px-2.5 pointer-events-none">
           <EyeOff className="size-3" />
           <span className="text-[10px] font-mono font-bold uppercase tracking-tighter">Hidden</span>
         </div>
       )}
 
-      {/* Edit Hint */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/tile:opacity-100 transition-opacity pointer-events-none z-10 bg-lume-primary/[0.03]">
-        <div className="px-4 py-2 bg-black/70 border border-white/15 rounded-full backdrop-blur-xl flex items-center gap-2 text-white/90 shadow-2xl">
+      {/* Edit Hint Overlay */}
+      <div 
+        onClick={(e) => {
+          e.stopPropagation()
+          onClick()
+        }}
+        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/tile:opacity-100 transition-opacity z-10 bg-black/40 backdrop-blur-[2px] rounded-3xl cursor-pointer"
+      >
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onClick()
+          }}
+          className="px-4 py-2 bg-black/80 border border-white/20 rounded-full backdrop-blur-xl flex items-center gap-2 text-white shadow-2xl hover:border-lume-primary/50 hover:bg-black transition-all active:scale-95"
+        >
           <Settings2 className="size-3.5 text-lume-primary" />
           <span className="text-[10px] font-bold uppercase tracking-widest">Edit Details</span>
-        </div>
+        </button>
       </div>
     </div>
   )

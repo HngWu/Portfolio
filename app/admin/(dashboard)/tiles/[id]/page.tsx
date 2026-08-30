@@ -10,13 +10,11 @@ import {
   ArrowLeft, 
   Type, 
   Maximize, 
-  Settings2, 
   Code, 
   SlidersHorizontal, 
-  Sparkles, 
   Eye, 
-  Layers,
-  Wand2
+  Wand2,
+  Loader2
 } from "lucide-react"
 import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
@@ -236,12 +234,12 @@ export default function TileEditPage() {
 
   if (isLoading) return (
     <div className="flex items-center justify-center min-h-[400px]">
-      <div className="w-8 h-8 border-2 border-lume-primary/30 border-t-lume-primary rounded-full animate-spin" />
+      <Loader2 className="size-8 text-lume-primary animate-spin" />
     </div>
   )
 
   return (
-    <div className="space-y-6 pb-20 animate-in fade-in duration-300">
+    <div className="space-y-6 pb-36 animate-in fade-in duration-300">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
@@ -249,6 +247,7 @@ export default function TileEditPage() {
             href="/admin/tiles"
             className="p-2.5 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white rounded-xl transition-all"
             title="Back to Tiles"
+            aria-label="Back to Tiles"
           >
             <ArrowLeft className="size-4" />
           </Link>
@@ -271,6 +270,7 @@ export default function TileEditPage() {
           {!isNew && (
             <button 
               onClick={handleDelete}
+              aria-label="Delete Tile"
               className="flex items-center gap-2 px-3.5 py-2 text-red-400/80 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all text-xs font-semibold"
             >
               <Trash2 className="size-3.5" />
@@ -281,10 +281,11 @@ export default function TileEditPage() {
           <button 
             onClick={handleSave}
             disabled={isSaving}
+            aria-label={isNew ? 'Create Tile' : 'Save Changes'}
             className="flex items-center gap-2 px-6 py-2.5 bg-lume-primary text-black text-xs font-bold rounded-xl hover:bg-lume-primary/90 transition-all shadow-[0_0_20px_rgba(74,255,180,0.25)] active:scale-95 disabled:opacity-50 uppercase tracking-wider"
           >
             {isSaving ? (
-              <div className="size-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
               <Save className="size-3.5" />
             )}
@@ -332,16 +333,24 @@ export default function TileEditPage() {
         )}>
           
           {/* Metadata Card (Category, Dimensions, Hidden Toggle) */}
-          <GlassCard className="p-5 sm:p-6 space-y-5 bg-white/[0.01]">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <GlassCard className="p-6 sm:p-8 space-y-6 bg-white/[0.01] border-white/5 rounded-3xl">
+            <div className="border-b border-white/5 pb-3">
+              <h2 className="text-lg font-semibold text-white/90">Tile Metadata</h2>
+              <p className="text-[11px] text-white/40 mt-1 leading-relaxed">
+                Configure primary category schema, layout dimensions, and visibility state.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
               {/* Category Selector */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[10px] font-mono text-white/40 uppercase tracking-widest">
-                  <Type className="size-3 text-lume-primary" />
-                  <span>Tile Category</span>
-                </div>
+              <div>
+                <label htmlFor="tile-type" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium flex items-center gap-2">
+                  <Type className="size-3.5 text-lume-primary" />
+                  <span>Tile Category <span className="text-lume-primary">*</span></span>
+                </label>
                 <select 
-                  className="w-full bg-black/50 border border-white/10 rounded-xl p-2.5 text-xs text-white focus:ring-2 focus:ring-lume-primary/50 outline-none transition-all cursor-pointer font-mono"
+                  id="tile-type"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all cursor-pointer font-mono"
                   value={formData.type} 
                   onChange={(e) => setFormData({...formData, type: e.target.value})}
                 >
@@ -349,16 +358,20 @@ export default function TileEditPage() {
                     <option key={t} value={t} className="bg-[#0f0f0f]">{t.replace('_', ' ').toUpperCase()}</option>
                   ))}
                 </select>
+                <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
+                  Structural category and component schema for this tile.
+                </p>
               </div>
 
               {/* Grid Size Dimensions */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[10px] font-mono text-white/40 uppercase tracking-widest">
-                  <Maximize className="size-3 text-blue-400" />
-                  <span>Grid Dimensions</span>
-                </div>
+              <div>
+                <label htmlFor="tile-size" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium flex items-center gap-2">
+                  <Maximize className="size-3.5 text-blue-400" />
+                  <span>Grid Dimensions <span className="text-lume-primary">*</span></span>
+                </label>
                 <select 
-                  className="w-full bg-black/50 border border-white/10 rounded-xl p-2.5 text-xs text-white focus:ring-2 focus:ring-lume-primary/50 outline-none transition-all cursor-pointer font-mono"
+                  id="tile-size"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all cursor-pointer font-mono"
                   value={isCustomSize ? 'custom' : (Object.keys(PRESET_SIZES).includes(formData.size) ? formData.size : 'custom')}
                   onChange={(e) => {
                     if (e.target.value === 'custom') {
@@ -390,39 +403,48 @@ export default function TileEditPage() {
                     <option value="custom">-- Custom Size --</option>
                   </optgroup>
                 </select>
+                <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
+                  Column span by row span dimensions on the 12-column grid.
+                </p>
               </div>
             </div>
 
             {/* Custom Size Input if selected */}
             {isCustomSize && (
               <div className="pt-2 animate-in fade-in duration-200">
-                <label className="block text-[10px] font-mono text-white/50 uppercase tracking-widest mb-1.5">
-                  Custom Dimension String (Columns x Rows)
+                <label htmlFor="tile-custom-size" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
+                  Custom Dimension String (Columns x Rows) <span className="text-lume-primary">*</span>
                 </label>
                 <input 
+                  id="tile-custom-size"
                   type="text"
-                  className="w-full bg-black/50 border border-lume-primary/30 rounded-xl p-2.5 text-xs text-lume-primary focus:ring-1 focus:ring-lume-primary outline-none font-mono"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-lume-primary placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-mono"
                   placeholder="e.g. 4x3"
                   value={formData.size} 
                   onChange={(e) => setFormData({...formData, size: e.target.value})}
                 />
+                <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
+                  Specify format as COLxROW (e.g. 4x3 or 6x2).
+                </p>
               </div>
             )}
 
             {/* Hidden from public toggle */}
-            <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+            <div className="pt-4 border-t border-white/5 flex items-center justify-between">
               <div>
-                <span className="text-xs text-white/80 font-medium">Public Grid Visibility</span>
-                <p className="text-[11px] text-white/40 mt-0.5">Toggle whether this tile appears to public portfolio visitors.</p>
+                <span className="text-sm font-medium text-white/90">Public Grid Visibility</span>
+                <p className="text-[11px] text-white/40 mt-0.5 leading-relaxed">
+                  Toggle whether this tile appears to public portfolio visitors.
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => setFormData({...formData, is_hidden: !formData.is_hidden})}
                 className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all border font-semibold",
+                  "px-4 py-2 rounded-xl text-xs font-mono transition-all border font-semibold",
                   formData.is_hidden 
-                    ? "bg-red-500/10 text-red-400 border-red-500/20" 
-                    : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                    ? "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20" 
+                    : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
                 )}
               >
                 {formData.is_hidden ? "Hidden" : "Visible"}
@@ -431,12 +453,13 @@ export default function TileEditPage() {
           </GlassCard>
 
           {/* Content Editor Card with Form vs JSON Switcher */}
-          <GlassCard className="p-5 sm:p-6 space-y-5 bg-white/[0.01]">
+          <GlassCard className="p-6 sm:p-8 space-y-6 bg-white/[0.01] border-white/5 rounded-3xl">
             <div className="flex items-center justify-between border-b border-white/5 pb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase tracking-widest text-white/40">
-                  Content Configuration
-                </span>
+              <div>
+                <h2 className="text-lg font-semibold text-white/90">Content Configuration</h2>
+                <p className="text-[11px] text-white/40 mt-1 leading-relaxed">
+                  Switch between interactive visual inputs and raw JSON structure.
+                </p>
               </div>
 
               {/* Form vs Raw JSON Switch */}
@@ -446,9 +469,9 @@ export default function TileEditPage() {
                     type="button"
                     onClick={() => setEditorTab('form')}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-lg transition-all",
+                      "flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-mono rounded-lg transition-all",
                       editorTab === 'form'
-                        ? "bg-white/10 text-white font-semibold"
+                        ? "bg-white/10 text-white font-semibold shadow-sm"
                         : "text-white/40 hover:text-white"
                     )}
                   >
@@ -459,9 +482,9 @@ export default function TileEditPage() {
                     type="button"
                     onClick={() => setEditorTab('json')}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-lg transition-all",
+                      "flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-mono rounded-lg transition-all",
                       editorTab === 'json'
-                        ? "bg-white/10 text-white font-semibold"
+                        ? "bg-white/10 text-white font-semibold shadow-sm"
                         : "text-white/40 hover:text-white"
                     )}
                   >
@@ -474,7 +497,8 @@ export default function TileEditPage() {
                   <button
                     type="button"
                     onClick={handleFormatJson}
-                    className="p-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-xl border border-white/10 transition-colors"
+                    aria-label="Format JSON"
+                    className="p-2 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-xl border border-white/10 transition-colors"
                     title="Format / Beautify JSON"
                   >
                     <Wand2 className="size-3.5" />
@@ -496,11 +520,9 @@ export default function TileEditPage() {
               /* Mode 2: Raw CodeMirror JSON Editor */
               <div className="space-y-6">
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">
-                      Quick Pitch JSON Payload
-                    </span>
-                  </div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
+                    Quick Pitch JSON Payload
+                  </label>
                   <div className="border border-white/10 rounded-2xl overflow-hidden bg-black/60">
                     <CodeMirror 
                       value={formData.content} 
@@ -510,14 +532,15 @@ export default function TileEditPage() {
                       onChange={(value) => setFormData({...formData, content: value})}
                     />
                   </div>
+                  <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
+                    Raw JSON structure displayed in standard view mode.
+                  </p>
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">
-                      Deep Dive JSON Payload
-                    </span>
-                  </div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
+                    Deep Dive JSON Payload
+                  </label>
                   <div className="border border-white/10 rounded-2xl overflow-hidden bg-black/60">
                     <CodeMirror 
                       value={formData.deep_dive} 
@@ -527,6 +550,9 @@ export default function TileEditPage() {
                       onChange={(value) => setFormData({...formData, deep_dive: value})}
                     />
                   </div>
+                  <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
+                    Raw JSON structure displayed in Deep Dive view mode.
+                  </p>
                 </div>
               </div>
             )}
@@ -539,7 +565,7 @@ export default function TileEditPage() {
           mobileViewTab === 'editor' && "hidden lg:block"
         )}>
           <div className="sticky top-24 space-y-4">
-            <GlassCard className="p-5 space-y-4 bg-white/[0.01] border-white/10 shadow-2xl">
+            <GlassCard className="p-6 space-y-5 bg-white/[0.01] border-white/10 shadow-2xl rounded-3xl">
               <div className="flex items-center justify-between border-b border-white/5 pb-3">
                 <div className="flex items-center gap-2">
                   <Eye className="size-4 text-lume-primary" />

@@ -37,6 +37,15 @@ export interface ParsedEducation {
   deepDiveDate?: string
   deepDiveGpa?: string
   honours?: string
+  lat?: number
+  lng?: number
+  type?: "degree" | "exchange" | "bootcamp" | "workshop" | "conference"
+  city?: string
+  country?: string
+  caption?: string
+  thumbnail?: string
+  startDate?: string
+  endDate?: string
 }
 
 export interface ParsedAward {
@@ -84,6 +93,69 @@ export interface PortfolioContent {
   stats: ParsedStat[]
   skills: ParsedSkill[]
   contact?: ParsedContact
+}
+
+export const MONTH_MAP: Record<string, string> = {
+  jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+  jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12"
+}
+
+export function parseDateRangeParts(dateRange: string): { startDate: string; endDate: string } {
+  if (!dateRange) return { startDate: "2020-01", endDate: "Present" }
+  const parts = dateRange.split(/\s*[-–—]\s*/)
+  
+  const parsePart = (p: string, defaultMonth = "01"): string => {
+    if (!p || p.toLowerCase().includes("present")) return "Present"
+    const matchMonthYear = p.match(/([a-zA-Z]{3,})\s*(\d{4})/)
+    if (matchMonthYear) {
+      const monthPrefix = matchMonthYear[1].toLowerCase().slice(0, 3)
+      const m = MONTH_MAP[monthPrefix] || defaultMonth
+      return `${matchMonthYear[2]}-${m}`
+    }
+    const matchYear = p.match(/(\d{4})/)
+    if (matchYear) {
+      return `${matchYear[1]}-${defaultMonth}`
+    }
+    return p
+  }
+
+  const start = parsePart(parts[0], "01")
+  const end = parts.length > 1 ? parsePart(parts[1], "12") : "Present"
+  return { startDate: start, endDate: end }
+}
+
+export const SINGAPORE_INSTITUTION_GEOS: Record<string, { lat: number; lng: number; city: string; country: string; type?: "degree" | "exchange" | "bootcamp" | "workshop" | "conference"; thumbnail?: string }> = {
+  "peiying primary school": { lat: 1.4178, lng: 103.8329, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=600&q=80" },
+  "peiying": { lat: 1.4178, lng: 103.8329, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=600&q=80" },
+  "chung cheng high school (yishun)": { lat: 1.4230, lng: 103.8340, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=600&q=80" },
+  "chung cheng high school": { lat: 1.4230, lng: 103.8340, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=600&q=80" },
+  "nanyang polytechnic": { lat: 1.3801, lng: 103.8489, city: "Ang Mo Kio", country: "Singapore", type: "degree", thumbnail: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=600&q=80" },
+  "nyp": { lat: 1.3801, lng: 103.8489, city: "Ang Mo Kio", country: "Singapore", type: "degree", thumbnail: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=600&q=80" },
+  "national university of singapore": { lat: 1.2966, lng: 103.7764, city: "Kent Ridge", country: "Singapore", type: "degree", thumbnail: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=600&q=80" },
+  "nus": { lat: 1.2966, lng: 103.7764, city: "Kent Ridge", country: "Singapore", type: "degree", thumbnail: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=600&q=80" },
+  "nanyang technological university": { lat: 1.3483, lng: 103.6831, city: "Jurong West", country: "Singapore", type: "degree" },
+  "ntu": { lat: 1.3483, lng: 103.6831, city: "Jurong West", country: "Singapore", type: "degree" },
+  "singapore management university": { lat: 1.2963, lng: 103.8502, city: "Bras Basah", country: "Singapore", type: "degree" },
+  "smu": { lat: 1.2963, lng: 103.8502, city: "Bras Basah", country: "Singapore", type: "degree" },
+  "singapore polytechnic": { lat: 1.3098, lng: 103.7775, city: "Dover", country: "Singapore", type: "degree" },
+  "ngee ann polytechnic": { lat: 1.3323, lng: 103.7747, city: "Clementi", country: "Singapore", type: "degree" },
+  "temasek polytechnic": { lat: 1.3533, lng: 103.9329, city: "Tampines", country: "Singapore", type: "degree" },
+  "republic polytechnic": { lat: 1.4447, lng: 103.7858, city: "Woodlands", country: "Singapore", type: "degree" },
+}
+
+export function resolveEducationGeo(institution: string, degree: string, contentVal: any, deepDiveVal: any) {
+  const normInst = (institution || "").trim().toLowerCase()
+  const lookup = SINGAPORE_INSTITUTION_GEOS[normInst] || Object.entries(SINGAPORE_INSTITUTION_GEOS).find(([k]) => normInst.includes(k))?.[1]
+
+  const lat = typeof contentVal?.lat === 'number' ? contentVal.lat : (typeof deepDiveVal?.lat === 'number' ? deepDiveVal.lat : lookup?.lat ?? 1.3521)
+  const lng = typeof contentVal?.lng === 'number' ? contentVal.lng : (typeof deepDiveVal?.lng === 'number' ? deepDiveVal.lng : lookup?.lng ?? 103.8198)
+  const city = contentVal?.city || deepDiveVal?.city || lookup?.city || "Singapore"
+  const country = contentVal?.country || deepDiveVal?.country || lookup?.country || "Singapore"
+  const type = contentVal?.type || deepDiveVal?.type || lookup?.type || "degree"
+  const thumbnail = contentVal?.thumbnail || deepDiveVal?.thumbnail || lookup?.thumbnail || undefined
+  const caption = contentVal?.caption || deepDiveVal?.caption || deepDiveVal?.notes || (deepDiveVal?.honours ? `${degree} at ${institution}. Honours: ${deepDiveVal.honours}.` : `${degree} at ${institution}.`)
+
+  return { lat, lng, city, country, type, thumbnail, caption }
 }
 
 export function parseTilesToPortfolioContent(tiles: Tile[]): PortfolioContent {
@@ -144,6 +216,8 @@ export function parseTilesToPortfolioContent(tiles: Tile[]): PortfolioContent {
         const parsed = parseTileContent("education", tile.content)
         if (parsed.ok) {
           const dd = parseTileDeepDive("education", tile.deep_dive)
+          const { startDate, endDate } = parseDateRangeParts(parsed.data.date)
+          const geo = resolveEducationGeo(parsed.data.institution, parsed.data.degree, parsed.data, dd)
           content.education.push({
             id: tile.id,
             institution: parsed.data.institution,
@@ -155,6 +229,15 @@ export function parseTilesToPortfolioContent(tiles: Tile[]): PortfolioContent {
             deepDiveDate: dd.date,
             deepDiveGpa: dd.gpa,
             honours: dd.honours,
+            lat: geo.lat,
+            lng: geo.lng,
+            type: geo.type,
+            city: geo.city,
+            country: geo.country,
+            caption: geo.caption,
+            thumbnail: geo.thumbnail,
+            startDate,
+            endDate,
           })
         }
         break
@@ -265,23 +348,41 @@ export async function getPortfolioContent(): Promise<PortfolioContent> {
         case "education": {
           const contentVal = (item.content || {}) as any
           const deepDiveVal = (item.deep_dive || {}) as any
+          const institution = item.subtitle || ""
+          const degree = item.title
+          const dateRange = item.date_range || ""
+          const { startDate, endDate } = parseDateRangeParts(dateRange)
+          const geo = resolveEducationGeo(institution, degree, contentVal, deepDiveVal)
+
           content.education.push({
             id: item.id,
-            institution: item.subtitle || "",
-            degree: item.title,
-            date: item.date_range || "",
+            institution,
+            degree,
+            date: dateRange,
             gpa: contentVal.gpa || "",
             deepDiveDegree: deepDiveVal.degree || undefined,
             deepDiveInstitution: deepDiveVal.institution || undefined,
             deepDiveDate: deepDiveVal.date || undefined,
             deepDiveGpa: deepDiveVal.gpa || undefined,
             honours: deepDiveVal.honours || undefined,
+            lat: geo.lat,
+            lng: geo.lng,
+            type: geo.type,
+            city: geo.city,
+            country: geo.country,
+            caption: geo.caption,
+            thumbnail: geo.thumbnail,
+            startDate,
+            endDate,
           })
           break
         }
       }
     }
   }
+
+  // Sort education chronologically by startDate
+  content.education.sort((a, b) => (a.startDate || "").localeCompare(b.startDate || ""))
 
   return content
 }

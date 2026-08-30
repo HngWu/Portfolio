@@ -3,7 +3,7 @@
 import * as React from "react"
 import { getConfig, updateConfig, type ConfigItem as ConfigItemType } from "@/app/actions/config"
 import { GlassCard } from "@/components/ui/GlassCard"
-import { Save, Wand2, Copy, Check, Settings2, Sparkles, CheckCircle2, AlertCircle } from "lucide-react"
+import { Save, Wand2, Copy, Check, Settings2, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import { useToastStore } from "@/store/useToastStore"
 import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
@@ -45,7 +45,7 @@ export default function ConfigPage() {
   }
 
   return (
-    <div className="space-y-6 pb-20 animate-in fade-in duration-300">
+    <div className="space-y-6 pb-36 animate-in fade-in duration-300">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
@@ -123,8 +123,8 @@ function ConfigItemCard({
   }
 
   return (
-    <GlassCard className="p-5 sm:p-6 space-y-4 bg-white/[0.01]">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3.5">
+    <GlassCard className="p-6 sm:p-8 space-y-6 bg-white/[0.01] border-white/5 rounded-3xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
         <div className="flex items-center gap-2.5">
           <Settings2 className="size-4 text-lume-primary" />
           <div>
@@ -146,6 +146,7 @@ function ConfigItemCard({
           <button
             type="button"
             onClick={handleCopy}
+            aria-label={`Copy JSON config for ${item.key}`}
             className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-xl text-xs font-mono transition-all border border-white/5"
             title="Copy JSON"
           >
@@ -156,6 +157,7 @@ function ConfigItemCard({
           <button
             type="button"
             onClick={handleFormat}
+            aria-label={`Format JSON for ${item.key}`}
             className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-xl text-xs font-mono transition-all border border-white/5"
             title="Format / Beautify"
           >
@@ -167,23 +169,36 @@ function ConfigItemCard({
             type="button"
             disabled={isSaving || !isValidJson}
             onClick={handleSaveClick}
+            aria-label={isSaving ? `Saving config for ${item.key}...` : `Save config for ${item.key}`}
             className="flex items-center gap-1.5 px-4 py-1.5 bg-lume-primary text-black rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 uppercase tracking-wider"
           >
-            <Save className="size-3.5" />
+            {isSaving ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Save className="size-3.5" />
+            )}
             <span>{isSaving ? "Saving..." : "Save"}</span>
           </button>
         </div>
       </div>
 
       {/* CodeMirror JSON Editor */}
-      <div className="border border-white/10 rounded-2xl overflow-hidden bg-black/60">
-        <CodeMirror 
-          value={value} 
-          height="180px" 
-          theme={vscodeDark} 
-          extensions={[json()]}
-          onChange={(val) => setValue(val)}
-        />
+      <div>
+        <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
+          Configuration JSON Payload <span className="text-lume-primary">*</span>
+        </label>
+        <div className="border border-white/10 rounded-2xl overflow-hidden bg-black/60 focus-within:border-lume-primary/60 focus-within:ring-1 focus-within:ring-lume-primary/20 transition-all">
+          <CodeMirror 
+            value={value} 
+            height="180px" 
+            theme={vscodeDark} 
+            extensions={[json()]}
+            onChange={(val) => setValue(val)}
+          />
+        </div>
+        <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
+          Structured configuration parameters and metadata values for runtime application state.
+        </p>
       </div>
     </GlassCard>
   )

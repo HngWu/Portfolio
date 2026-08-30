@@ -43,7 +43,7 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <GlassCard className="p-8 space-y-6 bg-white/[0.02] border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl rounded-3xl">
+        <GlassCard className="p-6 sm:p-8 space-y-6 bg-white/[0.01] border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl rounded-3xl">
           <div className="text-center space-y-2">
             <div className="size-12 rounded-2xl bg-lume-primary/10 border border-lume-primary/30 flex items-center justify-center text-lume-primary mx-auto shadow-[0_0_20px_rgba(74,255,180,0.15)]">
               <Layers className="size-6" />
@@ -52,40 +52,49 @@ export default function LoginPage() {
             <p className="text-xs text-white/50 font-mono">Sign in to manage portfolio content</p>
           </div>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">
-                Email Address
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label htmlFor="login-email" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
+                Email Address <span className="text-lume-primary">*</span>
               </label>
               <input
+                id="login-email"
                 required
                 name="email"
                 type="email"
                 placeholder="admin@example.com"
-                className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/20 outline-none focus:border-lume-primary/50 transition-colors font-mono"
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-mono"
               />
+              <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
+                Enter your registered administrative email.
+              </p>
             </div>
             
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">
-                Access Password
+            <div>
+              <label htmlFor="login-password" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
+                Access Password <span className="text-lume-primary">*</span>
               </label>
               <div className="relative">
                 <input
+                  id="login-password"
                   required
                   name="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="w-full bg-black/60 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-xs text-white placeholder:text-white/20 outline-none focus:border-lume-primary/50 transition-colors font-mono"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/40 hover:text-white"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-white/40 hover:text-white transition-colors"
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
+              <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
+                Enter your administrator access key.
+              </p>
             </div>
 
             {error && (
@@ -97,6 +106,7 @@ export default function LoginPage() {
             <button
               disabled={isPending}
               type="submit"
+              aria-label={isPending ? "Authenticating admin credentials..." : "Access Dashboard"}
               className="w-full bg-lume-primary text-black font-bold py-3 rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(74,255,180,0.25)] flex items-center justify-center gap-2 mt-2 hover:bg-lume-primary/90"
             >
               {isPending ? (

@@ -91,7 +91,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6 pb-20 animate-in fade-in duration-300">
+    <div className="space-y-6 pb-36 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -107,6 +107,7 @@ export default function AdminUsersPage() {
         </div>
         <button
           onClick={() => router.push("/admin/users/new")}
+          aria-label="Add new admin user"
           className="flex items-center gap-2 px-5 py-2.5 bg-lume-primary text-black rounded-xl hover:bg-lume-primary/90 transition-all active:scale-95 shadow-[0_0_20px_rgba(74,255,180,0.25)] text-xs font-bold uppercase tracking-wider"
         >
           <Plus className="size-3.5" />
@@ -119,16 +120,20 @@ export default function AdminUsersPage() {
         <div className="relative w-full max-w-md">
           <Search className="size-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
           <input
+            id="search-users"
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search admin accounts by email..."
-            className="w-full bg-black/50 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-lume-primary/50 transition-colors font-mono"
+            aria-label="Search admin accounts by email"
+            className="w-full h-[42px] bg-black/50 border border-white/10 rounded-xl pl-9 pr-8 py-2.5 text-xs text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-mono"
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white"
+              aria-label="Clear search query"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white transition-colors"
             >
               <X className="size-3" />
             </button>
@@ -149,7 +154,7 @@ export default function AdminUsersPage() {
             return (
               <GlassCard 
                 key={user.id} 
-                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-lume-primary/30 transition-all duration-300 bg-white/[0.01]"
+                className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-lume-primary/30 transition-all duration-300 bg-white/[0.01] border-white/5 rounded-2xl"
               >
                 <div className="flex items-start sm:items-center gap-4 overflow-hidden">
                   <div className={`size-10 rounded-xl flex items-center justify-center text-xs font-mono transition-colors shrink-0 ${
@@ -160,7 +165,7 @@ export default function AdminUsersPage() {
 
                   <div className="overflow-hidden space-y-1">
                     <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className="text-sm font-semibold text-white/95">{user.email}</span>
+                      <span className="text-sm font-semibold text-white/95 font-mono">{user.email}</span>
                       <span className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase tracking-wider border ${
                         locked
                           ? "bg-red-500/10 text-red-400 border-red-500/20"
@@ -190,6 +195,7 @@ export default function AdminUsersPage() {
                     <button
                       type="button"
                       onClick={() => handleUnlock(user.id, user.email)}
+                      aria-label={`Unlock account for ${user.email}`}
                       className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl transition-all border border-amber-500/20 text-xs font-semibold"
                       title="Unlock Account"
                     >
@@ -200,6 +206,7 @@ export default function AdminUsersPage() {
                   <button
                     type="button"
                     onClick={() => router.push(`/admin/users/${user.id}`)}
+                    aria-label={`Reset password for ${user.email}`}
                     className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-xl text-xs font-semibold transition-all border border-white/5"
                     title="Change Password"
                   >
@@ -209,6 +216,7 @@ export default function AdminUsersPage() {
                   <button
                     type="button"
                     onClick={() => handleDelete(user.id, user.email)}
+                    aria-label={`Delete admin account ${user.email}`}
                     className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400/70 hover:text-red-400 rounded-xl transition-all border border-red-500/20"
                     title="Delete Account"
                   >
@@ -220,7 +228,7 @@ export default function AdminUsersPage() {
           })}
 
           {displayedUsers.length === 0 && (
-            <div className="text-center py-20 bg-white/[0.01] rounded-3xl border border-dashed border-white/10">
+            <div className="text-center py-20 bg-white/[0.01] rounded-3xl border border-dashed border-white/10 p-6 sm:p-8">
               <UserCheck className="size-8 text-white/20 mx-auto mb-2" />
               <p className="text-xs font-mono text-white/40">No admin accounts found matching your query.</p>
             </div>

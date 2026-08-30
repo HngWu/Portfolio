@@ -80,7 +80,7 @@ export default function DetailedItemsAdminPage() {
   })
 
   return (
-    <div className="space-y-6 pb-20 animate-in fade-in duration-300">
+    <div className="space-y-6 pb-36 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -96,6 +96,7 @@ export default function DetailedItemsAdminPage() {
         </div>
         <button
           onClick={() => router.push("/admin/detailed-items/new")}
+          aria-label="Add new detailed entry"
           className="flex items-center gap-2 px-5 py-2.5 bg-lume-primary text-black rounded-xl hover:bg-lume-primary/90 transition-all active:scale-95 shadow-[0_0_20px_rgba(74,255,180,0.25)] text-xs font-bold uppercase tracking-wider"
         >
           <Plus className="size-3.5" />
@@ -110,6 +111,7 @@ export default function DetailedItemsAdminPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              aria-label={`Filter by ${tab.label}`}
               className={cn(
                 "px-3.5 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap",
                 activeTab === tab.id
@@ -125,16 +127,20 @@ export default function DetailedItemsAdminPage() {
         <div className="relative min-w-[240px]">
           <Search className="size-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
           <input
+            id="search-detailed-items"
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search entries by title or organization..."
-            className="w-full bg-black/50 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-lume-primary/50 transition-colors font-mono"
+            aria-label="Search entries by title or organization"
+            className="w-full h-[42px] bg-black/50 border border-white/10 rounded-xl pl-9 pr-8 py-2.5 text-xs text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-mono"
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white"
+              aria-label="Clear search query"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white transition-colors"
             >
               <X className="size-3" />
             </button>
@@ -152,7 +158,7 @@ export default function DetailedItemsAdminPage() {
           {displayedItems.map((item) => (
             <GlassCard 
               key={item.id} 
-              className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-lume-primary/30 transition-all duration-300 bg-white/[0.01]"
+              className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-lume-primary/30 transition-all duration-300 bg-white/[0.01] border-white/5 rounded-2xl"
             >
               <div className="flex items-start sm:items-center gap-3.5 overflow-hidden">
                 <div className="size-9 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-xs font-mono text-white/40 shrink-0 group-hover:bg-lume-primary/10 group-hover:text-lume-primary transition-colors">
@@ -184,6 +190,7 @@ export default function DetailedItemsAdminPage() {
                 <button
                   type="button"
                   onClick={() => router.push(`/admin/detailed-items/${item.id}`)}
+                  aria-label={`Edit detailed entry ${item.title}`}
                   className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-xl text-xs font-semibold transition-all border border-white/5"
                   title="Edit Entry"
                 >
@@ -193,6 +200,7 @@ export default function DetailedItemsAdminPage() {
                 <button
                   type="button"
                   onClick={() => handleDelete(item.id, item.title)}
+                  aria-label={`Delete entry ${item.title}`}
                   className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400/70 hover:text-red-400 rounded-xl transition-all border border-red-500/20"
                   title="Delete Entry"
                 >
@@ -203,7 +211,7 @@ export default function DetailedItemsAdminPage() {
           ))}
 
           {displayedItems.length === 0 && (
-            <div className="text-center py-20 bg-white/[0.01] rounded-3xl border border-dashed border-white/10">
+            <div className="text-center py-20 bg-white/[0.01] rounded-3xl border border-dashed border-white/10 p-6 sm:p-8">
               <Layers className="size-8 text-white/20 mx-auto mb-2" />
               <p className="text-xs font-mono text-white/40">No entries match the selected filter or query.</p>
             </div>

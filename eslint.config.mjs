@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "public/download_font.js",
     "start-brainstorm.js",
+    "scripts/**",
   ]),
 ]);
 

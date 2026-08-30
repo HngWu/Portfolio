@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Save, Sparkles } from "lucide-react"
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { DetailedItemRow, DetailedItemInsert, DetailedItemUpdate } from "@/app/actions/detailed-items"
 import { BasicInfoFields } from "./form/BasicInfoFields"
 import { TypePayloadEditor } from "./form/TypePayloadEditor"
@@ -80,7 +80,61 @@ export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemF
   const [projFeatured, setProjFeatured] = React.useState<boolean>(Boolean(initialContent?.featured))
   const [projNotes, setProjNotes] = React.useState<string>(initialDeepDive?.notes || "")
 
-  const activeType = type === "custom" ? customType : type
+  const isCustomType = type === "custom" || !["project", "experience", "education"].includes(type)
+  const activeType = isCustomType ? (customType || type) : type
+
+  const getVisualPayloads = React.useCallback(() => {
+    let currentContent: any = {}
+    let currentDeepDive: any = {}
+
+    if (activeType === "experience") {
+      currentContent = { highlights: expHighlights }
+      currentDeepDive = { highlights: expDeepHighlights }
+    } else if (activeType === "education") {
+      currentContent = { gpa: eduGpa }
+      currentDeepDive = { gpa: eduGpa, degree: eduDegree, institution: eduInstitution, honours: eduHonours }
+    } else if (activeType === "project") {
+      const techArray = projTechStack.split(",").map(s => s.trim()).filter(Boolean)
+      currentContent = {
+        tech_stack: techArray,
+        github_url: projGithubUrl,
+        live_url: projLiveUrl,
+        featured: projFeatured
+      }
+      currentDeepDive = { notes: projNotes }
+    } else {
+      try { currentContent = JSON.parse(rawContent) } catch { currentContent = {} }
+      try { currentDeepDive = JSON.parse(rawDeepDive) } catch { currentDeepDive = {} }
+    }
+
+    return { currentContent, currentDeepDive }
+  }, [
+    activeType,
+    expHighlights,
+    expDeepHighlights,
+    eduGpa,
+    eduDegree,
+    eduInstitution,
+    eduHonours,
+    projTechStack,
+    projGithubUrl,
+    projLiveUrl,
+    projFeatured,
+    projNotes,
+    rawContent,
+    rawDeepDive
+  ])
+
+  const handleToggleRawJson = (nextShow: boolean) => {
+    if (nextShow) {
+      if (["experience", "education", "project"].includes(activeType)) {
+        const { currentContent, currentDeepDive } = getVisualPayloads()
+        setRawContent(JSON.stringify(currentContent, null, 2))
+        setRawDeepDive(JSON.stringify(currentDeepDive, null, 2))
+      }
+    }
+    setShowRawJson(nextShow)
+  }
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,25 +148,9 @@ export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemF
         finalContent = JSON.parse(rawContent)
         finalDeepDive = JSON.parse(rawDeepDive)
       } else {
-        if (activeType === "experience") {
-          finalContent = { highlights: expHighlights }
-          finalDeepDive = { highlights: expDeepHighlights }
-        } else if (activeType === "education") {
-          finalContent = { gpa: eduGpa }
-          finalDeepDive = { gpa: eduGpa, degree: eduDegree, institution: eduInstitution, honours: eduHonours }
-        } else if (activeType === "project") {
-          const techArray = projTechStack.split(",").map(s => s.trim()).filter(Boolean)
-          finalContent = {
-            tech_stack: techArray,
-            github_url: projGithubUrl,
-            live_url: projLiveUrl,
-            featured: projFeatured
-          }
-          finalDeepDive = { notes: projNotes }
-        } else {
-          finalContent = JSON.parse(rawContent)
-          finalDeepDive = JSON.parse(rawDeepDive)
-        }
+        const { currentContent, currentDeepDive } = getVisualPayloads()
+        finalContent = currentContent
+        finalDeepDive = currentDeepDive
       }
 
       await onSubmit({
@@ -136,7 +174,7 @@ export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemF
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-20 animate-in fade-in duration-300">
+    <div className="space-y-6 max-w-4xl mx-auto pb-36 animate-in fade-in duration-300">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
           <button
@@ -144,6 +182,7 @@ export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemF
             onClick={() => router.push("/admin/detailed-items")}
             className="p-2.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-xl transition-all"
             title="Back to Detailed Items"
+            aria-label="Back to Detailed Items"
           >
             <ArrowLeft className="size-4" />
           </button>
@@ -200,17 +239,18 @@ export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemF
 
         <RawJsonEditor
           showRawJson={showRawJson}
-          setShowRawJson={setShowRawJson}
+          setShowRawJson={handleToggleRawJson}
           rawContent={rawContent}
           setRawContent={setRawContent}
           rawDeepDive={rawDeepDive}
           setRawDeepDive={setRawDeepDive}
         />
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+        <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={() => router.push("/admin/detailed-items")}
+            aria-label="Cancel and return to Detailed Items"
             className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-xl text-xs font-semibold transition-all"
           >
             Cancel
@@ -218,9 +258,14 @@ export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemF
           <button
             type="submit"
             disabled={isSubmitting}
+            aria-label={isSubmitting ? "Saving entry..." : "Save Entry"}
             className="flex items-center gap-2 px-6 py-2.5 bg-lume-primary text-black font-bold rounded-xl hover:bg-lume-primary/90 transition-all active:scale-95 disabled:opacity-50 text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(74,255,180,0.25)]"
           >
-            <Save className="size-3.5" />
+            {isSubmitting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Save className="size-3.5" />
+            )}
             <span>{isSubmitting ? "Saving..." : "Save Entry"}</span>
           </button>
         </div>
