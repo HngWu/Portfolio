@@ -145,7 +145,7 @@ function seedDatabase(db: InstanceType<typeof Database>) {
       order_val_mobile: 0,
       is_hidden: 1,
       is_active: 1,
-      content: "{\"theme\":{\"primary\":\"#4AFFB4\",\"secondary\":\"#4A8FFF\"},\"identity\":{\"mark\":\"HW\",\"title\":\"Creative Developer\"}}",
+      content: "{\"theme\":{\"primary\":\"#4AFFB4\",\"secondary\":\"#4A8FFF\"},\"identity\":{\"mark\":\"\",\"title\":\"Creative Developer\"}}",
       deep_dive: "{}",
       created_at: "2026-08-15T04:15:26.772Z",
       updated_at: "2026-08-15T04:15:26.773Z"

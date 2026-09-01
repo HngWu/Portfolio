@@ -2,13 +2,19 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
 import { ViewModeToggle } from "./ViewModeToggle"
 import { SearchButton } from "./SearchButton"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 
 export function Navbar() {
+  const pathname = usePathname()
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
+
+  if (pathname?.startsWith("/admin")) {
+    return null
+  }
 
   return (
     <motion.header
@@ -19,9 +25,30 @@ export function Navbar() {
     >
       {/* Brand Logo / Home Link */}
       <div className="pointer-events-auto">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 bg-white/[0.03] border border-white/10 rounded-xl flex items-center justify-center font-display text-sm font-bold text-white transition-all duration-300 hover:bg-white/[0.08] hover:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl group-hover:scale-105 active:scale-95">
-            HW
+        <Link href="/" className="flex items-center gap-2 group" aria-label="Home">
+          <div className="w-10 h-10 bg-white/[0.03] border border-white/10 rounded-xl flex items-center justify-center text-white transition-all duration-300 hover:bg-white/[0.08] hover:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl group-hover:scale-105 active:scale-95">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              className="size-5 text-white/85 group-hover:text-lume-primary transition-colors duration-300"
+            >
+              <path
+                d="M12 2L2 12L12 22L22 12L12 2Z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12 6L6 12L12 18L18 12L12 6Z"
+                fill="currentColor"
+                fillOpacity="0.2"
+                stroke="currentColor"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
         </Link>
       </div>
@@ -34,4 +61,3 @@ export function Navbar() {
     </motion.header>
   )
 }
-

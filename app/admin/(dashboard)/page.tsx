@@ -107,19 +107,19 @@ export default async function AdminDashboard() {
             <Link
               key={action.title}
               href={action.href}
-              className="group p-5 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-white/15 rounded-2xl transition-all duration-300 flex flex-col justify-between space-y-4"
+              className="group p-5 sm:p-6 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-white/15 rounded-2xl transition-all duration-300 flex flex-col justify-between space-y-5"
             >
               <div className="flex items-center justify-between">
-                <div className={`p-2.5 rounded-xl border ${action.color}`}>
+                <div className={`p-3 rounded-xl border ${action.color}`}>
                   <action.icon className="size-4" />
                 </div>
                 <ArrowRight className="size-4 text-white/20 group-hover:text-white/80 group-hover:translate-x-1 transition-all" />
               </div>
-              <div>
+              <div className="space-y-1.5">
                 <h3 className="text-sm font-semibold text-white/90 group-hover:text-white transition-colors">
                   {action.title}
                 </h3>
-                <p className="text-xs text-white/40 mt-1 leading-relaxed line-clamp-2">
+                <p className="text-xs text-white/40 leading-relaxed line-clamp-2">
                   {action.desc}
                 </p>
               </div>
@@ -136,53 +136,53 @@ export default async function AdminDashboard() {
           </h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <GlassCard className="p-5 flex items-center gap-4 bg-white/[0.01]">
-            <div className="p-3 bg-lume-primary/10 rounded-2xl text-lume-primary border border-lume-primary/20 shrink-0">
-              <LayoutGrid className="size-5" />
+          <GlassCard className="p-5 sm:p-6 flex flex-col justify-between bg-white/[0.01] hover:bg-white/[0.03] transition-all">
+            <div className="text-lume-primary mb-4">
+              <LayoutGrid className="size-6" />
             </div>
-            <div className="overflow-hidden">
+            <div className="space-y-1">
               <div className="text-[10px] font-mono text-white/40 uppercase tracking-widest truncate">Bento Tiles</div>
-              <div className="text-2xl font-bold text-white tracking-tight mt-0.5">{totalTiles}</div>
-              <div className="text-[11px] text-white/40 mt-0.5 truncate">
+              <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{totalTiles}</div>
+              <div className="text-[11px] text-white/40 truncate">
                 <span className="text-lume-primary font-medium">{visibleTiles}</span> active • {hiddenTiles} hidden
               </div>
             </div>
           </GlassCard>
 
-          <GlassCard className="p-5 flex items-center gap-4 bg-white/[0.01]">
-            <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400 border border-blue-500/20 shrink-0">
-              <Briefcase className="size-5" />
+          <GlassCard className="p-5 sm:p-6 flex flex-col justify-between bg-white/[0.01] hover:bg-white/[0.03] transition-all">
+            <div className="text-blue-400 mb-4">
+              <Briefcase className="size-6" />
             </div>
-            <div className="overflow-hidden">
+            <div className="space-y-1">
               <div className="text-[10px] font-mono text-white/40 uppercase tracking-widest truncate">Projects</div>
-              <div className="text-2xl font-bold text-white tracking-tight mt-0.5">{totalProjects}</div>
-              <div className="text-[11px] text-white/40 mt-0.5 truncate">
+              <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{totalProjects}</div>
+              <div className="text-[11px] text-white/40 truncate">
                 Interactive showcases
               </div>
             </div>
           </GlassCard>
 
-          <GlassCard className="p-5 flex items-center gap-4 bg-white/[0.01]">
-            <div className="p-3 bg-purple-500/10 rounded-2xl text-purple-400 border border-purple-500/20 shrink-0">
-              <ListTree className="size-5" />
+          <GlassCard className="p-5 sm:p-6 flex flex-col justify-between bg-white/[0.01] hover:bg-white/[0.03] transition-all">
+            <div className="text-purple-400 mb-4">
+              <ListTree className="size-6" />
             </div>
-            <div className="overflow-hidden">
+            <div className="space-y-1">
               <div className="text-[10px] font-mono text-white/40 uppercase tracking-widest truncate">Detailed Items</div>
-              <div className="text-2xl font-bold text-white tracking-tight mt-0.5">{detailedItems.length}</div>
-              <div className="text-[11px] text-white/40 mt-0.5 truncate">
+              <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{detailedItems.length}</div>
+              <div className="text-[11px] text-white/40 truncate">
                 {totalExperience} exp • {totalEducation} edu
               </div>
             </div>
           </GlassCard>
 
-          <GlassCard className="p-5 flex items-center gap-4 bg-white/[0.01]">
-            <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-400 border border-amber-500/20 shrink-0">
-              <Settings2 className="size-5" />
+          <GlassCard className="p-5 sm:p-6 flex flex-col justify-between bg-white/[0.01] hover:bg-white/[0.03] transition-all">
+            <div className="text-amber-400 mb-4">
+              <Settings2 className="size-6" />
             </div>
-            <div className="overflow-hidden">
+            <div className="space-y-1">
               <div className="text-[10px] font-mono text-white/40 uppercase tracking-widest truncate">Config Registry</div>
-              <div className="text-2xl font-bold text-white tracking-tight mt-0.5">{configCount}</div>
-              <div className="text-[11px] text-white/40 mt-0.5 truncate">
+              <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{configCount}</div>
+              <div className="text-[11px] text-white/40 truncate">
                 Global variables
               </div>
             </div>

@@ -19,7 +19,7 @@ export interface TerminalConfig {
   }
 }
 
-export const BIO_FALLBACK = "HW - Creative Developer / Systems Architect. Specialized in high-performance web applications and immersive interfaces. Bridging the gap between engineering and aesthetic design."
+export const BIO_FALLBACK = "Creative Developer / Systems Architect. Specialized in high-performance web applications and immersive interfaces. Bridging the gap between engineering and aesthetic design."
 
 export const SKILLS_FALLBACK = [
   { category: "Languages", items: ["Java", "Python", "JavaScript", "TypeScript", "Kotlin", "C#", "SQL"] },
@@ -78,14 +78,14 @@ export function detectOS(): OSType {
 export function getTerminalConfig(os: OSType): TerminalConfig {
   if (os === "windows") {
     return {
-      prompt: "C:\\Users\\HW> ",
+      prompt: "C:\\Users\\Developer> ",
       cursorColor: "bg-[#cccccc]",
       headerTitle: "Command Prompt",
       commands: { list: "dir", read: "type", clear: "cls" }
     }
   }
   return {
-    prompt: os === "mac" ? "hw@mac:~$ " : "hw@linux:~$ ",
+    prompt: os === "mac" ? "developer@mac:~$ " : "developer@linux:~$ ",
     cursorColor: "bg-lume-primary",
     headerTitle: os === "mac" ? "zsh" : "bash",
     commands: { list: "ls", read: "cat", clear: "clear" }

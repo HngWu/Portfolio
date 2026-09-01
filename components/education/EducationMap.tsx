@@ -2,36 +2,40 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { EducationLocation, EducationMapProps, EducationType } from "@/types/education-map";
 import type { ParsedEducation } from "@/lib/content/portfolio";
 import rawEducationLocations from "@/data/education-locations.json";
-import { EducationTimelineStrip } from "./EducationTimelineStrip";
-import { EducationLegend } from "./EducationLegend";
-import { EducationMapCardHUD } from "./EducationMapCardHUD";
+import { GoogleMapsSearchBar } from "./GoogleMapsSearchBar";
+import { GoogleMapsPlacePanel } from "./GoogleMapsPlacePanel";
+import { GoogleMapsControls } from "./GoogleMapsControls";
 import { cn } from "@/lib/utils";
-import { usePageTransition } from "@/hooks/usePageTransition";
-import {
-  Globe,
-  Compass,
-  Sun,
-  Moon,
-  RotateCcw,
-  ArrowLeft,
-  SlidersHorizontal,
-  Layers,
-} from "lucide-react";
+import { Compass } from "lucide-react";
 
-// Client-only dynamic import of the Leaflet Map Engine
+// Client-only dynamic import of the Leaflet Map Engine with cinematic shimmer skeleton
 const EducationMapLeaflet = dynamic(() => import("./EducationMapLeaflet"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-[#080808] space-y-3">
-      <div className="size-9 rounded-full border-2 border-lume-primary/30 border-t-lume-primary animate-spin" />
-      <span className="text-xs font-mono text-white/50 tracking-widest uppercase">
-        Initializing Singapore Geographic Atlas...
-      </span>
+    <div className="relative w-full h-full bg-[#050505] overflow-hidden flex flex-col items-center justify-center">
+      {/* Animated Subtle Grid Lines matching Lume-Glass theme */}
+      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(var(--lume-primary)_1px,transparent_1px)] [background-size:24px_24px]" />
+      
+      {/* Shimmer Pulse Auras */}
+      <div className="relative flex flex-col items-center gap-4 z-10">
+        <div className="relative size-16 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full bg-[var(--lume-primary)]/20 animate-ping" />
+          <div className="size-12 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex items-center justify-center shadow-[0_0_30px_rgba(74,255,180,0.25)]">
+            <Compass className="size-6 text-[var(--lume-primary)] animate-pulse" />
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-1 text-center">
+          <span className="text-xs font-mono font-medium tracking-widest text-white/90 uppercase">
+            Loading Geographic Map...
+          </span>
+          <span className="text-[10px] font-mono text-white/40">
+            Singapore Academic Journey Atlas
+          </span>
+        </div>
+      </div>
     </div>
   ),
 });
@@ -44,16 +48,11 @@ export function EducationMap({
   education: dbEducation,
   locations: customLocations,
   initialActiveId,
-  height = "100%",
   className,
-  showTimeline = true,
-  showLegend = true,
   theme: initialTheme = "dark",
   fullViewport = true,
   onSelectLocation,
 }: FullEducationMapProps) {
-  const { navigateWithTransition } = usePageTransition();
-
   // Transform dbEducation or customLocations to EducationLocation array
   const allLocations: EducationLocation[] = React.useMemo(() => {
     if (dbEducation && dbEducation.length > 0) {
@@ -88,18 +87,82 @@ export function EducationMap({
     );
   }, [dbEducation, customLocations]);
 
-  const [selectedType, setSelectedType] = React.useState<EducationType | "all">("all");
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [selectedCategory, setSelectedCategory] = React.useState("all");
   const [activeId, setActiveId] = React.useState<string | null>(
     initialActiveId || (allLocations.length > 0 ? allLocations[0].id : null)
   );
+  const [isPlacePanelOpen, setIsPlacePanelOpen] = React.useState(true);
   const [mapTheme, setMapTheme] = React.useState<"light" | "dark" | "auto">(initialTheme);
-  const [showFilters, setShowFilters] = React.useState(false);
+  
+  // Default to previous minimalist map
+  const [mapStyle, setMapStyle] = React.useState<"high-res" | "minimal">("minimal");
 
-  // Filtered locations based on legend selection
+  // Zoom and recenter triggers
+  const [zoomInTrigger, setZoomInTrigger] = React.useState(0);
+  const [zoomOutTrigger, setZoomOutTrigger] = React.useState(0);
+  const [recenterTrigger, setRecenterTrigger] = React.useState(0);
+
+  // Robust Filtered locations matching name, program, caption, honours, and category
   const filteredLocations = React.useMemo(() => {
-    if (selectedType === "all") return allLocations;
-    return allLocations.filter((l) => l.type === selectedType);
-  }, [allLocations, selectedType]);
+    return allLocations.filter((loc) => {
+      const normProg = (loc.program || "").toLowerCase();
+      const normName = (loc.name || "").toLowerCase();
+      const normCaption = (loc.caption || "").toLowerCase();
+      const fullText = `${normName} ${normProg} ${normCaption} ${loc.type || ""}`;
+
+      // Category filter
+      if (selectedCategory !== "all") {
+        if (selectedCategory === "primary") {
+          const isPrimary =
+            fullText.includes("primary") ||
+            fullText.includes("psle") ||
+            fullText.includes("peiying") ||
+            fullText.includes("elementary");
+          if (!isPrimary) return false;
+        } else if (selectedCategory === "secondary") {
+          const isSecondary =
+            fullText.includes("secondary") ||
+            fullText.includes("o level") ||
+            fullText.includes("o-level") ||
+            fullText.includes("high school") ||
+            fullText.includes("chung cheng") ||
+            fullText.includes("gce");
+          if (!isSecondary) return false;
+        } else if (selectedCategory === "diploma") {
+          const isDiploma =
+            fullText.includes("diploma") ||
+            fullText.includes("polytechnic") ||
+            fullText.includes("poly") ||
+            fullText.includes("nyp") ||
+            fullText.includes("nanyang poly");
+          if (!isDiploma) return false;
+        } else if (selectedCategory === "degree") {
+          const isUniversity =
+            fullText.includes("university") ||
+            fullText.includes("bachelor") ||
+            fullText.includes("degree") ||
+            fullText.includes("nus") ||
+            fullText.includes("bcomp") ||
+            fullText.includes("undergraduate");
+          if (!isUniversity) return false;
+        }
+      }
+
+      // Search text filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchName = normName.includes(q);
+        const matchProg = normProg.includes(q);
+        const matchCity = (loc.city || "").toLowerCase().includes(q);
+        const matchHonours = (loc.honours || "").toLowerCase().includes(q);
+        const matchCaption = normCaption.includes(q);
+        if (!matchName && !matchProg && !matchCity && !matchHonours && !matchCaption) return false;
+      }
+
+      return true;
+    });
+  }, [allLocations, selectedCategory, searchQuery]);
 
   // Keep activeId valid within filtered locations
   React.useEffect(() => {
@@ -116,6 +179,7 @@ export function EducationMap({
   const handleSelectLocation = React.useCallback(
     (loc: EducationLocation) => {
       setActiveId(loc.id);
+      setIsPlacePanelOpen(true);
       onSelectLocation?.(loc);
     },
     [onSelectLocation]
@@ -150,22 +214,19 @@ export function EducationMap({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handlePrev, handleNext]);
 
-  const handleReset = () => {
-    setSelectedType("all");
-    if (allLocations.length > 0) {
-      setActiveId(allLocations[0].id);
-    }
+  const handleRecenter = () => {
+    setRecenterTrigger((prev) => prev + 1);
   };
 
-  const toggleTheme = () => {
-    setMapTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  const handleToggleMapStyle = () => {
+    setMapStyle((prev) => (prev === "minimal" ? "high-res" : "minimal"));
   };
 
   return (
     <div
       className={cn(
-        "relative w-full overflow-hidden bg-[#050505]",
-        fullViewport ? "h-[100dvh] w-screen fixed inset-0 z-30" : "h-[600px] rounded-3xl border border-white/10",
+        "relative w-full h-[100dvh] overflow-hidden bg-[#050505] select-none",
+        fullViewport ? "w-screen fixed inset-0 z-30" : "h-[650px] rounded-3xl border border-white/10",
         className
       )}
     >
@@ -190,127 +251,98 @@ export function EducationMap({
         </ul>
       </div>
 
-      {/* Background Fullscreen Leaflet Map */}
+      {/* Fullscreen Leaflet Map Canvas */}
       <div className="absolute inset-0 z-0 w-full h-full">
         <EducationMapLeaflet
           locations={filteredLocations}
           activeId={activeId}
           onSelectLocation={handleSelectLocation}
           theme={mapTheme}
+          mapStyle={mapStyle}
+          isPanelOpen={isPlacePanelOpen}
+          zoomInTrigger={zoomInTrigger}
+          zoomOutTrigger={zoomOutTrigger}
+          recenterTrigger={recenterTrigger}
         />
       </div>
 
-      {/* Floating Top Header Bar */}
-      <div className="absolute top-20 sm:top-24 left-4 right-4 sm:left-6 sm:right-6 z-[450] pointer-events-none flex flex-wrap items-center justify-between gap-3">
-        {/* Left: Back Link & Title */}
-        <div className="pointer-events-auto flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigateWithTransition("/")}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 text-xs font-mono text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200 shadow-xl group"
-            aria-label="Return to portfolio home"
-          >
-            <ArrowLeft className="size-3.5 transform transition-transform group-hover:-translate-x-0.5" />
-            <span className="hidden sm:inline">Back</span>
-          </button>
+      {/* DESKTOP & TABLET MODE: Full Viewport Height Left Sidebar */}
+      <div className="hidden sm:flex fixed left-0 top-0 bottom-0 z-[450] w-full sm:w-[420px] md:w-[480px] lg:w-[520px] xl:w-[540px] flex-col p-4 sm:p-5 gap-3.5 bg-[#080808]/94 backdrop-blur-3xl border-r border-white/10 shadow-[24px_0_60px_rgba(0,0,0,0.92)]">
+        {/* Top Search & Category Filter Bar */}
+        <GoogleMapsSearchBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          locationsCount={filteredLocations.length}
+          totalCount={allLocations.length}
+          className="w-full shrink-0"
+        />
 
-          <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 shadow-xl">
-            <div className="size-2 rounded-full bg-lume-primary animate-pulse" />
-            <span className="text-xs font-mono font-medium text-white/90 tracking-wide uppercase">
-              Education Journey
-            </span>
-            <span className="text-[10px] font-mono text-white/40 hidden md:inline">
-              • Singapore
-            </span>
-          </div>
-        </div>
-
-        {/* Right: Controls (Theme, Reset, Filter toggle) */}
-        <div className="pointer-events-auto flex items-center gap-2">
-          {/* Filter Pills Toggle on mobile/tablet */}
-          {showLegend && (
-            <button
-              type="button"
-              onClick={() => setShowFilters((prev) => !prev)}
-              className={cn(
-                "p-2 rounded-xl border text-xs font-mono transition-all backdrop-blur-xl shadow-xl flex items-center gap-1.5",
-                showFilters
-                  ? "bg-lume-primary text-black border-lume-primary font-medium"
-                  : "bg-[#0a0a0a]/80 hover:bg-white/10 text-white/70 hover:text-white border-white/10"
-              )}
-              title="Toggle milestone category filters"
-              aria-label="Toggle category filter toolbar"
-            >
-              <SlidersHorizontal className="size-3.5" />
-              <span className="hidden md:inline text-[11px]">Filters</span>
-            </button>
-          )}
-
-          {/* Basemap Tile Theme Toggle */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="p-2 rounded-xl bg-[#0a0a0a]/80 hover:bg-white/10 text-white/70 hover:text-white transition-all border border-white/10 backdrop-blur-xl shadow-xl flex items-center gap-1.5 text-xs font-mono"
-            title={`Switch to ${mapTheme === "dark" ? "Light Gray Base" : "Dark Gray Base"} tiles`}
-            aria-label="Toggle map tile theme"
-          >
-            {mapTheme === "dark" ? (
-              <Sun className="size-3.5 text-amber-400" />
-            ) : (
-              <Moon className="size-3.5 text-blue-400" />
-            )}
-          </button>
-
-          {/* Reset / Center View Button */}
-          <button
-            type="button"
-            onClick={handleReset}
-            className="p-2 rounded-xl bg-[#0a0a0a]/80 hover:bg-white/10 text-white/70 hover:text-white transition-all border border-white/10 backdrop-blur-xl shadow-xl flex items-center gap-1.5 text-xs font-mono"
-            title="Reset Singapore view and active milestone"
-            aria-label="Reset map view"
-          >
-            <RotateCcw className="size-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Dropdown / Floating Category Filter Bar */}
-      {showLegend && showFilters && (
-        <div className="absolute top-32 sm:top-36 left-4 right-4 sm:left-6 sm:right-auto z-[450] pointer-events-auto animate-in fade-in slide-in-from-top-2">
-          <EducationLegend
-            locations={allLocations}
-            selectedType={selectedType}
-            onSelectType={setSelectedType}
-            className="bg-[#0a0a0a]/90 shadow-2xl border-white/12"
-          />
-        </div>
-      )}
-
-      {/* Floating On-Map Popup HUD Card with Prev / Next Buttons (Positioned to avoid blocking Singapore view) */}
-      {activeLocation && (
-        <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 md:right-8 z-[420] pointer-events-auto">
-          <EducationMapCardHUD
+        {/* Full-Height Place Details Card Body */}
+        {activeLocation ? (
+          <GoogleMapsPlacePanel
             location={activeLocation}
             currentIndex={activeIndex}
             totalCount={filteredLocations.length}
             onPrev={handlePrev}
             onNext={handleNext}
+            onRecenter={handleRecenter}
+            isOpen={isPlacePanelOpen}
+            onToggleOpen={() => setIsPlacePanelOpen((prev) => !prev)}
+            className="w-full flex-1 min-h-0"
           />
-        </div>
-      )}
-
-      {/* Floating Timeline Strip (Positioned at bottom-left, non-obstructive) */}
-      {showTimeline && (
-        <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 max-w-[calc(100vw-32px)] sm:max-w-md lg:max-w-lg z-[410] pointer-events-auto hidden md:block">
-          <div className="p-2.5 rounded-2xl bg-[#0a0a0a]/75 backdrop-blur-xl border border-white/10 shadow-2xl">
-            <EducationTimelineStrip
-              locations={filteredLocations}
-              activeId={activeId}
-              onSelectLocation={handleSelectLocation}
-            />
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center rounded-2xl bg-white/[0.02] border border-white/5">
+            <Compass className="size-10 text-white/30 mb-3" />
+            <p className="text-sm text-white/60 font-medium">No educational institutions found</p>
+            <p className="text-xs text-white/40 mt-1">Try clearing your search filter</p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* MOBILE MODE: Floating Top Search Bar */}
+      <div className="sm:hidden fixed top-3 left-3 right-3 z-[450] pointer-events-auto">
+        <GoogleMapsSearchBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          locationsCount={filteredLocations.length}
+          totalCount={allLocations.length}
+          className="w-full"
+        />
+      </div>
+
+      {/* MOBILE MODE: Strictly Positioned at Bottom of Screen as Bottom Sheet */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-[450] pointer-events-auto">
+        {activeLocation && (
+          <GoogleMapsPlacePanel
+            location={activeLocation}
+            currentIndex={activeIndex}
+            totalCount={filteredLocations.length}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onRecenter={handleRecenter}
+            isOpen={isPlacePanelOpen}
+            onToggleOpen={() => setIsPlacePanelOpen((prev) => !prev)}
+            className="w-full"
+          />
+        )}
+      </div>
+
+      {/* Floating Map Controls in the Bottom Right-Hand Corner of the Screen */}
+      <div className="fixed bottom-5 sm:bottom-6 right-5 sm:right-6 z-[450] pointer-events-auto">
+        <GoogleMapsControls
+          mapTheme={mapTheme}
+          onToggleTheme={() => setMapTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+          mapStyle={mapStyle}
+          onToggleMapStyle={handleToggleMapStyle}
+          onZoomIn={() => setZoomInTrigger((prev) => prev + 1)}
+          onZoomOut={() => setZoomOutTrigger((prev) => prev + 1)}
+          onRecenterSingapore={handleRecenter}
+        />
+      </div>
     </div>
   );
 }

@@ -26,10 +26,10 @@ export default function DashboardLoading() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col justify-between space-y-4 h-36"
+              className="p-5 sm:p-6 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col justify-between space-y-5 h-40"
             >
               <div className="flex items-center justify-between">
-                <div className="size-9 rounded-xl bg-white/5 border border-white/5" />
+                <div className="size-10 rounded-xl bg-white/5 border border-white/5" />
                 <div className="size-4 rounded bg-white/5" />
               </div>
               <div className="space-y-2">
@@ -50,10 +50,10 @@ export default function DashboardLoading() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="p-5 flex items-center gap-4 bg-white/[0.02] border border-white/5 rounded-2xl"
+              className="p-5 sm:p-6 flex flex-col justify-between bg-white/[0.02] border border-white/5 rounded-2xl"
             >
-              <div className="size-11 rounded-2xl bg-lume-primary/10 border border-lume-primary/20 shrink-0" />
-              <div className="space-y-1.5 flex-1 min-w-0">
+              <div className="size-6 bg-lume-primary/20 rounded-md mb-4" />
+              <div className="space-y-2">
                 <div className="h-2.5 w-16 bg-white/10 rounded" />
                 <div className="h-7 w-12 bg-white/20 rounded" />
                 <div className="h-2.5 w-24 bg-white/5 rounded" />

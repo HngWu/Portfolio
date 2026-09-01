@@ -68,23 +68,49 @@ export function getTypeIconSvg(type: EducationType): string {
 export function createMarkerHtml(
   type: EducationType,
   index: number,
-  isActive: boolean = false
+  isActive: boolean = false,
+  thumbnail?: string,
+  theme: "light" | "dark" | "auto" = "dark"
 ): string {
   const config = TYPE_CONFIGS[type] || TYPE_CONFIGS.degree;
   const pinColor = config.pinColor;
   const glowColor = config.glow;
   const innerIcon = getTypeIconSvg(type);
 
-  return `
-    <div class="education-custom-marker ${isActive ? "is-active" : ""}" data-type="${type}" style="--pin-color: ${pinColor}; --glow-color: ${glowColor};">
-      <div class="marker-pulse-ring"></div>
-      <div class="marker-pin-body">
-        <div class="marker-index-badge">${index + 1}</div>
-        <div class="marker-icon-wrapper">
+  const imageContent = thumbnail
+    ? `
+      <div class="marker-image-container">
+        <img
+          src="${thumbnail}"
+          alt="Milestone ${index + 1}"
+          class="marker-thumbnail-img"
+          loading="eager"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+        />
+        <div class="marker-icon-wrapper marker-fallback-icon" style="display: none;">
           <svg viewBox="0 0 24 24" class="marker-svg-icon" style="color: ${pinColor};">
             ${innerIcon}
           </svg>
         </div>
+        <div class="marker-image-overlay"></div>
+      </div>
+    `
+    : `
+      <div class="marker-icon-wrapper">
+        <svg viewBox="0 0 24 24" class="marker-svg-icon" style="color: ${pinColor};">
+          ${innerIcon}
+        </svg>
+      </div>
+    `;
+
+  const themeClass = theme === "light" ? "marker-theme-light" : "marker-theme-dark";
+
+  return `
+    <div class="education-custom-marker ${isActive ? "is-active" : ""} ${themeClass}" data-type="${type}" style="--pin-color: ${pinColor}; --glow-color: ${glowColor};">
+      <div class="marker-pulse-ring"></div>
+      <div class="marker-pin-body">
+        <div class="marker-index-badge">${index + 1}</div>
+        ${imageContent}
       </div>
       <div class="marker-pointer"></div>
     </div>

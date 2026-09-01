@@ -112,7 +112,7 @@ export function TerminalTile({
         type: "output",
         content: detected === "windows"
           ? "Microsoft Windows [Version 10.0.22631.3447]\n(c) Microsoft Corporation. All rights reserved."
-          : `Welcome to HW OS v1.0.0 (${detected === "mac" ? "Darwin" : "Linux"} kernel)`
+          : `Welcome to Lume OS v1.0.0 (${detected === "mac" ? "Darwin" : "Linux"} kernel)`
       },
       { type: "output", content: `Type 'help' to see available commands.` }
     ])

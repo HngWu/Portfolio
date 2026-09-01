@@ -13,7 +13,7 @@ type HistoryItem = {
 
 const COMMANDS = {
   help: "Available commands: help, clear, ls projects, whoami, sudo ignite",
-  whoami: "HW - Creative Developer / Systems Architect. Specialized in high-performance web applications and immersive interfaces.",
+  whoami: "Creative Developer / Systems Architect. Specialized in high-performance web applications and immersive interfaces.",
   "sudo ignite": "Igniting easter egg sequences... [OK] Initializing neural bridge... [OK] System status: STABLE.",
 }
 

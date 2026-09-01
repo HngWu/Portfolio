@@ -30,7 +30,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "HW | Lume-Glass Portfolio",
+  title: "Lume-Glass Portfolio",
   description: "Creative Developer Portfolio",
 };
 
