@@ -1,0 +1,58 @@
+[
+  {
+    "id": "nus-bcomp",
+    "name": "National University of Singapore",
+    "type": "degree",
+    "program": "BComp Computer Science (Honours with Highest Distinction)",
+    "city": "Singapore",
+    "country": "Singapore",
+    "lat": 1.2966,
+    "lng": 103.7764,
+    "startDate": "2020-08",
+    "endDate": "2024-05",
+    "caption": "Focused on Distributed Systems, Computer Graphics, and Algorithms. Graduated with First Class Honours and Dean's List recognition.",
+    "thumbnail": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=600&q=80"
+  },
+  {
+    "id": "stanford-exchange",
+    "name": "Stanford University",
+    "type": "exchange",
+    "program": "Overseas Academic Exchange / Special Program",
+    "city": "Stanford, CA",
+    "country": "USA",
+    "lat": 37.4275,
+    "lng": -122.1697,
+    "startDate": "2022-09",
+    "endDate": "2023-01",
+    "caption": "Immersive study in Silicon Valley focusing on Advanced HCI, Interactive Computer Graphics, and scalable web architectures.",
+    "thumbnail": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=600&q=80"
+  },
+  {
+    "id": "recurse-center",
+    "name": "Recurse Center",
+    "type": "bootcamp",
+    "program": "Self-Directed Engineering Retreat",
+    "city": "New York, NY",
+    "country": "USA",
+    "lat": 40.7209,
+    "lng": -74.0007,
+    "startDate": "2023-06",
+    "endDate": "2023-08",
+    "caption": "Intensive mini-retreat exploring WebGL shaders, real-time audio synthesis, and custom WebAssembly rendering engines.",
+    "thumbnail": "https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=600&q=80"
+  },
+  {
+    "id": "siggraph-workshop",
+    "name": "ACM SIGGRAPH Conference & Workshop",
+    "type": "conference",
+    "program": "Real-Time Rendering & Neural Graphics Workshop",
+    "city": "Denver, CO",
+    "country": "USA",
+    "lat": 39.7392,
+    "lng": -104.9903,
+    "startDate": "2024-07",
+    "endDate": "2024-08",
+    "caption": "Attended technical presentations on real-time neural radiance fields, Gaussian splatting, and cutting-edge GPU shading techniques.",
+    "thumbnail": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80"
+  }
+]

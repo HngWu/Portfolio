@@ -42,7 +42,7 @@ export function getDb(): InstanceType<typeof Database> {
     if (isServerless) {
       const tmpDir = os.tmpdir()
       dbPath = path.join(tmpDir, 'portfolio.db')
-      const sourceDbPath = path.join(process.cwd(), 'data', 'portfolio.db')
+      const sourceDbPath = path.join(/*turbopackIgnore: true*/ process.cwd(), 'data', 'portfolio.db')
 
       if (!fs.existsSync(dbPath) && fs.existsSync(sourceDbPath)) {
         try {
@@ -52,7 +52,7 @@ export function getDb(): InstanceType<typeof Database> {
         }
       }
     } else {
-      const dataDir = path.join(process.cwd(), 'data')
+      const dataDir = path.join(/*turbopackIgnore: true*/ process.cwd(), 'data')
       if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true })
       }
