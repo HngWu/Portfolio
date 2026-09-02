@@ -252,7 +252,7 @@ export function ExperienceTile({
           className="flex flex-col h-full overflow-hidden select-none outline-none"
         >
           {/* Header */}
-          <div className="flex justify-between items-start mb-4 shrink-0">
+          <div className="flex justify-between items-start mb-2 shrink-0">
             <div>
               <div className="flex items-center gap-2">
                 <h3 className={cn(typo.heading, "text-white/90")}>Key Responsibilities</h3>
@@ -304,7 +304,7 @@ export function ExperienceTile({
           <div className="flex-1 space-y-3.5 pr-2 pb-4 overflow-y-auto custom-scrollbar">
             {deepHighlights.map((highlight, i) => (
               <div key={i} className="flex items-start gap-3 group/item">
-                <div className="shrink-0 p-1 mt-0.5 bg-white/5 rounded-md border border-white/5 group-hover/item:border-lume-primary/30 transition-colors">
+                <div className="shrink-0 p-1 mt-0.5 bg-transparent rounded-md border border-white/10 group-hover/item:border-lume-primary/30 transition-colors">
                   {getHighlightIcon(
                     highlight,
                     "size-3 text-lume-primary/50 group-hover/item:text-lume-primary transition-colors"
@@ -331,7 +331,7 @@ export function ExperienceTile({
         className="relative flex flex-col h-full w-full outline-none"
       >
         {/* Top Header with Category badge and Desktop Controls */}
-        <div className="flex items-center justify-between mb-4 shrink-0 relative z-30">
+        <div className="flex items-center justify-between mb-1.5 shrink-0 relative z-30">
           <div className="flex items-center gap-2">
             <span className={cn(typo.meta, "text-white/40 uppercase tracking-widest flex items-center gap-1.5")}>
               <Briefcase className={cn(typo.icon, "text-lume-primary")} />
@@ -380,11 +380,11 @@ export function ExperienceTile({
         </div>
 
         {/* 3D Stack Container */}
-        <div className="relative flex-1 w-full min-h-[160px] flex flex-col justify-end">
+        <div className="relative flex-1 w-full min-h-[160px] flex flex-col justify-between pt-0">
           {/* Background Peek Card 2 (Bottom-most) */}
           {peekCard2 && (
             <div
-              className="absolute inset-x-4 bottom-0 h-[84%] rounded-2xl bg-white/[0.015] border border-white/[0.03] pointer-events-none transition-all duration-300 shadow-sm"
+              className="absolute inset-x-4 bottom-0 h-[84%] rounded-2xl bg-transparent border border-white/[0.04] pointer-events-none transition-all duration-300 shadow-sm"
               style={{
                 transform: "translateY(14px) scale(0.92)",
                 opacity: 0.25,
@@ -396,7 +396,7 @@ export function ExperienceTile({
           {/* Background Peek Card 1 (Middle) */}
           {peekCard1 && (
             <div
-              className="absolute inset-x-2 bottom-0 h-[92%] rounded-2xl bg-white/[0.03] border border-white/5 pointer-events-none transition-all duration-300 shadow-md backdrop-blur-[2px]"
+              className="absolute inset-x-2 bottom-0 h-[92%] rounded-2xl bg-transparent border border-white/[0.07] pointer-events-none transition-all duration-300 shadow-sm"
               style={{
                 transform: "translateY(7px) scale(0.96)",
                 opacity: 0.5,
@@ -474,18 +474,18 @@ export function ExperienceTile({
               className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y"
             >
               <div className="pr-5 select-none">
-                <h3 className={cn(typo.heading, "font-medium text-white/90 tracking-tight mb-0.5 line-clamp-1")}>
+                <h3 className={cn(typo.heading, "font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight")}>
                   {activeItem.role}
                 </h3>
-                <p className={cn(typo.meta, "text-white/40 mb-4")}>
+                <p className={cn(typo.meta, "text-white/40 mb-3 text-xs")}>
                   {activeItem.company} · {activeItem.date}
                 </p>
 
                 {/* Highlights List */}
-                <div className="space-y-2.5">
+                <div className="space-y-2 md:space-y-2.5">
                   {quickHighlights.slice(0, 4).map((highlight, i) => (
                     <div key={i} className="flex items-start gap-2.5 group/item">
-                      <div className="shrink-0 p-1 mt-0.5 bg-white/5 rounded-md border border-white/5 group-hover/item:border-lume-primary/30 transition-colors">
+                      <div className="shrink-0 p-1 mt-0.5 bg-transparent rounded-md border border-white/10 group-hover/item:border-lume-primary/30 transition-colors">
                         {getHighlightIcon(
                           highlight,
                           "size-3 text-lume-primary/50 group-hover/item:text-lume-primary transition-colors"
@@ -504,7 +504,7 @@ export function ExperienceTile({
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 flex items-center justify-between border-t border-white/5 pr-5 select-none">
+              <div className="mt-auto pt-3 flex items-center justify-between border-t border-white/5 select-none">
                 <span className={cn(typo.meta, "text-white/30 text-[10px]")}>{activeItem.date}</span>
                 <div className="flex items-center gap-1 text-[9px] font-mono text-white/30">
                   <Sparkles className="size-2.5 text-lume-primary/60" />

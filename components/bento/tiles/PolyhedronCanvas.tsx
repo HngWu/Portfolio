@@ -1290,13 +1290,16 @@ function PolyhedronScene({
     sharedSpellState.scrollProgress = smoothScroll.current
 
     // Stable camera positioning with dynamic viewport-based zoom scaling to prevent horizontal clipping on narrow mobile devices
-    const aspect = state.size.width / state.size.height
-    const baseZ = isEffectiveMobile ? 14.2 : 12.0
-    if (aspect < 0.85) {
-      camera.position.z = Math.max(baseZ, (baseZ * 0.85) / aspect)
-    } else {
-      camera.position.z = baseZ
+    const aspect = state.size.width / (state.size.height || 1)
+    if (camera instanceof THREE.PerspectiveCamera) {
+      if (Math.abs(camera.aspect - aspect) > 0.001) {
+        camera.aspect = aspect
+        camera.updateProjectionMatrix()
+      }
     }
+    const baseZ = isEffectiveMobile ? 14.2 : 12.0
+    const targetZ = aspect < 1.0 ? Math.max(baseZ, (baseZ * 0.95) / Math.max(aspect, 0.62)) : baseZ
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.1)
 
     // Gyroscopic Motion Resonance: Precession, Cursor Slerp and Harmonic Local Spin
     const p1 = _gyroPrecess1.set(1.0, 0.2 * Math.sin(0.5 * t), 0.1 * Math.cos(0.3 * t)).normalize()
@@ -1965,8 +1968,10 @@ function CameraController({ isEffectiveMobile }: { isEffectiveMobile: boolean })
 
   useEffect(() => {
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.aspect = size.width / size.height
-      camera.position.z = isEffectiveMobile ? 14.2 : 12
+      const aspect = size.width / (size.height || 1)
+      camera.aspect = aspect
+      const baseZ = isEffectiveMobile ? 14.2 : 12.0
+      camera.position.z = aspect < 1.0 ? Math.max(baseZ, (baseZ * 0.95) / Math.max(aspect, 0.62)) : baseZ
       camera.updateProjectionMatrix()
     }
   }, [camera, size.width, size.height, isEffectiveMobile])
@@ -2218,9 +2223,9 @@ export default function PolyhedronCanvas({
     <div ref={containerRef} className="w-full h-full relative overflow-hidden">
       <Canvas 
         camera={{ position: [0, 0, isEffectiveMobile ? 14.2 : 12], fov: 35 }}
-        dpr={isEffectiveMobile ? 1.0 : [1, 1.5]}
-        gl={{ alpha: true }}
-        resize={{ offsetSize: true }}
+        dpr={[1, 1.5]}
+        gl={{ alpha: true, powerPreference: "high-performance" }}
+        resize={{ offsetSize: true, scroll: false }}
         style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, pointerEvents: 'auto' }}
       >
         <CameraController isEffectiveMobile={isEffectiveMobile} />
@@ -2241,7 +2246,7 @@ export default function PolyhedronCanvas({
         </Suspense>
 
         {/* Volumetric Bloom Postprocessing - Calibrated for sleek cinematic balance */}
-        <EffectComposer multisampling={isEffectiveMobile ? 0 : 4}>
+        <EffectComposer multisampling={0}>
           <Bloom 
             luminanceThreshold={0.08} 
             luminanceSmoothing={0.80} 
@@ -2251,28 +2256,6 @@ export default function PolyhedronCanvas({
         </EffectComposer>
       </Canvas>
 
-      {/* Elegant Heads-Up Display (HUD) Tooltip Overlay in the corner — doesn't block the 3D model! */}
-      <AnimatePresence>
-        {hud.rune && (
-          <motion.div
-            initial={{ opacity: 0, x: -15, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -15, scale: 0.95 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="absolute top-6 left-6 pointer-events-none border border-lume-primary/20 bg-black/85 backdrop-blur-md rounded-xl p-3.5 shadow-2xl z-20 font-mono flex flex-col gap-1 w-[220px] select-none text-left"
-          >
-            <div className="text-[8px] uppercase tracking-[0.25em] text-lume-primary/60 font-bold leading-none mb-0.5">Arcane Telemetry</div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-3xl text-lume-primary font-bold leading-none">{hud.rune}</span>
-              <div className="h-6 w-[1px] bg-white/20" />
-              <span className="text-[11px] text-white font-bold tracking-wider uppercase leading-none">{hud.runeName}</span>
-            </div>
-            <div className="text-[10px] text-white/55 leading-relaxed mt-2 border-t border-white/5 pt-2">
-              {hud.loreDesc}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }

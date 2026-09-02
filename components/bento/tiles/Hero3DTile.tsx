@@ -59,7 +59,7 @@ export function Hero3DTile({
     <BentoTile 
       id={id} 
       size={size} 
-      className="p-0 bg-transparent overflow-hidden h-full w-full" 
+      className="p-0 bg-transparent overflow-hidden h-full w-full min-h-[350px] xs:min-h-[380px] sm:min-h-[420px] md:min-h-0 aspect-[1/1] sm:aspect-auto" 
       isDragging={isDragging} 
       sortableProps={sortableProps}
       canDeepDive={false}
@@ -70,7 +70,7 @@ export function Hero3DTile({
     >
       <div 
         ref={containerRef}
-        className="w-full h-full relative pointer-events-auto overflow-hidden"
+        className="w-full h-full min-h-[350px] xs:min-h-[380px] sm:min-h-[420px] md:min-h-0 relative pointer-events-auto overflow-hidden"
         onMouseEnter={() => !isDraggingActive && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

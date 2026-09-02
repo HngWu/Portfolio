@@ -174,9 +174,11 @@ export function ArcaneCursor() {
       document.body.classList.add('custom-cursor-active')
     } else {
       document.body.classList.remove('custom-cursor-active')
+      document.body.classList.remove('rune-cursor')
     }
     return () => {
       document.body.classList.remove('custom-cursor-active')
+      document.body.classList.remove('rune-cursor')
     }
   }, [isActive, isTouchDevice])
 

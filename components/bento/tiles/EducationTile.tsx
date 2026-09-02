@@ -201,7 +201,7 @@ export function EducationTile({
                   {activeItem.levelLabel || activeItem.level || "Academic"}
                 </span>
               </div>
-              <p className={cn(typo.body, "text-white/60 mt-0.5 text-xs")}>{activeItem.institution}</p>
+              <p className={cn(typo.body, "text-white/60 mt-0.5 text-xs line-clamp-2 leading-snug")}>{activeItem.institution}</p>
             </div>
 
             {/* Desktop Chevrons for Deep Dive */}
@@ -250,7 +250,7 @@ export function EducationTile({
 
             <div className="grid grid-cols-2 gap-2.5">
               {/* Metric Box */}
-              <div className="relative p-3.5 bg-white/[0.03] rounded-xl border border-white/5 overflow-hidden group/gpa flex flex-col justify-between">
+              <div className="relative p-3.5 bg-transparent rounded-xl border border-white/5 overflow-hidden group/gpa flex flex-col justify-between">
                 <div className="absolute top-0 right-0 p-2 opacity-20 group-hover/gpa:opacity-40 transition-opacity">
                   <TrendingUp className="size-3.5 text-lume-primary" />
                 </div>
@@ -274,7 +274,7 @@ export function EducationTile({
               </div>
 
               {/* Period & Honours Box */}
-              <div className="p-3.5 bg-white/[0.03] rounded-xl border border-white/5 flex flex-col justify-between">
+              <div className="p-3.5 bg-transparent rounded-xl border border-white/5 flex flex-col justify-between">
                 <div>
                   <span className={cn(typo.meta, "block text-white/30 text-[9px] mb-1")}>Study Period</span>
                   <span className={cn(typo.body, "text-white/80 font-medium leading-tight text-xs")}>
@@ -366,11 +366,11 @@ export function EducationTile({
         </div>
 
         {/* 3D Stack Container */}
-        <div className="relative flex-1 w-full min-h-[140px] flex flex-col justify-end">
+        <div className="relative flex-1 w-full min-h-[160px] flex flex-col justify-end">
           {/* Background Peek Card 2 (Bottom-most) */}
           {peekCard2 && (
             <div
-              className="absolute inset-x-4 bottom-0 h-[82%] rounded-2xl bg-white/[0.015] border border-white/[0.03] pointer-events-none transition-all duration-300 shadow-sm"
+              className="absolute inset-x-4 bottom-0 h-[82%] rounded-2xl bg-transparent border border-white/[0.04] pointer-events-none transition-all duration-300 shadow-sm"
               style={{
                 transform: "translateY(14px) scale(0.92)",
                 opacity: 0.25,
@@ -382,7 +382,7 @@ export function EducationTile({
           {/* Background Peek Card 1 (Middle) */}
           {peekCard1 && (
             <div
-              className="absolute inset-x-2 bottom-0 h-[90%] rounded-2xl bg-white/[0.03] border border-white/5 pointer-events-none transition-all duration-300 shadow-md backdrop-blur-[2px]"
+              className="absolute inset-x-2 bottom-0 h-[90%] rounded-2xl bg-transparent border border-white/[0.07] pointer-events-none transition-all duration-300 shadow-sm"
               style={{
                 transform: "translateY(7px) scale(0.96)",
                 opacity: 0.5,
@@ -460,7 +460,7 @@ export function EducationTile({
               className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y"
             >
               <div className="pr-5 select-none">
-                <h3 className={cn(typo.heading, "text-white/90 font-medium tracking-tight mb-1 line-clamp-1")}>
+                <h3 className="font-display text-lg md:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight">
                   {activeItem.institution}
                 </h3>
                 <p className={cn(typo.body, "text-white/60 text-xs md:text-sm font-normal line-clamp-2 leading-snug")}>

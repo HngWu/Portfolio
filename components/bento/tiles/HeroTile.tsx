@@ -58,6 +58,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
       element.innerText = text
           .split("")
           .map((letter, index) => {
+            if (letter === " ") return " "
             if (index < iteration) {
               return text[index]
             }
@@ -117,7 +118,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
           {/* Main Content */}
           <h1 
             ref={deepMarkRef}
-            className="text-3xl md:text-4xl font-display leading-tight text-white/90 min-h-[1.2em] font-extrabold tracking-tight"
+            className="text-2xl md:text-3xl font-display leading-tight text-white/90 min-h-[1.3em] font-bold tracking-tight break-words"
           >
             {mark}
           </h1>
@@ -130,8 +131,8 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
             {/* Bottom Left: Download CV Button */}
             <div className="flex items-center gap-2">
               <a 
-                href="/cv.pdf" 
-                download
+                href="/resume.pdf" 
+                download="resume.pdf"
                 className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-[#4AFFB4]/10 border border-white/5 hover:border-[#4AFFB4]/30 rounded-xl text-white/50 hover:text-[#4AFFB4] transition-all duration-300 select-none cursor-pointer group/cv"
               >
                 <Download className="w-4 h-4 transition-transform group-hover/cv:-translate-y-0.5" />
@@ -189,7 +190,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
         {/* Main Content */}
         <h1 
           ref={markRef}
-          className="text-3xl md:text-4xl font-display leading-tight text-white/90 min-h-[1.2em] font-extrabold tracking-tight"
+          className="text-2xl md:text-3xl font-display leading-tight text-white/90 min-h-[1.3em] font-bold tracking-tight break-words"
         >
           {mark}
         </h1>
@@ -202,8 +203,8 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
           {/* Bottom Left: Download CV Button */}
           <div className="flex items-center gap-2">
             <a 
-              href="/cv.pdf" 
-              download
+              href="/resume.pdf" 
+              download="resume.pdf"
               className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-[#4AFFB4]/10 border border-white/5 hover:border-[#4AFFB4]/30 rounded-xl text-white/50 hover:text-[#4AFFB4] transition-all duration-300 select-none cursor-pointer group/cv"
             >
               <Download className="w-4 h-4 transition-transform group-hover/cv:-translate-y-0.5" />

@@ -189,9 +189,14 @@ export function TerminalTile({
     }
     setHistoryIndex(-1)
 
+    const isClear = trimmedCmd === "clear" || trimmedCmd === "cls"
+    const isListProjects = trimmedCmd === "ls projects" || trimmedCmd === "dir projects"
+    const isListSkills = trimmedCmd === "ls skills" || trimmedCmd === "dir skills"
+    const isReadProject = trimmedCmd.startsWith("cat project/") || trimmedCmd.startsWith("type project/")
+
     if (trimmedCmd === "help") {
       setHistory([...newHistory, { type: "output", content: renderHelp() }])
-    } else if (trimmedCmd === config.commands.clear) {
+    } else if (isClear) {
       setHistory([])
     } else if (trimmedCmd === "sudo ignite") {
       setHistory([...newHistory, { type: "output", content: "🔥 Root access granted. Initializing neural bridge..." }])
@@ -199,7 +204,7 @@ export function TerminalTile({
       if (isHexcoreBridgeActive()) {
         sendHexcoreCommand("ignite on")
       }
-    } else if (trimmedCmd === `${config.commands.list} projects`) {
+    } else if (isListProjects) {
       const projectsList = projects || []
       setHistory([
         ...newHistory,
@@ -217,8 +222,11 @@ export function TerminalTile({
           )
         }
       ])
-    } else if (trimmedCmd.startsWith(`${config.commands.read} project/`)) {
-      const name = trimmedCmd.replace(`${config.commands.read} project/`, "").trim()
+    } else if (isReadProject) {
+      const name = trimmedCmd
+        .replace("cat project/", "")
+        .replace("type project/", "")
+        .trim()
       const proj = (projects || []).find(p => p.slug === name)
       if (proj) {
         setHistory([
@@ -231,7 +239,7 @@ export function TerminalTile({
       } else {
         setHistory([...newHistory, { type: "output", content: `Project not found: ${name}` }])
       }
-    } else if (trimmedCmd === `${config.commands.list} skills`) {
+    } else if (isListSkills) {
       setHistory([
         ...newHistory,
         {
@@ -354,6 +362,7 @@ export function TerminalTile({
           showCloseConfirm={showCloseConfirm}
           confirmClose={confirmClose}
           setShowCloseConfirm={setShowCloseConfirm}
+          os={os}
         />
 
         {/* Terminal Body */}

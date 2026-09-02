@@ -61,16 +61,37 @@ export const CATEGORY_MAP: Record<string, string> = {
 
 export function detectOS(): OSType {
   if (typeof window === "undefined") return "linux"
-  const ua = (window.navigator.userAgent || "").toLowerCase()
-  const platform = (window.navigator.platform || "").toLowerCase()
-  const userAgentDataPlatform = (
-    ((window.navigator as unknown as { userAgentData?: { platform?: string } }).userAgentData?.platform || "")
-  ).toLowerCase()
+  const nav = window.navigator as {
+    userAgent?: string
+    platform?: string
+    userAgentData?: { platform?: string }
+  }
+  const ua = (nav.userAgent || "").toLowerCase()
+  const platform = (nav.platform || "").toLowerCase()
+  const userAgentDataPlatform = (nav.userAgentData?.platform || "").toLowerCase()
 
-  const isWin = ua.includes("win") || platform.includes("win") || userAgentDataPlatform.includes("win")
-  const isMac = ua.includes("mac") || platform.includes("mac") || userAgentDataPlatform.includes("mac") || platform.includes("ipad") || platform.includes("iphone")
+  // Match Windows robustly across Chrome, Firefox, Edge, etc.
+  const isWin =
+    userAgentDataPlatform === "windows" ||
+    userAgentDataPlatform.includes("win") ||
+    platform.startsWith("win") ||
+    ua.includes("windows") ||
+    ua.includes("win32") ||
+    ua.includes("win64") ||
+    ua.includes("wow64")
 
   if (isWin) return "windows"
+
+  // Match Mac / Apple ecosystem
+  const isMac =
+    userAgentDataPlatform === "macos" ||
+    userAgentDataPlatform.includes("mac") ||
+    platform.startsWith("mac") ||
+    platform.includes("iphone") ||
+    platform.includes("ipad") ||
+    ua.includes("macintosh") ||
+    ua.includes("mac os x")
+
   if (isMac) return "mac"
   return "linux"
 }
