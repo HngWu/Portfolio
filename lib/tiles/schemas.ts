@@ -80,18 +80,43 @@ export interface ProjectContent {
   featured: boolean
 }
 
-export interface ExperienceContent {
+export interface ExperienceItem {
+  id?: string
   role: string
   company: string
   date: string
+  category?: string
   highlights: string[]
+  deepDiveHighlights?: string[]
 }
 
-export interface EducationContent {
+export interface ExperienceContent {
+  role?: string
+  company?: string
+  date?: string
+  highlights?: string[]
+  items?: ExperienceItem[]
+}
+
+export interface EducationItem {
+  id?: string
   institution: string
   degree: string
   date: string
-  gpa: string
+  gpa?: string
+  honours?: string
+  level?: "university" | "polytechnic" | "secondary" | "primary" | string
+  levelLabel?: string
+  highlights?: string[]
+  caption?: string
+}
+
+export interface EducationContent {
+  institution?: string
+  degree?: string
+  date?: string
+  gpa?: string
+  items?: EducationItem[]
 }
 
 export interface StatContent {
@@ -125,7 +150,8 @@ export type EmptyContent = Record<string, never>
 // ──────────────────────────────────────────────────────────────────────────
 
 export interface ExperienceDeepDive {
-  highlights: string[]
+  highlights?: string[]
+  items?: ExperienceItem[]
 }
 
 export interface EducationDeepDive {
@@ -134,6 +160,7 @@ export interface EducationDeepDive {
   degree?: string
   institution?: string
   honours?: string
+  items?: EducationItem[]
 }
 
 export interface StatDeepDive {
@@ -216,23 +243,94 @@ const parseProject = (raw: unknown): ParseResult<ProjectContent> => {
   })
 }
 
+const parseExperienceItem = (raw: unknown): ExperienceItem | null => {
+  if (!isObject(raw)) return null
+  const role = asString(raw.role) || asString(raw.title) || ""
+  const company = asString(raw.company) || asString(raw.subtitle) || ""
+  const date = asString(raw.date) || asString(raw.date_range) || ""
+  if (!role && !company) return null
+  return {
+    id: asString(raw.id),
+    role,
+    company,
+    date,
+    category: asString(raw.category) || asString(raw.tag),
+    highlights: asStringArray(raw.highlights) ?? [],
+    deepDiveHighlights: asStringArray(raw.deepDiveHighlights) ?? asStringArray(raw.deep_dive_highlights) ?? asStringArray(raw.highlights) ?? [],
+  }
+}
+
 const parseExperience = (raw: unknown): ParseResult<ExperienceContent> => {
   if (!isObject(raw)) return err("experience content must be an object")
+
+  let items: ExperienceItem[] | undefined
+  if (Array.isArray(raw.items)) {
+    const parsedItems = raw.items
+      .map(parseExperienceItem)
+      .filter((item): item is ExperienceItem => item !== null)
+    if (parsedItems.length > 0) {
+      items = parsedItems
+    }
+  }
+
+  const role = asStringOrFallback(raw.role, items?.[0]?.role ?? "")
+  const company = asStringOrFallback(raw.company, items?.[0]?.company ?? "")
+  const date = asStringOrFallback(raw.date, items?.[0]?.date ?? "")
+  const highlights = asStringArray(raw.highlights) ?? items?.[0]?.highlights ?? []
+
   return ok({
-    role: asStringOrFallback(raw.role, ""),
-    company: asStringOrFallback(raw.company, ""),
-    date: asStringOrFallback(raw.date, ""),
-    highlights: asStringArray(raw.highlights) ?? [],
+    role,
+    company,
+    date,
+    highlights,
+    ...(items ? { items } : {}),
   })
+}
+
+const parseEducationItem = (raw: unknown): EducationItem | null => {
+  if (!isObject(raw)) return null
+  const institution = asString(raw.institution) || asString(raw.subtitle) || ""
+  const degree = asString(raw.degree) || asString(raw.title) || ""
+  const date = asString(raw.date) || asString(raw.date_range) || ""
+  if (!institution && !degree) return null
+  return {
+    id: asString(raw.id),
+    institution,
+    degree,
+    date,
+    gpa: asString(raw.gpa),
+    honours: asString(raw.honours),
+    level: asString(raw.level),
+    levelLabel: asString(raw.levelLabel) || asString(raw.level_label),
+    highlights: asStringArray(raw.highlights),
+    caption: asString(raw.caption),
+  }
 }
 
 const parseEducation = (raw: unknown): ParseResult<EducationContent> => {
   if (!isObject(raw)) return err("education content must be an object")
+
+  let items: EducationItem[] | undefined
+  if (Array.isArray(raw.items)) {
+    const parsedItems = raw.items
+      .map(parseEducationItem)
+      .filter((item): item is EducationItem => item !== null)
+    if (parsedItems.length > 0) {
+      items = parsedItems
+    }
+  }
+
+  const institution = asStringOrFallback(raw.institution, items?.[0]?.institution ?? "")
+  const degree = asStringOrFallback(raw.degree, items?.[0]?.degree ?? "")
+  const date = asStringOrFallback(raw.date, items?.[0]?.date ?? "")
+  const gpa = asStringOrFallback(raw.gpa, items?.[0]?.gpa ?? "")
+
   return ok({
-    institution: asStringOrFallback(raw.institution, ""),
-    degree: asStringOrFallback(raw.degree, ""),
-    date: asStringOrFallback(raw.date, ""),
-    gpa: asStringOrFallback(raw.gpa, ""),
+    institution,
+    degree,
+    date,
+    gpa,
+    ...(items ? { items } : {}),
   })
 }
 
@@ -286,18 +384,40 @@ const parseHeroRaw = (raw: unknown): HeroContent => {
 
 const parseExperienceDeepDive = (raw: unknown): ExperienceDeepDive => {
   if (!isObject(raw)) return { highlights: [] }
-  return { highlights: asStringArray(raw.highlights) ?? [] }
+  let items: ExperienceItem[] | undefined
+  if (Array.isArray(raw.items)) {
+    const parsedItems = raw.items
+      .map(parseExperienceItem)
+      .filter((item): item is ExperienceItem => item !== null)
+    if (parsedItems.length > 0) {
+      items = parsedItems
+    }
+  }
+  return {
+    highlights: asStringArray(raw.highlights) ?? [],
+    ...(items ? { items } : {}),
+  }
 }
 
 const parseEducationDeepDive = (raw: unknown): EducationDeepDive => {
   if (!isObject(raw)) return {}
   const honours = asString(raw.honours)
+  let items: EducationItem[] | undefined
+  if (Array.isArray(raw.items)) {
+    const parsedItems = raw.items
+      .map(parseEducationItem)
+      .filter((item): item is EducationItem => item !== null)
+    if (parsedItems.length > 0) {
+      items = parsedItems
+    }
+  }
   return {
     ...(asString(raw.gpa) ? { gpa: asString(raw.gpa) } : {}),
     ...(asString(raw.date) ? { date: asString(raw.date) } : {}),
     ...(asString(raw.degree) ? { degree: asString(raw.degree) } : {}),
     ...(asString(raw.institution) ? { institution: asString(raw.institution) } : {}),
     ...(honours ? { honours } : {}),
+    ...(items ? { items } : {}),
   }
 }
 

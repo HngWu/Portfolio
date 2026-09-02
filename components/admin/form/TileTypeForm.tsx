@@ -318,185 +318,426 @@ export function TileTypeForm({
     )
   }
 
-  // 3. EXPERIENCE TILE
+  // 3. EXPERIENCE TILE (Stackable Deck Support)
   if (type === "experience") {
+    const rawItems: any[] = Array.isArray(content.items) && content.items.length > 0
+      ? content.items
+      : [
+          {
+            role: content.role || "Software Engineer Intern",
+            company: content.company || "DBS Bank",
+            date: content.date || "Apr 2025 - Mar 2026",
+            category: "Enterprise & Fintech",
+            highlights: content.highlights || [
+              "Led full-stack system migrations and automated pipeline deployments",
+              "Optimized data processing to speed up heavy application modules"
+            ],
+            deepDiveHighlights: deepDive.highlights || content.highlights || [
+              "Migrated Martech Request Portal from MongoDB to MariaDB using Java Spring Boot APIs",
+              "Automated CI/CD deployment pipelines using Jenkins on OpenShift"
+            ],
+          },
+        ]
+
+    const updateItem = (index: number, updatedFields: Record<string, any>) => {
+      const copy = rawItems.map((item, idx) => (idx === index ? { ...item, ...updatedFields } : item))
+      onChangeContent({
+        ...content,
+        role: copy[0]?.role || "",
+        company: copy[0]?.company || "",
+        date: copy[0]?.date || "",
+        highlights: copy[0]?.highlights || [],
+        items: copy,
+      })
+      onChangeDeepDive({
+        ...deepDive,
+        highlights: copy[0]?.deepDiveHighlights || copy[0]?.highlights || [],
+        items: copy,
+      })
+    }
+
+    const addItem = () => {
+      const newItem = {
+        role: "New Role Title",
+        company: "Company Name",
+        date: "2024 - Present",
+        category: "Engineering",
+        highlights: ["Contributed to core application modules and feature releases"],
+        deepDiveHighlights: ["Architected and delivered high-impact engineering solutions"],
+      }
+      const copy = [...rawItems, newItem]
+      onChangeContent({
+        ...content,
+        role: copy[0]?.role || "",
+        company: copy[0]?.company || "",
+        date: copy[0]?.date || "",
+        highlights: copy[0]?.highlights || [],
+        items: copy,
+      })
+      onChangeDeepDive({
+        ...deepDive,
+        highlights: copy[0]?.deepDiveHighlights || copy[0]?.highlights || [],
+        items: copy,
+      })
+    }
+
+    const removeItem = (index: number) => {
+      if (rawItems.length <= 1) return
+      const copy = rawItems.filter((_, idx) => idx !== index)
+      onChangeContent({
+        ...content,
+        role: copy[0]?.role || "",
+        company: copy[0]?.company || "",
+        date: copy[0]?.date || "",
+        highlights: copy[0]?.highlights || [],
+        items: copy,
+      })
+      onChangeDeepDive({
+        ...deepDive,
+        highlights: copy[0]?.deepDiveHighlights || copy[0]?.highlights || [],
+        items: copy,
+      })
+    }
+
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+      <div className="space-y-8">
+        <div className="flex items-center justify-between border-b border-white/5 pb-4">
           <div>
-            <label htmlFor="experience-role" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
-              Role Title
-            </label>
-            <input
-              id="experience-role"
-              type="text"
-              value={content.role || ""}
-              onChange={(e) => updateContentField("role", e.target.value)}
-              placeholder="e.g. Software Engineer Intern"
-              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-semibold"
-            />
-            <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
-              Designation held during the tenure.
+            <h3 className="text-sm font-semibold text-white/90">Stackable Experience Roles ({rawItems.length})</h3>
+            <p className="text-[11px] text-white/40 mt-0.5">
+              Manage the 3D card deck. Cards are displayed in reverse-chronological order from top to bottom.
             </p>
           </div>
-          <div>
-            <label htmlFor="experience-company" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
-              Company / Organization
-            </label>
-            <input
-              id="experience-company"
-              type="text"
-              value={content.company || ""}
-              onChange={(e) => updateContentField("company", e.target.value)}
-              placeholder="e.g. DBS Bank"
-              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-semibold"
-            />
-            <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
-              Employer or sponsoring institution.
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={addItem}
+            className="flex items-center gap-1.5 text-xs font-mono text-lume-primary hover:underline px-3 py-1.5 rounded-lg bg-lume-primary/10 hover:bg-lume-primary/20 transition-colors"
+          >
+            <Plus className="size-3.5" />
+            <span>Add Role Card</span>
+          </button>
         </div>
 
-        <div>
-          <label htmlFor="experience-date" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
-            Date Range
-          </label>
-          <input
-            id="experience-date"
-            type="text"
-            value={content.date || ""}
-            onChange={(e) => updateContentField("date", e.target.value)}
-            placeholder="e.g. Apr 2025 - Mar 2026"
-            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-mono"
-          />
-          <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
-            Start and conclusion period of employment.
-          </p>
-        </div>
+        <div className="space-y-6">
+          {rawItems.map((item, idx) => (
+            <div
+              key={idx}
+              className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-5 relative group/card"
+            >
+              <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs px-2.5 py-1 rounded-md bg-lume-primary/10 border border-lume-primary/20 text-lume-primary font-bold">
+                    #{idx + 1} {idx === 0 ? "(Top / Active Card)" : `(Peek ${idx})`}
+                  </span>
+                  <span className="text-xs font-medium text-white/80">
+                    {item.role || "Untitled Role"} {item.company ? `· ${item.company}` : ""}
+                  </span>
+                </div>
+                {rawItems.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeItem(idx)}
+                    className="p-2 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    title="Remove this role card"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                )}
+              </div>
 
-        {renderListEditor(
-          "Quick Pitch Highlights",
-          content.highlights || [],
-          (items) => updateContentField("highlights", items),
-          "e.g. Led full-stack system migrations...",
-          "experience-highlight",
-          "High-impact bullet points for scanning."
-        )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-medium">
+                    Role Title
+                  </label>
+                  <input
+                    type="text"
+                    value={item.role || ""}
+                    onChange={(e) => updateItem(idx, { role: e.target.value })}
+                    placeholder="e.g. Software Engineer Intern"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-medium">
+                    Company / Organization
+                  </label>
+                  <input
+                    type="text"
+                    value={item.company || ""}
+                    onChange={(e) => updateItem(idx, { company: e.target.value })}
+                    placeholder="e.g. DBS Bank"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-medium">
+                    Date Range
+                  </label>
+                  <input
+                    type="text"
+                    value={item.date || ""}
+                    onChange={(e) => updateItem(idx, { date: e.target.value })}
+                    placeholder="e.g. Apr 2025 - Mar 2026"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-medium">
+                    Category Tag
+                  </label>
+                  <input
+                    type="text"
+                    value={item.category || ""}
+                    onChange={(e) => updateItem(idx, { category: e.target.value })}
+                    placeholder="e.g. Enterprise & Fintech / Web & 3D"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-mono"
+                  />
+                </div>
+              </div>
 
-        <div className="pt-4 border-t border-white/5">
-          {renderListEditor(
-            "Deep Dive Achievements",
-            deepDive.highlights || content.highlights || [],
-            (items) => updateDeepDiveField("highlights", items),
-            "e.g. Migrated Martech Request Portal from MongoDB to MariaDB...",
-            "experience-deep-highlight",
-            "Detailed technical accomplishments and quantified impact."
-          )}
+              {renderListEditor(
+                "Quick Pitch Highlights",
+                item.highlights || [],
+                (hls) => updateItem(idx, { highlights: hls }),
+                "e.g. Led full-stack system migrations...",
+                `exp-card-${idx}-hl`,
+                "Summary bullet points shown on the front face."
+              )}
+
+              <div className="pt-3 border-t border-white/5">
+                {renderListEditor(
+                  "Deep Dive Technical Achievements",
+                  item.deepDiveHighlights || item.highlights || [],
+                  (hls) => updateItem(idx, { deepDiveHighlights: hls }),
+                  "e.g. Migrated Martech Request Portal from MongoDB to MariaDB...",
+                  `exp-card-${idx}-deep-hl`,
+                  "Extended achievements shown in the Deep Dive mode."
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )
   }
 
-  // 4. EDUCATION TILE
+  // 4. EDUCATION TILE (Stackable Deck Support)
   if (type === "education") {
+    const rawItems: any[] = Array.isArray(content.items) && content.items.length > 0
+      ? content.items
+      : [
+          {
+            degree: content.degree || "Diploma in Information Technology with Merit",
+            institution: content.institution || "Nanyang Polytechnic",
+            date: content.date || "Apr 2023 - Apr 2026",
+            gpa: content.gpa || "3.91",
+            honours: deepDive.honours || "Gold Medalist & Ngee Ann Kongsi Tertiary Award",
+            level: "polytechnic",
+            levelLabel: "Diploma",
+          },
+        ]
+
+    const updateItem = (index: number, updatedFields: Record<string, any>) => {
+      const copy = rawItems.map((item, idx) => (idx === index ? { ...item, ...updatedFields } : item))
+      onChangeContent({
+        ...content,
+        degree: copy[0]?.degree || "",
+        institution: copy[0]?.institution || "",
+        date: copy[0]?.date || "",
+        gpa: copy[0]?.gpa || "",
+        items: copy,
+      })
+      onChangeDeepDive({
+        ...deepDive,
+        degree: copy[0]?.degree || "",
+        institution: copy[0]?.institution || "",
+        date: copy[0]?.date || "",
+        gpa: copy[0]?.gpa || "",
+        honours: copy[0]?.honours || "",
+        items: copy,
+      })
+    }
+
+    const addItem = () => {
+      const newItem = {
+        degree: "New Degree / Certificate",
+        institution: "Institution Name",
+        date: "2024 - 2028",
+        gpa: "-",
+        honours: "-",
+        level: "university",
+        levelLabel: "University",
+      }
+      const copy = [...rawItems, newItem]
+      onChangeContent({
+        ...content,
+        degree: copy[0]?.degree || "",
+        institution: copy[0]?.institution || "",
+        date: copy[0]?.date || "",
+        gpa: copy[0]?.gpa || "",
+        items: copy,
+      })
+      onChangeDeepDive({
+        ...deepDive,
+        degree: copy[0]?.degree || "",
+        institution: copy[0]?.institution || "",
+        date: copy[0]?.date || "",
+        gpa: copy[0]?.gpa || "",
+        honours: copy[0]?.honours || "",
+        items: copy,
+      })
+    }
+
+    const removeItem = (index: number) => {
+      if (rawItems.length <= 1) return
+      const copy = rawItems.filter((_, idx) => idx !== index)
+      onChangeContent({
+        ...content,
+        degree: copy[0]?.degree || "",
+        institution: copy[0]?.institution || "",
+        date: copy[0]?.date || "",
+        gpa: copy[0]?.gpa || "",
+        items: copy,
+      })
+      onChangeDeepDive({
+        ...deepDive,
+        degree: copy[0]?.degree || "",
+        institution: copy[0]?.institution || "",
+        date: copy[0]?.date || "",
+        gpa: copy[0]?.gpa || "",
+        honours: copy[0]?.honours || "",
+        items: copy,
+      })
+    }
+
     return (
-      <div className="space-y-6">
-        <div>
-          <label htmlFor="education-degree" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
-            Degree / Certification
-          </label>
-          <input
-            id="education-degree"
-            type="text"
-            value={content.degree || deepDive.degree || ""}
-            onChange={(e) => {
-              updateContentField("degree", e.target.value)
-              updateDeepDiveField("degree", e.target.value)
-            }}
-            placeholder="e.g. Diploma in Information Technology with Merit"
-            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-semibold"
-          />
-          <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
-            Name of degree, diploma, or educational program.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+      <div className="space-y-8">
+        <div className="flex items-center justify-between border-b border-white/5 pb-4">
           <div>
-            <label htmlFor="education-institution" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
-              Institution
-            </label>
-            <input
-              id="education-institution"
-              type="text"
-              value={content.institution || deepDive.institution || ""}
-              onChange={(e) => {
-                updateContentField("institution", e.target.value)
-                updateDeepDiveField("institution", e.target.value)
-              }}
-              placeholder="e.g. Nanyang Polytechnic"
-              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all"
-            />
-            <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
-              University, polytechnic, or awarding body.
+            <h3 className="text-sm font-semibold text-white/90">Stackable Education Levels ({rawItems.length})</h3>
+            <p className="text-[11px] text-white/40 mt-0.5">
+              Manage the 3D education stack. Items are displayed from top to bottom (NUS → NYP → O-Level → PSLE).
             </p>
           </div>
-          <div>
-            <label htmlFor="education-gpa" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
-              GPA / Grade
-            </label>
-            <input
-              id="education-gpa"
-              type="text"
-              value={content.gpa || deepDive.gpa || ""}
-              onChange={(e) => {
-                updateContentField("gpa", e.target.value)
-                updateDeepDiveField("gpa", e.target.value)
-              }}
-              placeholder="e.g. 3.91 / 4.00"
-              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-mono"
-            />
-            <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
-              Cumulative score or honors standing.
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={addItem}
+            className="flex items-center gap-1.5 text-xs font-mono text-blue-400 hover:underline px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 transition-colors"
+          >
+            <Plus className="size-3.5" />
+            <span>Add Education Level</span>
+          </button>
         </div>
 
-        <div>
-          <label htmlFor="education-date" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
-            Study Period / Date
-          </label>
-          <input
-            id="education-date"
-            type="text"
-            value={content.date || deepDive.date || ""}
-            onChange={(e) => {
-              updateContentField("date", e.target.value)
-              updateDeepDiveField("date", e.target.value)
-            }}
-            placeholder="e.g. 2023 - 2026"
-            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all font-mono"
-          />
-          <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
-            Duration or graduation year.
-          </p>
-        </div>
+        <div className="space-y-6">
+          {rawItems.map((item, idx) => (
+            <div
+              key={idx}
+              className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-5 relative group/card"
+            >
+              <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-bold">
+                    #{idx + 1} {idx === 0 ? "(Top / Active Card)" : `(Peek ${idx})`}
+                  </span>
+                  <span className="text-xs font-medium text-white/80">
+                    {item.degree || "Untitled Program"} {item.institution ? `· ${item.institution}` : ""}
+                  </span>
+                </div>
+                {rawItems.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeItem(idx)}
+                    className="p-2 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    title="Remove this education card"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                )}
+              </div>
 
-        <div>
-          <label htmlFor="education-honours" className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2 font-medium">
-            Honours / Awards
-          </label>
-          <input
-            id="education-honours"
-            type="text"
-            value={deepDive.honours || ""}
-            onChange={(e) => updateDeepDiveField("honours", e.target.value)}
-            placeholder="e.g. Gold Medalist & Ngee Ann Kongsi Tertiary Award"
-            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-lume-primary/60 focus:ring-1 focus:ring-lume-primary/20 transition-all"
-          />
-          <p className="text-[11px] text-white/40 mt-1.5 leading-relaxed">
-            Distinctions, scholarships, or academic accolades.
-          </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-medium">
+                    Degree / Qualification Title
+                  </label>
+                  <input
+                    type="text"
+                    value={item.degree || ""}
+                    onChange={(e) => updateItem(idx, { degree: e.target.value })}
+                    placeholder="e.g. Bachelor of Computing in Computer Science"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-medium">
+                    Institution Name
+                  </label>
+                  <input
+                    type="text"
+                    value={item.institution || ""}
+                    onChange={(e) => updateItem(idx, { institution: e.target.value })}
+                    placeholder="e.g. National University of Singapore"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-medium">
+                    Study Period / Date Range
+                  </label>
+                  <input
+                    type="text"
+                    value={item.date || ""}
+                    onChange={(e) => updateItem(idx, { date: e.target.value })}
+                    placeholder="e.g. Aug 2028 - Aug 2032"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-medium">
+                    GPA / Score
+                  </label>
+                  <input
+                    type="text"
+                    value={item.gpa || ""}
+                    onChange={(e) => updateItem(idx, { gpa: e.target.value })}
+                    placeholder="e.g. 3.91 / 4.00 or 251"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-medium">
+                    Level Badge Label
+                  </label>
+                  <input
+                    type="text"
+                    value={item.levelLabel || item.level || ""}
+                    onChange={(e) =>
+                      updateItem(idx, {
+                        levelLabel: e.target.value,
+                        level: e.target.value.toLowerCase(),
+                      })
+                    }
+                    placeholder="e.g. University / Diploma / Secondary / Primary"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all font-mono"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-medium">
+                    Honours / Awards & Distinctions
+                  </label>
+                  <input
+                    type="text"
+                    value={item.honours || ""}
+                    onChange={(e) => updateItem(idx, { honours: e.target.value })}
+                    placeholder="e.g. Gold Medalist & Ngee Ann Kongsi Tertiary Award"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )

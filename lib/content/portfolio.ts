@@ -100,7 +100,7 @@ export const MONTH_MAP: Record<string, string> = {
   jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12"
 }
 
-export function parseDateRangeParts(dateRange: string): { startDate: string; endDate: string } {
+export function parseDateRangeParts(dateRange?: string): { startDate: string; endDate: string } {
   if (!dateRange) return { startDate: "2020-01", endDate: "Present" }
   const parts = dateRange.split(/\s*[-–—]\s*/)
   
@@ -203,11 +203,11 @@ export function parseTilesToPortfolioContent(tiles: Tile[]): PortfolioContent {
           const dd = parseTileDeepDive("experience", tile.deep_dive)
           content.experience.push({
             id: tile.id,
-            role: parsed.data.role,
-            company: parsed.data.company,
-            date: parsed.data.date,
-            highlights: parsed.data.highlights,
-            deepDiveHighlights: dd.highlights,
+            role: parsed.data.role || "",
+            company: parsed.data.company || "",
+            date: parsed.data.date || "",
+            highlights: parsed.data.highlights || [],
+            deepDiveHighlights: dd.highlights || [],
           })
         }
         break
@@ -216,14 +216,17 @@ export function parseTilesToPortfolioContent(tiles: Tile[]): PortfolioContent {
         const parsed = parseTileContent("education", tile.content)
         if (parsed.ok) {
           const dd = parseTileDeepDive("education", tile.deep_dive)
-          const { startDate, endDate } = parseDateRangeParts(parsed.data.date)
-          const geo = resolveEducationGeo(parsed.data.institution, parsed.data.degree, parsed.data, dd)
+          const dateStr = parsed.data.date || dd.date || ""
+          const { startDate, endDate } = parseDateRangeParts(dateStr)
+          const instStr = parsed.data.institution || dd.institution || ""
+          const degreeStr = parsed.data.degree || dd.degree || ""
+          const geo = resolveEducationGeo(instStr, degreeStr, parsed.data, dd)
           content.education.push({
             id: tile.id,
-            institution: parsed.data.institution,
-            degree: parsed.data.degree,
-            date: parsed.data.date,
-            gpa: parsed.data.gpa,
+            institution: instStr,
+            degree: degreeStr,
+            date: dateStr,
+            gpa: parsed.data.gpa || dd.gpa || "",
             deepDiveDegree: dd.degree,
             deepDiveInstitution: dd.institution,
             deepDiveDate: dd.date,
