@@ -12,7 +12,7 @@ export function Navbar() {
   const pathname = usePathname()
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
 
-  if (pathname?.startsWith("/admin")) {
+  if (pathname?.startsWith("/admin") || pathname === "/cv") {
     return null
   }
 
