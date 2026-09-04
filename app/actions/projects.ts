@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getTilesByTypeDb, getTileByIdDb, updateTileDb, deleteTileDb, createTileDb } from "@/lib/db"
+import { getTilesByType, getTileById, updateTile, deleteTile, createTile } from "@/lib/db"
 
 export interface ProjectContent {
   name: string
@@ -18,7 +18,7 @@ export interface Project extends ProjectContent {
 }
 
 export async function getProjects(): Promise<Project[]> {
-  const tiles = getTilesByTypeDb("project")
+  const tiles = await getTilesByType("project")
   
   return tiles.map(tile => {
     const content = (tile.content || {}) as unknown as ProjectContent
@@ -36,7 +36,7 @@ export async function getProjects(): Promise<Project[]> {
 }
 
 export async function updateProject(id: string, updates: Partial<ProjectContent> & { order_val?: number }) {
-  const tile = getTileByIdDb(id)
+  const tile = await getTileById(id)
   if (!tile) throw new Error("Tile not found")
 
   const newContent = {
@@ -44,7 +44,7 @@ export async function updateProject(id: string, updates: Partial<ProjectContent>
     ...updates
   }
 
-  updateTileDb(id, {
+  await updateTile(id, {
     content: newContent as any,
     order_val: updates.order_val !== undefined ? updates.order_val : tile.order_val
   })
@@ -55,7 +55,7 @@ export async function updateProject(id: string, updates: Partial<ProjectContent>
 }
 
 export async function deleteProject(id: string) {
-  deleteTileDb(id)
+  await deleteTile(id)
   revalidatePath("/")
   revalidatePath("/admin/projects")
   revalidatePath("/admin/tiles")
@@ -71,7 +71,7 @@ export async function createProject(project: ProjectContent & { order_val?: numb
     featured: project.featured
   }
 
-  createTileDb({
+  await createTile({
     type: "project",
     size: "4x3",
     content: content as any,

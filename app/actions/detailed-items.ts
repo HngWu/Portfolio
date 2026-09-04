@@ -3,12 +3,11 @@
 import { revalidatePath } from "next/cache"
 import { Database } from "@/types/supabase"
 import {
-  getDetailedItemsDb,
-  getDetailedItemByIdDb,
-  getDetailedItemsByTypeDb,
-  createDetailedItemDb,
-  updateDetailedItemDb,
-  deleteDetailedItemDb
+  getDetailedItems as getDetailedItemsFromDb,
+  getDetailedItemById as getDetailedItemByIdFromDb,
+  createDetailedItem as createDetailedItemInDb,
+  updateDetailedItem as updateDetailedItemInDb,
+  deleteDetailedItem as deleteDetailedItemFromDb
 } from "@/lib/db"
 
 export type DetailedItemRow = Database['public']['Tables']['detailed_items']['Row']
@@ -16,32 +15,29 @@ export type DetailedItemInsert = Database['public']['Tables']['detailed_items'][
 export type DetailedItemUpdate = Database['public']['Tables']['detailed_items']['Update']
 
 export async function getDetailedItems(type?: string): Promise<DetailedItemRow[]> {
-  if (type && type !== "all") {
-    return getDetailedItemsByTypeDb(type)
-  }
-  return getDetailedItemsDb()
+  return getDetailedItemsFromDb(type)
 }
 
 export async function getDetailedItem(id: string): Promise<DetailedItemRow | null> {
-  return getDetailedItemByIdDb(id)
+  return getDetailedItemByIdFromDb(id)
 }
 
 export async function createDetailedItem(item: DetailedItemInsert): Promise<DetailedItemRow> {
-  const created = createDetailedItemDb(item)
+  const created = await createDetailedItemInDb(item)
   revalidatePath("/")
   revalidatePath("/admin/detailed-items")
   return created
 }
 
 export async function updateDetailedItem(id: string, updates: DetailedItemUpdate): Promise<DetailedItemRow> {
-  const updated = updateDetailedItemDb(id, updates)
+  const updated = await updateDetailedItemInDb(id, updates)
   revalidatePath("/")
   revalidatePath("/admin/detailed-items")
   return updated
 }
 
 export async function deleteDetailedItem(id: string): Promise<void> {
-  deleteDetailedItemDb(id)
+  await deleteDetailedItemFromDb(id)
   revalidatePath("/")
   revalidatePath("/admin/detailed-items")
 }

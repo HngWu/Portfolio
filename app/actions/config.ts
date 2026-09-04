@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getTilesByTypeDb, updateTileDb, createTileDb } from "@/lib/db"
+import { getTilesByType, updateTile, createTile } from "@/lib/db"
 
 export interface ConfigItem {
   key: string
@@ -9,7 +9,7 @@ export interface ConfigItem {
 }
 
 export async function getConfig(): Promise<ConfigItem[]> {
-  const tiles = getTilesByTypeDb("config")
+  const tiles = await getTilesByType("config")
   if (tiles.length === 0) {
     return []
   }
@@ -19,7 +19,7 @@ export async function getConfig(): Promise<ConfigItem[]> {
 }
 
 export async function updateConfig(key: string, value: unknown) {
-  const tiles = getTilesByTypeDb("config")
+  const tiles = await getTilesByType("config")
   const existing = tiles[0]
 
   if (existing) {
@@ -27,9 +27,9 @@ export async function updateConfig(key: string, value: unknown) {
       ...(existing.content as object),
       [key]: value
     } as any
-    updateTileDb(existing.id, { content: newContent })
+    await updateTile(existing.id, { content: newContent })
   } else {
-    createTileDb({
+    await createTile({
       type: "config",
       size: "0x0",
       is_hidden: true,

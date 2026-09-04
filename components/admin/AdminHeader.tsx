@@ -4,11 +4,14 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAdminNavStore } from "@/store/useAdminNavStore"
-import { Menu, Globe, ChevronRight, Sparkles, ShieldCheck } from "lucide-react"
+import { Menu, Globe, ChevronRight, Sparkles, ShieldCheck, RefreshCw } from "lucide-react"
+import { DatabaseToggle } from "@/components/admin/DatabaseToggle"
+import { DatabaseSyncModal } from "@/components/admin/DatabaseSyncModal"
 
 export function AdminHeader() {
   const pathname = usePathname()
   const { toggleMobile } = useAdminNavStore()
+  const [isSyncModalOpen, setIsSyncModalOpen] = React.useState(false)
 
   // Generate breadcrumb items
   const breadcrumbs = React.useMemo(() => {
@@ -69,7 +72,21 @@ export function AdminHeader() {
         </nav>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Database Connection Selector */}
+        <DatabaseToggle />
+
+        {/* Database Synchronization Trigger */}
+        <button
+          type="button"
+          onClick={() => setIsSyncModalOpen(true)}
+          title="Synchronize SQLite and Supabase databases"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all shadow-sm group"
+        >
+          <RefreshCw className="size-3.5 text-white/50 group-hover:text-lume-primary group-hover:rotate-180 transition-transform duration-500" />
+          <span className="hidden sm:inline">Sync</span>
+        </button>
+
         {/* Live Site Preview Link */}
         <Link
           href="/"
@@ -88,6 +105,12 @@ export function AdminHeader() {
           <span>Active Session</span>
         </div>
       </div>
+
+      {/* Sync Modal Dialog */}
+      <DatabaseSyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+      />
     </header>
   )
 }

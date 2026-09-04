@@ -4,6 +4,33 @@ import fs from 'fs'
 import os from 'os'
 import { randomUUID } from 'crypto'
 import type { Database as DatabaseTypes } from '@/types/supabase'
+export * from './types'
+import type { DatabaseProvider, DatabaseStatus } from './types'
+import {
+  isSupabaseConfigured,
+  testSupabaseConnection,
+  getTilesSupabase,
+  getTileByIdSupabase,
+  getTilesByTypeSupabase,
+  createTileSupabase,
+  updateTileSupabase,
+  updateTilesSupabase,
+  deleteTileSupabase,
+  getDetailedItemsSupabase,
+  getDetailedItemByIdSupabase,
+  createDetailedItemSupabase,
+  updateDetailedItemSupabase,
+  deleteDetailedItemSupabase
+} from './supabase'
+export { isSupabaseConfigured, testSupabaseConnection }
+export {
+  pushSqliteToSupabase,
+  pullSupabaseToSqlite,
+  getLastSyncStatus,
+  type SyncSummary,
+  type SyncResult,
+  type SyncStatus
+} from './sync'
 
 export type TileRow = DatabaseTypes['public']['Tables']['tiles']['Row']
 export type TileInsert = DatabaseTypes['public']['Tables']['tiles']['Insert']
@@ -120,6 +147,12 @@ function initSchema(db: InstanceType<typeof Database>) {
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS system_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
   `)
 
   const tileCount = (db.prepare('SELECT count(*) as count FROM tiles').get() as { count: number }).count
@@ -145,10 +178,10 @@ function seedDatabase(db: InstanceType<typeof Database>) {
       order_val_mobile: 0,
       is_hidden: 1,
       is_active: 1,
-      content: "{\"theme\":{\"primary\":\"#4AFFB4\",\"secondary\":\"#4A8FFF\"},\"identity\":{\"mark\":\"\",\"title\":\"Creative Developer\"}}",
+      content: "{\"theme\":{\"primary\":\"#4AFFB4\",\"secondary\":\"#4A8FFF\"},\"identity\":{\"mark\":\"\",\"title\":\"Creative Developer\"},\"vault\":{\"folders\":[{\"id\":\"resume\",\"visible\":true,\"order\":1,\"files\":[{\"id\":\"resume\",\"visible\":true,\"order\":1}]},{\"id\":\"hackathons\",\"visible\":true,\"order\":2,\"files\":[{\"id\":\"world-skills-cert\",\"visible\":true,\"order\":1},{\"id\":\"polyfintech-hackathon\",\"visible\":true,\"order\":2},{\"id\":\"certificates-of-appreciation\",\"visible\":true,\"order\":3}]},{\"id\":\"scholarships\",\"visible\":true,\"order\":3,\"files\":[{\"id\":\"ngee-ann-kong-si\",\"visible\":true,\"order\":1},{\"id\":\"testimonial-tan-hng-wu\",\"visible\":true,\"order\":2}]},{\"id\":\"honours\",\"visible\":true,\"order\":4,\"files\":[{\"id\":\"directors-list-2024-sem1\",\"visible\":true,\"order\":1},{\"id\":\"directors-list-2023-sem2\",\"visible\":true,\"order\":2}]},{\"id\":\"grades\",\"visible\":true,\"order\":5,\"files\":[{\"id\":\"nyp-results\",\"visible\":true,\"order\":1}]}]}}",
       deep_dive: "{}",
       created_at: "2026-08-15T04:15:26.772Z",
-      updated_at: "2026-08-15T04:15:26.773Z"
+      updated_at: "2026-09-03T04:14:32.933Z"
     },
     {
       id: "4c37c16b-3500-401f-88cb-bf839071a48c",
@@ -862,5 +895,259 @@ export function deleteUserActiveSessionsDb(userId: string): void {
   const db = getDb()
   db.prepare('DELETE FROM active_sessions WHERE user_id = ?').run(userId)
 }
+
+export function getSystemSettingDb(key: string): string | null {
+  const db = getDb()
+  const row = db.prepare('SELECT value FROM system_settings WHERE key = ?').get(key) as { value: string } | undefined
+  return row ? row.value : null
+}
+
+export function setSystemSettingDb(key: string, value: string): void {
+  const db = getDb()
+  const now = new Date().toISOString()
+  db.prepare(`
+    INSERT INTO system_settings (key, value, updated_at)
+    VALUES (?, ?, ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+  `).run(key, value, now)
+}
+
+export function deleteSystemSettingDb(key: string): void {
+  const db = getDb()
+  db.prepare('DELETE FROM system_settings WHERE key = ?').run(key)
+}
+
+// -------------------------------------------------------------
+// Unified Database Provider Resolution
+// -------------------------------------------------------------
+
+export async function getActiveProvider(): Promise<DatabaseProvider> {
+  const override = getSystemSettingDb('database_provider')
+  if (override === 'supabase' || override === 'sqlite') {
+    return override
+  }
+
+  const envDefault = (process.env.DEFAULT_DATABASE || '').toLowerCase().trim()
+  if (envDefault === 'supabase') {
+    return 'supabase'
+  }
+
+  return 'sqlite'
+}
+
+export async function setActiveProvider(provider: DatabaseProvider): Promise<void> {
+  setSystemSettingDb('database_provider', provider)
+}
+
+export async function clearActiveProviderOverride(): Promise<void> {
+  deleteSystemSettingDb('database_provider')
+}
+
+export async function getDatabaseStatus(): Promise<DatabaseStatus> {
+  const activeProvider = await getActiveProvider()
+  const envDefaultRaw = (process.env.DEFAULT_DATABASE || '').toLowerCase().trim()
+  const defaultProvider: DatabaseProvider = envDefaultRaw === 'supabase' ? 'supabase' : 'sqlite'
+  const override = getSystemSettingDb('database_provider')
+  const isOverridden = Boolean(override)
+  const configured = isSupabaseConfigured()
+
+  let latencyMs: number | undefined
+  let error: string | undefined
+
+  if (configured) {
+    const testResult = await testSupabaseConnection()
+    latencyMs = testResult.latencyMs
+    if (!testResult.ok) {
+      error = testResult.error
+    }
+  }
+
+  return {
+    activeProvider,
+    defaultProvider,
+    isOverridden,
+    isSupabaseConfigured: configured,
+    latencyMs,
+    error
+  }
+}
+
+// -------------------------------------------------------------
+// Unified Async CRUD Delegators with Auto-Fallback
+// -------------------------------------------------------------
+
+export async function getTiles(): Promise<TileRow[]> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      return await getTilesSupabase()
+    } catch (e) {
+      console.warn('[DB Gateway] Supabase getTiles failed. Falling back to local SQLite:', e)
+      return getTilesDb()
+    }
+  }
+  return getTilesDb()
+}
+
+export async function getTileById(id: string): Promise<TileRow | null> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      return await getTileByIdSupabase(id)
+    } catch (e) {
+      console.warn(`[DB Gateway] Supabase getTileById(${id}) failed. Falling back to local SQLite:`, e)
+      return getTileByIdDb(id)
+    }
+  }
+  return getTileByIdDb(id)
+}
+
+export async function getTilesByType(type: string): Promise<TileRow[]> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      return await getTilesByTypeSupabase(type)
+    } catch (e) {
+      console.warn(`[DB Gateway] Supabase getTilesByType(${type}) failed. Falling back to local SQLite:`, e)
+      return getTilesByTypeDb(type)
+    }
+  }
+  return getTilesByTypeDb(type)
+}
+
+export async function createTile(tile: TileInsert): Promise<TileRow> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      return await createTileSupabase(tile)
+    } catch (e) {
+      console.warn('[DB Gateway] Supabase createTile failed. Falling back to local SQLite:', e)
+      return createTileDb(tile)
+    }
+  }
+  return createTileDb(tile)
+}
+
+export async function updateTile(id: string, updates: TileUpdate): Promise<TileRow> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      return await updateTileSupabase(id, updates)
+    } catch (e) {
+      console.warn(`[DB Gateway] Supabase updateTile(${id}) failed. Falling back to local SQLite:`, e)
+      return updateTileDb(id, updates)
+    }
+  }
+  return updateTileDb(id, updates)
+}
+
+export async function updateTiles(tiles: TileRow[]): Promise<void> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      await updateTilesSupabase(tiles)
+      return
+    } catch (e) {
+      console.warn('[DB Gateway] Supabase updateTiles failed. Falling back to local SQLite:', e)
+      updateTilesDb(tiles)
+      return
+    }
+  }
+  updateTilesDb(tiles)
+}
+
+export async function deleteTile(id: string): Promise<void> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      await deleteTileSupabase(id)
+      return
+    } catch (e) {
+      console.warn(`[DB Gateway] Supabase deleteTile(${id}) failed. Falling back to local SQLite:`, e)
+      deleteTileDb(id)
+      return
+    }
+  }
+  deleteTileDb(id)
+}
+
+export async function getDetailedItems(type?: string): Promise<DetailedItemRow[]> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      return await getDetailedItemsSupabase(type)
+    } catch (e) {
+      console.warn('[DB Gateway] Supabase getDetailedItems failed. Falling back to local SQLite:', e)
+      if (type && type !== 'all') {
+        return getDetailedItemsByTypeDb(type)
+      }
+      return getDetailedItemsDb()
+    }
+  }
+  if (type && type !== 'all') {
+    return getDetailedItemsByTypeDb(type)
+  }
+  return getDetailedItemsDb()
+}
+
+export async function getDetailedItemById(id: string): Promise<DetailedItemRow | null> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      return await getDetailedItemByIdSupabase(id)
+    } catch (e) {
+      console.warn(`[DB Gateway] Supabase getDetailedItemById(${id}) failed. Falling back to local SQLite:`, e)
+      return getDetailedItemByIdDb(id)
+    }
+  }
+  return getDetailedItemByIdDb(id)
+}
+
+export async function getDetailedItemsByType(type: string): Promise<DetailedItemRow[]> {
+  return getDetailedItems(type)
+}
+
+export async function createDetailedItem(item: DetailedItemInsert): Promise<DetailedItemRow> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      return await createDetailedItemSupabase(item)
+    } catch (e) {
+      console.warn('[DB Gateway] Supabase createDetailedItem failed. Falling back to local SQLite:', e)
+      return createDetailedItemDb(item)
+    }
+  }
+  return createDetailedItemDb(item)
+}
+
+export async function updateDetailedItem(id: string, updates: DetailedItemUpdate): Promise<DetailedItemRow> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      return await updateDetailedItemSupabase(id, updates)
+    } catch (e) {
+      console.warn(`[DB Gateway] Supabase updateDetailedItem(${id}) failed. Falling back to local SQLite:`, e)
+      return updateDetailedItemDb(id, updates)
+    }
+  }
+  return updateDetailedItemDb(id, updates)
+}
+
+export async function deleteDetailedItem(id: string): Promise<void> {
+  const provider = await getActiveProvider()
+  if (provider === 'supabase') {
+    try {
+      await deleteDetailedItemSupabase(id)
+      return
+    } catch (e) {
+      console.warn(`[DB Gateway] Supabase deleteDetailedItem(${id}) failed. Falling back to local SQLite:`, e)
+      deleteDetailedItemDb(id)
+      return
+    }
+  }
+  deleteDetailedItemDb(id)
+}
+
+
 
 

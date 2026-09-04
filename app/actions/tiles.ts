@@ -3,26 +3,26 @@
 import { revalidatePath } from "next/cache"
 import { Database } from "@/types/supabase"
 import {
-  getTilesDb,
-  updateTileDb,
-  updateTilesDb,
-  deleteTileDb,
-  createTileDb
+  getTiles as getTilesFromDb,
+  updateTile as updateTileInDb,
+  updateTiles as updateTilesInDb,
+  deleteTile as deleteTileFromDb,
+  createTile as createTileInDb
 } from "@/lib/db"
 
 export async function getTiles() {
-  return getTilesDb()
+  return getTilesFromDb()
 }
 
 export async function updateTile(id: string, updates: Partial<Database['public']['Tables']['tiles']['Update']>) {
-  updateTileDb(id, updates)
+  await updateTileInDb(id, updates)
   revalidatePath("/")
   revalidatePath("/admin/tiles")
 }
 
 export async function updateTiles(tiles: Database['public']['Tables']['tiles']['Row'][]) {
   try {
-    updateTilesDb(tiles)
+    await updateTilesInDb(tiles)
     revalidatePath("/")
     revalidatePath("/admin/tiles")
   } catch (e) {
@@ -32,13 +32,13 @@ export async function updateTiles(tiles: Database['public']['Tables']['tiles']['
 }
 
 export async function deleteTile(id: string) {
-  deleteTileDb(id)
+  await deleteTileFromDb(id)
   revalidatePath("/")
   revalidatePath("/admin/tiles")
 }
 
 export async function createTile(tile: Database['public']['Tables']['tiles']['Insert']) {
-  createTileDb(tile)
+  await createTileInDb(tile)
   revalidatePath("/")
   revalidatePath("/admin/tiles")
 }

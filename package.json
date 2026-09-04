@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:sync": "node scripts/sync-seed.js",
     "db:sync-seed": "node scripts/sync-seed.js",
+    "db:sync-cloud": "node scripts/sync-cloud.js",
     "brainstorm-server": "node start-brainstorm.js",
     "node-version": "node -v"
   },

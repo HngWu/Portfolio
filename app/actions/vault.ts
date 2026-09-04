@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getTilesByTypeDb, updateTileDb, createTileDb } from "@/lib/db"
+import { getTilesByType, updateTile, createTile } from "@/lib/db"
 import {
   type VaultConfig,
   getDefaultVaultConfig,
@@ -9,7 +9,7 @@ import {
 
 export async function getVaultConfigAction(): Promise<VaultConfig> {
   try {
-    const tiles = getTilesByTypeDb("config")
+    const tiles = await getTilesByType("config")
     if (tiles.length === 0) {
       return getDefaultVaultConfig()
     }
@@ -30,7 +30,7 @@ export async function getVaultConfigAction(): Promise<VaultConfig> {
 
 export async function saveVaultConfigAction(config: VaultConfig): Promise<{ success: boolean; message?: string }> {
   try {
-    const tiles = getTilesByTypeDb("config")
+    const tiles = await getTilesByType("config")
     const existing = tiles[0]
 
     if (existing) {
@@ -38,9 +38,9 @@ export async function saveVaultConfigAction(config: VaultConfig): Promise<{ succ
         ...(existing.content as object),
         vault: config,
       } as any
-      updateTileDb(existing.id, { content: newContent })
+      await updateTile(existing.id, { content: newContent })
     } else {
-      createTileDb({
+      await createTile({
         type: "config",
         size: "0x0",
         is_hidden: true,

@@ -1,6 +1,7 @@
 import * as React from "react"
 import Link from "next/link"
-import { getTilesDb, getDetailedItemsDb, getTilesByTypeDb } from "@/lib/db"
+import { getTiles, getDetailedItems, getTilesByType, getDatabaseStatus, getLastSyncStatus } from "@/lib/db"
+import { DashboardSyncButton } from "@/components/admin/DashboardSyncButton"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { 
   LayoutGrid, 
@@ -16,13 +17,18 @@ import {
   CheckCircle2,
   Sparkles,
   Layers,
-  Edit3
+  Edit3,
+  Cloud
 } from "lucide-react"
 
 export default async function AdminDashboard() {
-  const tiles = getTilesDb()
-  const detailedItems = getDetailedItemsDb()
-  const configTiles = getTilesByTypeDb("config")
+  const [tiles, detailedItems, configTiles, dbStatus, syncStatus] = await Promise.all([
+    getTiles(),
+    getDetailedItems(),
+    getTilesByType("config"),
+    getDatabaseStatus(),
+    getLastSyncStatus()
+  ])
   
   const contentTiles = tiles.filter(t => t.type !== "config")
   const totalTiles = contentTiles.length
@@ -199,28 +205,70 @@ export default async function AdminDashboard() {
               <Activity className="size-4 text-lume-primary" />
               <h2 className="text-sm font-semibold text-white/90">Infrastructure</h2>
             </div>
-            <span className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              <span className="size-1.5 rounded-full bg-emerald-400 animate-ping" />
-              Healthy
-            </span>
+            {dbStatus.activeProvider === "supabase" && dbStatus.error ? (
+              <span className="flex items-center gap-1.5 text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+                Degraded (Fallback)
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                <span className="size-1.5 rounded-full bg-emerald-400 animate-ping" />
+                {dbStatus.latencyMs !== undefined ? `Healthy (${dbStatus.latencyMs}ms)` : "Healthy"}
+              </span>
+            )}
           </div>
 
           <div className="space-y-3 font-mono text-xs">
             <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
               <span className="text-white/50 text-[11px]">Database Engine</span>
-              <span className="text-lume-primary text-[11px]">SQLite (WAL Mode)</span>
+              <span className={`text-[11px] font-semibold flex items-center gap-1.5 ${
+                dbStatus.activeProvider === "supabase" ? "text-emerald-400" : "text-lume-primary"
+              }`}>
+                {dbStatus.activeProvider === "supabase" ? (
+                  <>
+                    <Cloud className="size-3" />
+                    <span>Supabase (PostgreSQL)</span>
+                  </>
+                ) : (
+                  <>
+                    <Database className="size-3" />
+                    <span>SQLite (WAL Mode)</span>
+                  </>
+                )}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
+              <span className="text-white/50 text-[11px]">Data Source</span>
+              <span className="text-white/90 text-[11px] truncate max-w-[140px]">
+                {dbStatus.activeProvider === "supabase" ? "Cloud PostgREST" : "data/portfolio.db"}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
+              <span className="text-white/50 text-[11px]">Env Baseline</span>
+              <span className="text-white/70 text-[11px] uppercase">
+                {dbStatus.defaultProvider} {dbStatus.isOverridden ? "(Overridden)" : "(Default)"}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
+              <span className="text-white/50 text-[11px]">Cloud Sync</span>
+              <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                <span className="text-white/80">
+                  {syncStatus.lastSyncTimestamp ? new Date(syncStatus.lastSyncTimestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Never"}
+                </span>
+                {syncStatus.lastSyncDirection && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] uppercase font-bold bg-white/10 text-white/70">
+                    {syncStatus.lastSyncDirection}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
               <span className="text-white/50 text-[11px]">App Framework</span>
               <span className="text-white/90 text-[11px]">Next.js 16 App Router</span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
-              <span className="text-white/50 text-[11px]">Animation Core</span>
-              <span className="text-white/90 text-[11px]">GSAP 3.12+ / R3F</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
-              <span className="text-white/50 text-[11px]">Data Store Location</span>
-              <span className="text-white/40 text-[11px] truncate max-w-[140px]">data/portfolio.db</span>
+
+            <div className="pt-2">
+              <DashboardSyncButton />
             </div>
           </div>
         </GlassCard>
