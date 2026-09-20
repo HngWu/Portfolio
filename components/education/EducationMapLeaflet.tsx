@@ -39,29 +39,40 @@ export default function EducationMapLeaflet({
   // Basemap configuration: Default Minimalist Gray Canvas vs High-Resolution Street Map
   const getTileConfig = React.useCallback(
     (currentTheme: "light" | "dark" | "auto", currentStyle: "high-res" | "minimal") => {
+      const isRetina = typeof window !== "undefined" && window.devicePixelRatio > 1;
+
       if (currentStyle === "minimal") {
         if (currentTheme === "light") {
           return {
             url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
             attribution:
               '&copy; <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer">Esri</a> &mdash; Esri, &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
-            maxZoom: 16,
+            maxNativeZoom: isRetina ? 15 : 16,
+            maxZoom: 20,
+            subdomains: "abc",
+            detectRetina: true,
           };
         }
         return {
           url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
           attribution:
             '&copy; <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer">Esri</a> &mdash; Esri, &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
-          maxZoom: 16,
+          maxNativeZoom: isRetina ? 15 : 16,
+          maxZoom: 20,
+          subdomains: "abc",
+          detectRetina: true,
         };
       }
 
-      // High-Resolution OpenStreetMap engine with full zoom level 19
+      // High-Resolution OpenStreetMap engine with full zoom levels up to 19
       return {
         url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
-        maxZoom: 19,
+        maxNativeZoom: 19,
+        maxZoom: 20,
+        subdomains: "abc",
+        detectRetina: true,
       };
     },
     []
@@ -100,33 +111,42 @@ export default function EducationMapLeaflet({
   React.useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    // Create Map instance starting at high-altitude overview
+    // Create Map instance starting at high-altitude overview with full zoom range 2-20
     const map = L.map(containerRef.current, {
       center: [1.3521, 103.8198],
-      zoom: 10.5,
+      zoom: 11,
       zoomControl: false,
       attributionControl: true,
       minZoom: 2,
-      maxZoom: 19,
+      maxZoom: 20,
       worldCopyJump: true,
     });
 
-    // Add Initial Basemap TileLayer (Defaulting to previous minimalist canvas)
+    // Add Initial Basemap TileLayer with native zoom, subdomains, and retina support
     const tileConfig = getTileConfig(theme, mapStyle);
     const tileLayer = L.tileLayer(tileConfig.url, {
       attribution: tileConfig.attribution,
-      maxZoom: tileConfig.maxZoom || 16,
+      subdomains: tileConfig.subdomains || "abc",
+      maxZoom: tileConfig.maxZoom || 20,
+      maxNativeZoom: tileConfig.maxNativeZoom ?? 16,
+      detectRetina: Boolean(tileConfig.detectRetina),
     }).addTo(map);
 
     tileLayerRef.current = tileLayer;
     mapRef.current = map;
 
-    // Smooth entrance fly-in zoom into Singapore
+    // Smooth entrance fly-in zoom into Singapore with desktop sidebar compensation
     if (!hasAnimatedEntry.current) {
       hasAnimatedEntry.current = true;
       setTimeout(() => {
         if (mapRef.current) {
-          mapRef.current.flyTo([1.3521, 103.8198], 12.5, {
+          const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
+          const zoom = 12;
+          const targetPoint = mapRef.current.project([1.3521, 103.8198], zoom);
+          const pixelOffsetX = isDesktop ? -240 : 0;
+          const offsetLatLng = mapRef.current.unproject(targetPoint.add([pixelOffsetX, 0]), zoom);
+
+          mapRef.current.flyTo(offsetLatLng, zoom, {
             duration: 1.5,
             easeLinearity: 0.25,
           });
@@ -149,12 +169,24 @@ export default function EducationMapLeaflet({
     };
   }, [getTileConfig]);
 
-  // 2. Seamlessly update TileLayer URL when Theme or MapStyle changes
+  // 2. Seamlessly update TileLayer URL and options when Theme or MapStyle changes
   React.useEffect(() => {
-    if (!mapRef.current || !tileLayerRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
     const tileConfig = getTileConfig(theme, mapStyle);
-    tileLayerRef.current.setUrl(tileConfig.url);
-    tileLayerRef.current.options.maxZoom = tileConfig.maxZoom;
+
+    const newLayer = L.tileLayer(tileConfig.url, {
+      attribution: tileConfig.attribution,
+      subdomains: tileConfig.subdomains || "abc",
+      maxZoom: tileConfig.maxZoom || 20,
+      maxNativeZoom: tileConfig.maxNativeZoom ?? 16,
+      detectRetina: Boolean(tileConfig.detectRetina),
+    }).addTo(map);
+
+    if (tileLayerRef.current) {
+      tileLayerRef.current.remove();
+    }
+    tileLayerRef.current = newLayer;
   }, [theme, mapStyle, getTileConfig]);
 
   // 3. Handle Zoom In trigger
@@ -171,10 +203,17 @@ export default function EducationMapLeaflet({
     }
   }, [zoomOutTrigger]);
 
-  // 5. Handle Recenter trigger
+  // 5. Handle Recenter trigger with sidebar compensation
   React.useEffect(() => {
-    if (recenterTrigger > 0 && mapRef.current) {
-      mapRef.current.flyTo([1.3521, 103.8198], 12.5, {
+    const map = mapRef.current;
+    if (recenterTrigger > 0 && map) {
+      const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
+      const zoom = 12;
+      const targetPoint = map.project([1.3521, 103.8198], zoom);
+      const pixelOffsetX = isDesktop ? -240 : 0;
+      const offsetLatLng = map.unproject(targetPoint.add([pixelOffsetX, 0]), zoom);
+
+      map.flyTo(offsetLatLng, zoom, {
         duration: 1.2,
         easeLinearity: 0.25,
       });
@@ -251,14 +290,19 @@ export default function EducationMapLeaflet({
     const activeLoc = locations.find((l) => l.id === activeId);
     if (!activeLoc) return;
 
-    // Smart Camera Pan: Offset on desktop (to open right canvas) and mobile (above bottom sheet)
+    // Smart Camera Pan: Zoom-invariant pixel projection offset
+    // On desktop: offset camera left by 240px so landmark is centered in open right canvas
+    // On mobile: offset camera down by 110px if place panel is open so landmark is centered above bottom sheet
     const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
-    const lngOffset = isDesktop ? 0.016 : 0;
-    const latOffset = !isDesktop && isPanelOpen ? -0.005 : 0;
-    const targetLng = activeLoc.lng - lngOffset;
-    const targetLat = activeLoc.lat + latOffset;
+    const targetZoom = Math.max(map.getZoom(), 14);
+    const pixelOffsetX = isDesktop ? -240 : 0;
+    const pixelOffsetY = !isDesktop && isPanelOpen ? 110 : 0;
 
-    map.flyTo([targetLat, targetLng], Math.max(map.getZoom(), 13), {
+    const targetPoint = map.project([activeLoc.lat, activeLoc.lng], targetZoom);
+    const offsetPoint = targetPoint.add([pixelOffsetX, pixelOffsetY]);
+    const offsetLatLng = map.unproject(offsetPoint, targetZoom);
+
+    map.flyTo(offsetLatLng, targetZoom, {
       duration: 1.2,
       easeLinearity: 0.25,
     });
