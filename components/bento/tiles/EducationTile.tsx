@@ -5,7 +5,7 @@ import { BentoTile } from "../BentoTile"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
 import { useViewModeStore } from "@/store/useViewModeStore"
-import { GraduationCap, TrendingUp, Award, ChevronUp, ChevronDown, Sparkles } from "lucide-react"
+import { GraduationCap, TrendingUp, Award, ChevronDown } from "lucide-react"
 import { parseTileDeepDive, type EducationContent, type EducationItem } from "@/lib/tiles/schemas"
 import type { Json } from "@/types/supabase"
 import { motion, AnimatePresence, type PanInfo } from "framer-motion"
@@ -151,8 +151,8 @@ export function EducationTile({
       isInteractingRef.current = false
     }, 100)
 
-    const offsetThreshold = 25
-    const velocityThreshold = 200
+    const offsetThreshold = 45
+    const velocityThreshold = 300
 
     if (info.offset.y < -offsetThreshold || info.velocity.y < -velocityThreshold) {
       goToNext()
@@ -197,11 +197,11 @@ export function EducationTile({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className={cn(typo.heading, "text-white/90")}>Academic Profile</h3>
-                <span className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider">
+                <span className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider">
                   {activeItem.levelLabel || activeItem.level || "Academic"}
                 </span>
               </div>
-              <p className={cn(typo.body, "text-white/60 mt-0.5 text-xs line-clamp-2 leading-snug")}>{activeItem.institution}</p>
+              <p className={cn(typo.body, "text-white/70 mt-0.5 text-xs sm:text-sm line-clamp-2 leading-snug")}>{activeItem.institution}</p>
             </div>
 
             {/* Desktop Chevrons for Deep Dive */}
@@ -210,18 +210,6 @@ export function EducationTile({
                 {String(safeIndex + 1).padStart(2, "0")}/{String(items.length).padStart(2, "0")}
               </span>
               <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-lg p-0.5 shadow-sm">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    goToPrev()
-                  }}
-                  aria-label="Previous education level"
-                  className="p-1 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95"
-                >
-                  <ChevronUp className="size-3.5" />
-                </button>
-                <div className="w-[1px] h-3 bg-white/10" />
                 <button
                   type="button"
                   onClick={(e) => {
@@ -243,7 +231,7 @@ export function EducationTile({
               <span className={cn(typo.meta, "text-white/30 uppercase tracking-widest text-[9px]")}>
                 Program / Degree
               </span>
-              <p className={cn(typo.body, "text-white/80 font-medium leading-tight text-xs md:text-sm line-clamp-2")}>
+              <p className={cn(typo.body, "text-white/85 font-medium leading-tight text-xs sm:text-sm line-clamp-2")}>
                 {activeItem.degree}
               </p>
             </div>
@@ -254,14 +242,14 @@ export function EducationTile({
                 <div className="absolute top-0 right-0 p-2 opacity-20 group-hover/gpa:opacity-40 transition-opacity">
                   <TrendingUp className="size-3.5 text-lume-primary" />
                 </div>
-                <span className={cn(typo.meta, "block text-white/30 text-[9px] mb-1")}>
+                <span className={cn(typo.meta, "block text-white/40 text-[10px] mb-1")}>
                   {hasGpa ? "Cumulative GPA" : activeItem.gpa && activeItem.gpa !== "-" ? "Score" : "Standing"}
                 </span>
                 <div className="flex items-baseline gap-1 my-0.5">
                   <span className={cn(typo.heading, "text-lume-primary leading-none font-mono text-xl md:text-2xl")}>
                     {activeItem.gpa && activeItem.gpa !== "-" ? activeItem.gpa : "Honours Track"}
                   </span>
-                  {hasGpa && <span className="text-[9px] text-white/20 font-mono">/ 4.00</span>}
+                  {hasGpa && <span className="text-[10px] text-white/30 font-mono">/ 4.00</span>}
                 </div>
                 {hasGpa && (
                   <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
@@ -276,16 +264,16 @@ export function EducationTile({
               {/* Period & Honours Box */}
               <div className="p-3.5 bg-transparent rounded-xl border border-white/5 flex flex-col justify-between">
                 <div>
-                  <span className={cn(typo.meta, "block text-white/30 text-[9px] mb-1")}>Study Period</span>
-                  <span className={cn(typo.body, "text-white/80 font-medium leading-tight text-xs")}>
+                  <span className={cn(typo.meta, "block text-white/40 text-[10px] mb-1")}>Study Period</span>
+                  <span className={cn(typo.body, "text-white/85 font-medium leading-tight text-xs sm:text-sm")}>
                     {activeItem.date}
                   </span>
                 </div>
                 {activeItem.honours && activeItem.honours !== "-" && (
                   <div className="flex items-center gap-1.5 mt-2">
-                    <Award className="size-3 text-lume-primary/70 shrink-0" />
+                    <Award className="size-3.5 text-lume-primary/80 shrink-0" />
                     <span
-                      className="text-[8px] md:text-[9px] text-lume-primary font-bold uppercase tracking-tighter truncate"
+                      className="text-xs text-lume-primary font-semibold uppercase tracking-tight truncate"
                       title={activeItem.honours}
                     >
                       {activeItem.honours}
@@ -301,7 +289,7 @@ export function EducationTile({
                 {activeItem.highlights.slice(0, 3).map((hl, i) => (
                   <span
                     key={i}
-                    className="text-[9px] px-2 py-0.5 rounded-md bg-white/[0.02] border border-white/5 text-white/60 font-mono"
+                    className="text-xs px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/10 text-white/70 font-mono"
                   >
                     {hl}
                   </span>
@@ -319,13 +307,13 @@ export function EducationTile({
         className="relative flex flex-col h-full w-full outline-none"
       >
         {/* Top Header with Level badge and Desktop Controls */}
-        <div className="flex items-center justify-between mb-3 shrink-0 relative z-30">
+        <div className="flex items-center justify-between mb-2 shrink-0 relative z-30">
           <div className="flex items-center gap-2">
             <span className={cn(typo.meta, "text-white/40 uppercase tracking-widest flex items-center gap-1.5")}>
               <GraduationCap className={cn(typo.icon, "text-[#4A8FFF]")} />
               Education
             </span>
-            <span className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider">
+            <span className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider">
               {activeItem.levelLabel || activeItem.level || "Academic"}
             </span>
           </div>
@@ -340,24 +328,11 @@ export function EducationTile({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation()
-                  goToPrev()
-                }}
-                aria-label="Previous education level"
-                title="Previous level (Swipe Down / Up Arrow)"
-                className="p-1 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95"
-              >
-                <ChevronUp className="size-3.5" />
-              </button>
-              <div className="w-[1px] h-3 bg-white/10" />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
                   goToNext()
                 }}
                 aria-label="Next education level"
                 title="Next level (Swipe Up / Down Arrow)"
-                className="p-1 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95"
+                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
               >
                 <ChevronDown className="size-3.5" />
               </button>
@@ -366,13 +341,13 @@ export function EducationTile({
         </div>
 
         {/* 3D Stack Container */}
-        <div className="relative flex-1 w-full min-h-[160px] flex flex-col justify-end">
+        <div className="relative flex-1 w-full min-h-0 flex flex-col justify-between">
           {/* Background Peek Card 2 (Bottom-most) */}
           {peekCard2 && (
             <div
               className="absolute inset-x-4 bottom-0 h-[82%] rounded-2xl bg-transparent border border-white/[0.04] pointer-events-none transition-all duration-300 shadow-sm"
               style={{
-                transform: "translateY(14px) scale(0.92)",
+                transform: "translateY(8px) scale(0.92)",
                 opacity: 0.25,
                 zIndex: 1,
               }}
@@ -408,13 +383,17 @@ export function EducationTile({
                   }}
                   aria-label={`Go to ${item.institution}`}
                   title={`${item.levelLabel || item.institution} (${item.date})`}
-                  className={cn(
-                    "transition-all duration-300 rounded-full",
-                    isCurrent
-                      ? "w-1.5 h-3.5 bg-[#4A8FFF] shadow-[0_0_8px_rgba(74,143,255,0.7)]"
-                      : "w-1.5 h-1.5 bg-white/20 hover:bg-white/50 hover:scale-125"
-                  )}
-                />
+                  className="p-1 flex items-center justify-center min-w-[20px] min-h-[20px]"
+                >
+                  <span
+                    className={cn(
+                      "transition-all duration-300 rounded-full",
+                      isCurrent
+                        ? "w-1.5 h-3.5 bg-[#4A8FFF] shadow-[0_0_8px_rgba(74,143,255,0.7)]"
+                        : "w-1.5 h-1.5 bg-white/20 hover:bg-white/50 hover:scale-125"
+                    )}
+                  />
+                </button>
               )
             })}
           </div>
@@ -453,39 +432,24 @@ export function EducationTile({
               animate="center"
               exit="exit"
               drag="y"
+              dragDirectionLock={true}
               dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={0.25}
+              dragElastic={0.2}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
-              className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y"
+              className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y min-h-0"
             >
               <div className="pr-5 select-none">
-                <h3 className="font-display text-lg md:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight">
+                <h3 className="font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight">
                   {activeItem.institution}
                 </h3>
-                <p className={cn(typo.body, "text-white/60 text-xs md:text-sm font-normal line-clamp-2 leading-snug")}>
+                <p className={cn(typo.body, "text-white/70 text-xs sm:text-sm font-normal line-clamp-2 leading-snug")}>
                   {activeItem.degree}
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 flex items-center justify-between border-t border-white/5 pr-5 select-none">
-                <span className={cn(typo.meta, "text-white/40")}>{activeItem.date}</span>
-                {activeItem.gpa && activeItem.gpa !== "-" ? (
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-[10px] font-mono text-lume-primary">
-                    <TrendingUp className="size-3 text-lume-primary" />
-                    <span>{activeItem.gpa.includes("/") ? activeItem.gpa : `GPA ${activeItem.gpa}`}</span>
-                  </div>
-                ) : activeItem.honours && activeItem.honours !== "-" ? (
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-[9px] font-mono text-[#4A8FFF] max-w-[130px] truncate">
-                    <Award className="size-3 text-[#4A8FFF] shrink-0" />
-                    <span className="truncate">{activeItem.honours}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-[9px] font-mono text-white/30">
-                    <Sparkles className="size-2.5 text-blue-400/60" />
-                    <span>Swipe up/down</span>
-                  </div>
-                )}
+              <div className="mt-auto pt-2.5 flex items-center justify-between border-t border-white/5 pr-5 select-none shrink-0">
+                <span className={cn(typo.meta, "text-white/60 font-mono text-xs")}>{activeItem.date}</span>
               </div>
             </motion.div>
           </AnimatePresence>

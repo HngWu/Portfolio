@@ -51,10 +51,10 @@ if (typeof window !== 'undefined') {
 
 // Pre-allocated static colors to avoid 60fps GC allocation overhead
 const COLOR_GOLD = new THREE.Color("#c9a227")
-const COLOR_DEFAULT = new THREE.Color("#0c0a1a")
+const COLOR_DEFAULT = new THREE.Color("#05061f")
 const COLOR_GOLD_EDGE1 = new THREE.Color("#ffe875")
 const COLOR_GOLD_EDGE2 = new THREE.Color("#ffb44a")
-const COLOR_DEFAULT_EDGE1 = new THREE.Color("#6A0DAD")
+const COLOR_DEFAULT_EDGE1 = new THREE.Color("#4A8FFF")
 const COLOR_DEFAULT_EDGE2 = new THREE.Color("#4AFFB4")
 const COLOR_IGNITE_GLOW = new THREE.Color("#ff4500")
 const COLOR_LOCKDOWN_BASE = new THREE.Color("#05070a")
@@ -68,7 +68,7 @@ const COLOR_WHITE = new THREE.Color("#ffffff")
 const COLOR_GLASS_GOLD_BASE = new THREE.Color("#1a1005")
 const COLOR_GLASS_INDIGO_BASE = new THREE.Color("#0e0b1f")
 const COLOR_GLASS_GOLD_ATTEN = new THREE.Color("#ffb44a")
-const COLOR_GLASS_INDIGO_ATTEN = new THREE.Color("#0c0a1a")
+const COLOR_GLASS_INDIGO_ATTEN = new THREE.Color("#1e3a6a")
 
 // Global scratch variables for zero-allocation hot loops
 const _scratchColor1 = new THREE.Color()
@@ -859,6 +859,10 @@ function PolyhedronScene({
   const isIgnited = useIgniteStore((state) => state.isIgnited)
   const faces = useMemo(() => getUniformHexCoreFaces(2.32) as FaceData[], [])
 
+  useEffect(() => {
+    sharedSpellState.modeProgress = isDeepDive ? 1.0 : 0.0
+  }, [isDeepDive])
+
   const glassMaterialProps = useMemo(() => ({
     transmission: 0.98,
     ior: 1.65,
@@ -867,7 +871,7 @@ function PolyhedronScene({
     clearcoat: 1.0,
     clearcoatRoughness: 0.02,
     color: new THREE.Color("#0e0b1f"),
-    attenuationColor: new THREE.Color("#0c0a1a"),
+    attenuationColor: new THREE.Color("#1e3a6a"),
     attenuationDistance: 0.5,
     envMapIntensity: 2.5,
     metalness: 0.0,
@@ -902,7 +906,7 @@ function PolyhedronScene({
   // Concentric Rings: Beautiful custom Runic Shader Materials
   const ring1Uniforms = useMemo(() => ({
     uTime: { value: 0 },
-    uRuneColor: { value: new THREE.Color("#4AFFB4") },
+    uRuneColor: { value: new THREE.Color("#ffe875") },
     uHoverActive: { value: 0 },
     uPulseScale: { value: 1.0 }
   }), [])
@@ -956,15 +960,15 @@ function PolyhedronScene({
 
   // Shared single PBR material for optimal 54-pyramid rendering and smooth mode color transition
   const sharedMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: new THREE.Color("#c9a227"),
-    roughness: 0.12,
-    metalness: 0.95,
+    color: new THREE.Color(isDeepDive ? "#05061f" : "#c9a227"),
+    roughness: isDeepDive ? 0.18 : 0.12,
+    metalness: isDeepDive ? 0.90 : 0.95,
     bumpScale: 0.05,
     side: THREE.DoubleSide,
     polygonOffset: true,
     polygonOffsetFactor: 1.0,
     polygonOffsetUnits: 1.0
-  }), [])
+  }), [isDeepDive])
 
   // Wrap materials in a ref for zero-warning useFrame modification
   const materialsRef = useRef({
@@ -1164,7 +1168,7 @@ function PolyhedronScene({
 
     // Dynamic ring glass casing PBR color transitions (magma overloading & EMP lockdowns)
     const targetGlassColor = _scratchColor1.set("#0e0b1f")
-    const targetGlassAtten = _scratchColor2.set("#0c0a1a")
+    const targetGlassAtten = _scratchColor2.set("#1e3a6a")
     
     if (sharedSpellState.ignite) {
       targetGlassColor.set("#3a0a0a") // Heated Magma glass
@@ -1209,8 +1213,8 @@ function PolyhedronScene({
     }
     mats.shared.color.lerp(targetFaceColor, delta * 6.0)
     
-    mats.shared.roughness = THREE.MathUtils.lerp(0.12, 0.22, sharedSpellState.modeProgress)
-    mats.shared.metalness = THREE.MathUtils.lerp(0.95, 0.9, sharedSpellState.modeProgress)
+    mats.shared.roughness = THREE.MathUtils.lerp(0.12, 0.18, sharedSpellState.modeProgress)
+    mats.shared.metalness = THREE.MathUtils.lerp(0.95, 0.90, sharedSpellState.modeProgress)
 
     // Smooth transition for edge colors & pulse scale (steady without periodic flare bursts)
     mats.edge.uniforms.uColor1.value.copy(COLOR_GOLD_EDGE1).lerp(COLOR_DEFAULT_EDGE1, sharedSpellState.modeProgress)
@@ -1395,6 +1399,20 @@ function PolyhedronScene({
       coreRef.current.scale.setScalar(0.72 * corePulse * sharedSpellState.pulseScale)
     }
 
+    if (coreLightRef.current) {
+      const targetLightColor = _scratchColor1.copy(COLOR_GOLD_EDGE2).lerp(COLOR_DEFAULT_EDGE2, sharedSpellState.modeProgress)
+      if (sharedSpellState.ignite) {
+        targetLightColor.copy(COLOR_IGNITE_GLOW)
+        coreLightRef.current.intensity = THREE.MathUtils.lerp(coreLightRef.current.intensity, 12, delta * 6.0)
+      } else if (sharedSpellState.lockdown) {
+        targetLightColor.copy(COLOR_LOCKDOWN_BASE)
+        coreLightRef.current.intensity = THREE.MathUtils.lerp(coreLightRef.current.intensity, 1.0, delta * 6.0)
+      } else {
+        coreLightRef.current.intensity = THREE.MathUtils.lerp(coreLightRef.current.intensity, 6.0 * sharedSpellState.pulseScale, delta * 6.0)
+      }
+      coreLightRef.current.color.lerp(targetLightColor, delta * 6.0)
+    }
+
     // 5.1 Hover Magnetic spring-damped Tilt
     let targetTiltX = 0
     let targetTiltY = 0
@@ -1444,7 +1462,7 @@ function PolyhedronScene({
           <primitive object={coreMaterial} attach="material" />
         </mesh>
 
-        <pointLight ref={coreLightRef} intensity={14} color="#4AFFB4" distance={8} />
+        <pointLight ref={coreLightRef} intensity={6} color="#ffb44a" distance={8} />
 
 
 
@@ -1682,7 +1700,7 @@ function PyramidFragment({
     }
   }, [geometry, edgeGeo])
 
-  const currentRuneColor = useRef(new THREE.Color("#ffb44a"))
+  const currentRuneColor = useRef(new THREE.Color(isDeepDive ? "#4AFFB4" : "#ffb44a"))
 
   const floatHashX = useMemo(() => (Math.abs(Math.sin(data.center.x * 12.9898 + data.center.y * 78.233)) * 43758.5453) % (Math.PI * 2), [data.center])
   const floatHashY = useMemo(() => (Math.abs(Math.cos(data.center.y * 39.346 + data.center.z * 11.135)) * 43758.5453) % (Math.PI * 2), [data.center])
@@ -1952,7 +1970,7 @@ function PyramidFragment({
           anchorY="middle"
           rotation={rd.rot}
         >
-          <meshBasicMaterial color="#ffb44a" toneMapped={false} />
+          <meshBasicMaterial color={isDeepDive ? "#4AFFB4" : "#ffb44a"} toneMapped={false} />
           {rd.rune}
         </Text>
       ))}
@@ -1969,8 +1987,10 @@ function CameraController({ isEffectiveMobile }: { isEffectiveMobile: boolean })
   useEffect(() => {
     if (camera instanceof THREE.PerspectiveCamera) {
       const aspect = size.width / (size.height || 1)
+      // eslint-disable-next-line react-hooks/immutability
       camera.aspect = aspect
       const baseZ = isEffectiveMobile ? 14.2 : 12.0
+      // eslint-disable-next-line react-hooks/immutability
       camera.position.z = aspect < 1.0 ? Math.max(baseZ, (baseZ * 0.95) / Math.max(aspect, 0.62)) : baseZ
       camera.updateProjectionMatrix()
     }
@@ -2229,9 +2249,10 @@ export default function PolyhedronCanvas({
         style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, pointerEvents: 'auto' }}
       >
         <CameraController isEffectiveMobile={isEffectiveMobile} />
-        <ambientLight intensity={0.24} />
+        <ambientLight intensity={0.32} />
         <pointLight position={[10, 10, 10]} intensity={1.2} />
         <directionalLight position={[-10, 8, -5]} intensity={0.7} color="#ffffff" />
+        <directionalLight position={[0, -6, 6]} intensity={0.35} color="#4A8FFF" />
         
         <Suspense fallback={null}>
           <PolyhedronScene 

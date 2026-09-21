@@ -1,12 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { BackLink } from "./BackLink"
 import { PageHero } from "./PageHero"
 import { ModeScrollFx } from "./ModeScrollFx"
 import { useGsap } from "@/hooks/useGsap"
 import { useViewModeStore } from "@/store/useViewModeStore"
 import { useNavigationStore } from "@/store/useNavigationStore"
+import { cn } from "@/lib/utils"
 import gsap from "gsap"
 
 interface DetailShellProps {
@@ -15,9 +15,19 @@ interface DetailShellProps {
   descriptor: string
   children: React.ReactNode
   hideHero?: boolean
+  maxWidth?: string
+  className?: string
 }
 
-export function DetailShell({ typeLabel, title, descriptor, children, hideHero = false }: DetailShellProps) {
+export function DetailShell({
+  typeLabel,
+  title,
+  descriptor,
+  children,
+  hideHero = false,
+  maxWidth,
+  className,
+}: DetailShellProps) {
   const mode = useViewModeStore((s) => s.mode)
   const curtainState = useNavigationStore((s) => s.curtainState)
   const originRect = useNavigationStore((s) => s.originRect)
@@ -149,10 +159,14 @@ export function DetailShell({ typeLabel, title, descriptor, children, hideHero =
   return (
     <main
       ref={shellRef}
-      className="min-h-screen pt-24 pb-24 px-4 md:px-8 max-w-4xl mx-auto"
+      className={cn(
+        "min-h-screen pb-24 px-4 md:px-8 mx-auto",
+        hideHero ? "pt-16 md:pt-20" : "pt-24",
+        maxWidth || "max-w-4xl",
+        className
+      )}
     >
       <ModeScrollFx />
-      <BackLink />
       {!hideHero && <PageHero typeLabel={typeLabel} title={title} descriptor={descriptor} />}
       <div className="flex flex-col gap-6">
         {React.Children.map(children, (child) => (

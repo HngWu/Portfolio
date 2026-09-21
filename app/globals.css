@@ -17,6 +17,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-ui);
   --font-mono: var(--font-mono);
+  --breakpoint-xs: 30rem;
 
   --color-lume-primary: var(--lume-primary);
   --color-lume-secondary: var(--lume-secondary);

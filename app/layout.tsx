@@ -30,8 +30,11 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Lume-Glass Portfolio",
-  description: "Creative Developer Portfolio",
+  title: {
+    default: "Portfolio",
+    template: "%s | Portfolio",
+  },
+  description: "Creative Developer & Software Engineer Portfolio",
 };
 
 export default async function RootLayout({

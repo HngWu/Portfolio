@@ -119,7 +119,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
     <BentoTile 
       id={id} 
       size={size} 
-      className="bg-white/[0.02] border border-white/5 p-6 md:p-8 flex flex-col justify-center h-full"
+      className="bg-white/[0.02] border border-white/5 p-4 sm:p-6 md:p-8 flex flex-col justify-center h-full"
       isDragging={isDragging}
       sortableProps={sortableProps}
       canMorph={false}
@@ -133,12 +133,12 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
           >
             {mark}
           </h1>
-          <p className="text-base md:text-lg mt-6 text-white/50 w-full leading-relaxed">
+          <p className="text-base md:text-lg mt-4 sm:mt-6 text-white/50 w-full leading-relaxed">
             {description}
           </p>
 
           {/* Horizontal Footer Chrome */}
-          <div className="border-t border-white/5 pt-4 flex items-center justify-between w-full mt-8">
+          <div className="border-t border-white/5 pt-3 sm:pt-4 flex flex-wrap items-center justify-between gap-2.5 w-full mt-4 sm:mt-6 md:mt-8">
             {/* Bottom Left: Download CV Button */}
             <div className="flex items-center gap-2">
               <a 
@@ -208,12 +208,12 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
         >
           {mark}
         </h1>
-        <p className="text-base md:text-lg mt-6 text-white/50 w-full leading-relaxed">
+        <p className="text-base md:text-lg mt-4 sm:mt-6 text-white/50 w-full leading-relaxed">
           {description}
         </p>
 
         {/* Horizontal Footer Chrome */}
-        <div className="border-t border-white/5 pt-4 flex items-center justify-between w-full mt-8">
+        <div className="border-t border-white/5 pt-3 sm:pt-4 flex flex-wrap items-center justify-between gap-2.5 w-full mt-4 sm:mt-6 md:mt-8">
           {/* Bottom Left: Download CV Button */}
           <div className="flex items-center gap-2">
             <a 

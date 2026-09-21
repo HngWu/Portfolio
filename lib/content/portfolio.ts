@@ -125,14 +125,14 @@ export function parseDateRangeParts(dateRange?: string): { startDate: string; en
 }
 
 export const SINGAPORE_INSTITUTION_GEOS: Record<string, { lat: number; lng: number; city: string; country: string; type?: "degree" | "exchange" | "bootcamp" | "workshop" | "conference"; thumbnail?: string }> = {
-  "peiying primary school": { lat: 1.4178, lng: 103.8329, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "/images/education/peiying-primary.jpg" },
-  "peiying": { lat: 1.4178, lng: 103.8329, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "/images/education/peiying-primary.jpg" },
-  "chung cheng high school (yishun)": { lat: 1.4230, lng: 103.8340, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "/images/education/chung-cheng-yishun.jpg" },
-  "chung cheng high school": { lat: 1.4230, lng: 103.8340, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "/images/education/chung-cheng-yishun.jpg" },
-  "nanyang polytechnic": { lat: 1.3801, lng: 103.8489, city: "Ang Mo Kio", country: "Singapore", type: "degree", thumbnail: "/images/education/nanyang-polytechnic.jpg" },
-  "nyp": { lat: 1.3801, lng: 103.8489, city: "Ang Mo Kio", country: "Singapore", type: "degree", thumbnail: "/images/education/nanyang-polytechnic.jpg" },
-  "national university of singapore": { lat: 1.2966, lng: 103.7764, city: "Kent Ridge", country: "Singapore", type: "degree", thumbnail: "/images/education/national-university-singapore.jpg" },
-  "nus": { lat: 1.2966, lng: 103.7764, city: "Kent Ridge", country: "Singapore", type: "degree", thumbnail: "/images/education/national-university-singapore.jpg" },
+  "peiying primary school": { lat: 1.417416, lng: 103.830143, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "/images/education/peiying-primary.jpg" },
+  "peiying": { lat: 1.417416, lng: 103.830143, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "/images/education/peiying-primary.jpg" },
+  "chung cheng high school (yishun)": { lat: 1.419226, lng: 103.837391, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "/images/education/chung-cheng-yishun.jpg" },
+  "chung cheng high school": { lat: 1.419226, lng: 103.837391, city: "Yishun", country: "Singapore", type: "degree", thumbnail: "/images/education/chung-cheng-yishun.jpg" },
+  "nanyang polytechnic": { lat: 1.380270, lng: 103.848618, city: "Ang Mo Kio", country: "Singapore", type: "degree", thumbnail: "/images/education/nanyang-polytechnic.jpg" },
+  "nyp": { lat: 1.380270, lng: 103.848618, city: "Ang Mo Kio", country: "Singapore", type: "degree", thumbnail: "/images/education/nanyang-polytechnic.jpg" },
+  "national university of singapore": { lat: 1.294970, lng: 103.773800, city: "Kent Ridge", country: "Singapore", type: "degree", thumbnail: "/images/education/national-university-singapore.jpg" },
+  "nus": { lat: 1.294970, lng: 103.773800, city: "Kent Ridge", country: "Singapore", type: "degree", thumbnail: "/images/education/national-university-singapore.jpg" },
   "nanyang technological university": { lat: 1.3483, lng: 103.6831, city: "Jurong West", country: "Singapore", type: "degree" },
   "ntu": { lat: 1.3483, lng: 103.6831, city: "Jurong West", country: "Singapore", type: "degree" },
   "singapore management university": { lat: 1.2963, lng: 103.8502, city: "Bras Basah", country: "Singapore", type: "degree" },

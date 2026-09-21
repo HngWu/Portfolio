@@ -30,6 +30,18 @@ interface BentoTileProps {
   disableHoverScale?: boolean
 }
 
+function subscribeMobile(callback: () => void) {
+  const mediaQuery = window.matchMedia("(max-width: 767px)")
+  mediaQuery.addEventListener("change", callback)
+  return () => mediaQuery.removeEventListener("change", callback)
+}
+function getMobileSnapshot() {
+  return window.matchMedia("(max-width: 767px)").matches
+}
+function getMobileServerSnapshot() {
+  return false
+}
+
 export function BentoTile({
   id,
   size,
@@ -46,7 +58,7 @@ export function BentoTile({
   canExpand = true,
   layout = true,
   noPadding = false,
-  forceFullHeight = false,
+  forceFullHeight: _forceFullHeight = false,
   disableHoverScale = false,
 }: BentoTileProps) {
   const { navigateWithTransition } = usePageTransition()
@@ -62,18 +74,18 @@ export function BentoTile({
   
   const [dynamicRows, setDynamicRows] = React.useState<number | null>(null)
   const backRef = React.useRef<HTMLDivElement>(null)
-  const [isMobile, setIsMobile] = React.useState(false)
+  const isMobile = React.useSyncExternalStore(subscribeMobile, getMobileSnapshot, getMobileServerSnapshot)
   const isMobileOverride = forceMobile || isMobile
 
   const recalculateRows = React.useCallback(() => {
     if (isDeepDive && canExpand && canMorph && backRef.current) {
       // Base row height (60px) and gaps (8/12/16px) matching BentoGrid.tsx
       const rowHeight = 60
-      const vw = window.innerWidth
+      const vw = typeof window !== "undefined" ? window.innerWidth : 1024
       const gap = vw >= 1280 ? 16 : (vw >= 768 ? 12 : 8)
       
       const contentHeight = backRef.current.scrollHeight
-      const padding = 48 // p-6 is 24px * 2
+      const padding = 48 // p-4 or p-6 is 24px * 2
       const totalHeight = contentHeight + padding
       
       // Calculate how many spans of (rowHeight + gap) are needed
@@ -89,13 +101,9 @@ export function BentoTile({
   }, [isDeepDive, canExpand, canMorph, size])
 
   React.useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
-      recalculateRows()
-    }
-    handleResize()
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
+    recalculateRows()
+    window.addEventListener("resize", recalculateRows)
+    return () => window.removeEventListener("resize", recalculateRows)
   }, [recalculateRows])
 
   React.useLayoutEffect(() => {
@@ -122,19 +130,18 @@ export function BentoTile({
     <motion.div
       data-id={id}
       layout={isMobileOverride ? false : layout}
-      whileHover={!sortableProps && !disableHoverScale ? { scale: 1.01, translateY: -4 } : undefined}
+      whileHover={!isMobileOverride && !sortableProps && !disableHoverScale ? { scale: 1.01, translateY: -4 } : undefined}
       transition={{ 
         layout: { duration: 0.6, ease: [0.4, 0, 0.2, 1] },
         scale: { duration: 0.4, ease: "easeOut" },
         translateY: { duration: 0.4, ease: "easeOut" }
       }}
       style={{
-        ...(dynamicRows ? { gridRow: `span ${dynamicRows}` } : {}),
-        ...(isMobileOverride && !forceFullHeight ? { gridRow: "auto" } : {})
+        ...(dynamicRows ? { gridRow: `span ${dynamicRows}` } : {})
       }}
       className={cn(
         spanClass, 
-        isMobileOverride && !forceFullHeight ? "h-auto" : "h-full",
+        "h-full",
         "perspective-[1500px]", 
         isDragging ? "touch-none opacity-30" : "touch-pan-y",
         isDissolving && "transition-all duration-500 ease-out opacity-0 scale-95 pointer-events-none"
@@ -150,10 +157,10 @@ export function BentoTile({
           rotateY: { duration: 0.7, delay: index * 0.04, ease: [0.34, 1.25, 0.64, 1] },
           z: { duration: 0.7, delay: index * 0.04, ease: [0.34, 1.25, 0.64, 1] }
         }}
-        className={cn("relative w-full preserve-3d", isMobileOverride && !forceFullHeight ? "h-auto" : "h-full")}
+        className="relative w-full h-full preserve-3d"
       >
         {/* Front Face (Quick Pitch) */}
-        <div className={cn("backface-hidden z-10 w-full", isMobileOverride && !forceFullHeight ? (isDeepDive ? "absolute inset-0 h-0 overflow-hidden w-full" : "relative h-auto w-full") : "absolute inset-0 h-full w-full")}>
+        <div className="absolute inset-0 h-full w-full backface-hidden z-10">
           <GlassCard
             ref={ref}
             onMouseEnter={onMouseEnter}
@@ -164,8 +171,7 @@ export function BentoTile({
             interactive={!isDragging}
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
-              "flex flex-col w-full",
-              isMobileOverride && !forceFullHeight ? "h-auto" : "h-full",
+              "flex flex-col w-full h-full",
               isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
               className
             )}
@@ -181,15 +187,14 @@ export function BentoTile({
         </div>
 
         {/* Back Face (Deep Dive) */}
-        <div className={cn("backface-hidden rotate-y-180 z-0 w-full", isMobileOverride && !forceFullHeight ? (isDeepDive ? "relative h-auto" : "absolute inset-0 h-0 overflow-hidden") : "absolute inset-0 h-full")}>
+        <div className="absolute inset-0 h-full w-full backface-hidden rotate-y-180 z-0">
           <GlassCard
             glowColor={glowColor}
             onClick={handleClick}
             interactive={!isDragging}
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
-              "flex flex-col bg-lume-secondary/5 border-lume-secondary/20",
-              isMobileOverride && !forceFullHeight ? "h-auto" : "h-full",
+              "flex flex-col h-full bg-lume-secondary/5 border-lume-secondary/20",
               isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
               className
             )}

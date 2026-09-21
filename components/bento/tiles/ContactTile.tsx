@@ -228,7 +228,7 @@ export function ContactTile({
           </div>
 
           {/* Availability Grid featuring the Unique Animated SGT Clock */}
-          <div className="grid grid-cols-2 gap-4 mb-6 select-none">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 select-none">
             <div className="p-4 md:p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center gap-4 hover:bg-white/[0.04] transition-all duration-300">
               <Calendar className="size-5 text-white/30 shrink-0" />
               <div>
@@ -251,7 +251,7 @@ export function ContactTile({
               href={linkedinUrl} 
               target="_blank" 
               onPointerDown={(e) => e.stopPropagation()}
-              className="group/link inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-lume-primary/30 transition-all font-mono text-[10px] text-white/40 hover:text-lume-primary shadow-sm cursor-pointer"
+              className="group/link inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 min-h-[36px] bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-lume-primary/30 transition-all font-mono text-[10px] text-white/40 hover:text-lume-primary shadow-sm cursor-pointer"
             >
               <Linkedin className="size-3.5 group-hover/link:scale-105 transition-transform" />
               <span>LinkedIn</span>
@@ -262,7 +262,7 @@ export function ContactTile({
                 href={telegramUrl} 
                 target="_blank" 
                 onPointerDown={(e) => e.stopPropagation()}
-                className="group/link inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-lume-primary/30 transition-all font-mono text-[10px] text-white/40 hover:text-lume-primary shadow-sm cursor-pointer"
+                className="group/link inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 min-h-[36px] bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-lume-primary/30 transition-all font-mono text-[10px] text-white/40 hover:text-lume-primary shadow-sm cursor-pointer"
               >
                 <svg 
                   className="size-3.5 fill-current text-white/40 group-hover/link:text-lume-primary group-hover/link:scale-105 transition-transform" 
@@ -278,7 +278,7 @@ export function ContactTile({
               href={githubUrl} 
               target="_blank" 
               onPointerDown={(e) => e.stopPropagation()}
-              className="group/link inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-lume-primary/30 transition-all font-mono text-[10px] text-white/40 hover:text-lume-primary shadow-sm cursor-pointer"
+              className="group/link inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 min-h-[36px] bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-lume-primary/30 transition-all font-mono text-[10px] text-white/40 hover:text-lume-primary shadow-sm cursor-pointer"
             >
               <Github className="size-3.5 group-hover/link:scale-105 transition-transform" />
               <span>GitHub</span>

@@ -42,7 +42,7 @@ export function StatTile({
     <BentoTile 
       id={id} 
       size={size} 
-      className="flex flex-col p-4 md:p-5 group/stat" 
+      className="flex flex-col p-3 sm:p-4 md:p-5 group/stat" 
       isDragging={isDragging} 
       sortableProps={sortableProps} 
       canDeepDive={true} 
@@ -61,7 +61,7 @@ export function StatTile({
           <div className="flex flex-col items-center justify-center flex-1 w-full h-full pb-2">
             <div className={cn(
               "font-mono text-lume-secondary tracking-tighter drop-shadow-[0_0_10px_rgba(74,180,255,0.3)] leading-none",
-              size === '1x1' ? "text-2xl md:text-3xl" : "text-4xl md:text-5xl"
+              size === '1x1' ? "text-2xl md:text-3xl" : "text-3xl sm:text-4xl md:text-5xl"
             )}>
               {deepValue || value}
             </div>
@@ -80,7 +80,7 @@ export function StatTile({
       <div className="flex flex-col items-center justify-center flex-1 w-full h-full pb-2">
         <div className={cn(
           "font-mono text-lume-primary tracking-tighter drop-shadow-[0_0_10px_rgba(74,255,180,0.3)] leading-none",
-          size === '1x1' ? "text-2xl md:text-3xl" : "text-4xl md:text-5xl"
+          size === '1x1' ? "text-2xl md:text-3xl" : "text-3xl sm:text-4xl md:text-5xl"
         )}>
           {value}
         </div>

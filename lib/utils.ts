@@ -14,7 +14,7 @@ export function getSizeClasses(sizeKey: string, isDeepDive: boolean = false, for
     "1x1": isDeepDive ? "col-span-1 row-span-2" : "col-span-1 row-span-1",
     "1x2": isDeepDive ? "col-span-1 row-span-4" : "col-span-1 row-span-2",
     "2x1": isDeepDive ? "col-span-2 row-span-2 md:col-span-3 xl:col-span-2" : "col-span-2 row-span-1 md:col-span-3 xl:col-span-2",
-    "2x2": isDeepDive ? "col-span-2 row-span-3 md:col-span-3 xl:col-span-2" : "col-span-2 row-span-2 md:col-span-3 xl:col-span-2",
+    "2x2": isDeepDive ? "col-span-1 sm:col-span-2 row-span-3 md:col-span-3 xl:col-span-2" : "col-span-1 sm:col-span-2 row-span-2 md:col-span-3 xl:col-span-2",
 
     // Medium & Functional
     "3x1": isDeepDive ? "col-span-2 row-span-2 md:col-span-3 xl:col-span-3" : "col-span-2 row-span-1 md:col-span-3 xl:col-span-3",
@@ -43,7 +43,7 @@ export function getSizeClasses(sizeKey: string, isDeepDive: boolean = false, for
   }
   const classes = base[sizeKey] || "col-span-2 row-span-2"
   if (forceMobile) {
-    return classes.split(' ').filter(c => !c.startsWith('md:') && !c.startsWith('xl:')).join(' ')
+    return classes.split(' ').filter(c => !c.startsWith('sm:') && !c.startsWith('md:') && !c.startsWith('xl:')).join(' ')
   }
   return classes
 }

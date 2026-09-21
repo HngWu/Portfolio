@@ -54,56 +54,22 @@ const DEFAULT_EXPERIENCE_ITEMS: ExperienceItem[] = [
     ]
   },
   {
-    id: "freelance-dev",
-    role: "Full-Stack & Creative Developer",
-    company: "Freelance / Client Projects",
-    date: "Jan 2024 - Present",
-    category: "Web & 3D Engineering",
+    id: "ttp-support",
+    role: "Junior IT Application Support Engineer",
+    company: "To The Point Pte Ltd (TTP)",
+    date: "Sep 2024 - Present",
+    category: "IT Solutions & Systems Support",
     highlights: [
-      "Engineered high-performance Next.js web applications and 3D WebGL interfaces",
-      "Built scalable RESTful & realtime database integrations with Supabase & Redis",
-      "Designed dark minimalist aesthetics with GSAP timelines and Tailwind CSS v4",
-      "Optimized Core Web Vitals achieving 98+ Lighthouse scores across client sites"
+      "Executed end-to-end UAT and SIT testing cycles to validate software releases",
+      "Investigated and debugged application issues and system anomalies across logs",
+      "Authored comprehensive technical documentation, SOP runbooks, and test cases",
+      "Coordinated deployment readiness and SLA defect tracking for client teams"
     ],
     deepDiveHighlights: [
-      "Architected interactive client portals utilizing Next.js 16 App Router and Turbopack",
-      "Implemented hardware-accelerated 3D viewports utilizing Three.js and custom GLSL shaders",
-      "Integrated Stripe payments, OAuth auth flows, and automated edge cron pipelines",
-      "Delivered maintainable component systems with comprehensive TypeScript coverage"
-    ]
-  },
-  {
-    id: "nyp-ta",
-    role: "Teaching Assistant & Student Developer",
-    company: "Nanyang Polytechnic",
-    date: "Apr 2023 - Mar 2025",
-    category: "Academic & Mentorship",
-    highlights: [
-      "Mentored junior peers in Data Structures, Algorithms, and Object-Oriented Programming",
-      "Built internal lab assessment scripts and automated test suites",
-      "Facilitated hands-on workshops on modern Web technologies and Git version control"
-    ],
-    deepDiveHighlights: [
-      "Conducted weekly lab consultation sessions for over 60+ computing students per semester",
-      "Created automated grading test suites in Java and Python, reducing grading turnaround by 40%",
-      "Authored interactive step-by-step developer guides for modern Git version control workflows"
-    ]
-  },
-  {
-    id: "open-source",
-    role: "Open Source Contributor",
-    company: "Independent & Community",
-    date: "2023 - Present",
-    category: "Open Source & Labs",
-    highlights: [
-      "Developed and published full-stack developer tools and UI starter templates",
-      "Contributed bug fixes and documentation enhancements to modern JS ecosystems",
-      "Authored open-source real-time multiplayer and graphics experiments"
-    ],
-    deepDiveHighlights: [
-      "Built TriviaDuel (real-time multiplayer AI platform) and SecureAsset (watermarking engine)",
-      "Engineered custom React hooks and Zustand middleware for cross-tab state syncing",
-      "Maintained active GitHub repositories with CI/CD automated test workflows"
+      "Executed User Acceptance Testing (UAT) and System Integration Testing (SIT) for enterprise clients",
+      "Identified edge-case regressions, debugged root causes in application logs, and logged structured defect reports",
+      "Produced standardized operational runbooks, user manuals, and technical testing documentation",
+      "Maintained incident response tracking and SLA adherence across production support workflows"
     ]
   }
 ]
@@ -183,8 +149,8 @@ export function ExperienceTile({
       isInteractingRef.current = false
     }, 100)
 
-    const offsetThreshold = 25
-    const velocityThreshold = 200
+    const offsetThreshold = 45
+    const velocityThreshold = 300
 
     if (info.offset.y < -offsetThreshold || info.velocity.y < -velocityThreshold) {
       goToNext()
@@ -257,7 +223,7 @@ export function ExperienceTile({
               <div className="flex items-center gap-2">
                 <h3 className={cn(typo.heading, "text-white/90")}>Key Responsibilities</h3>
                 {activeItem.category && (
-                  <span className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-lume-primary/10 border border-lume-primary/20 text-lume-primary font-semibold uppercase tracking-wider">
+                  <span className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-lume-primary/10 border border-lume-primary/20 text-lume-primary font-semibold uppercase tracking-wider">
                     {activeItem.category}
                   </span>
                 )}
@@ -280,7 +246,7 @@ export function ExperienceTile({
                     goToPrev()
                   }}
                   aria-label="Previous role"
-                  className="p-1 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95"
+                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
                 >
                   <ChevronUp className="size-3.5" />
                 </button>
@@ -292,7 +258,7 @@ export function ExperienceTile({
                     goToNext()
                   }}
                   aria-label="Next role"
-                  className="p-1 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95"
+                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
                 >
                   <ChevronDown className="size-3.5" />
                 </button>
@@ -313,7 +279,7 @@ export function ExperienceTile({
                 <span
                   className={cn(
                     typo.body,
-                    "text-white/60 group-hover/item:text-white/90 transition-colors leading-snug text-xs md:text-sm"
+                    "text-white/70 group-hover/item:text-white/90 transition-colors leading-snug text-xs sm:text-sm"
                   )}
                 >
                   {highlight}
@@ -338,7 +304,7 @@ export function ExperienceTile({
               Experience
             </span>
             {activeItem.category && (
-              <span className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-lume-primary/10 border border-lume-primary/20 text-lume-primary font-semibold uppercase tracking-wider">
+              <span className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-lume-primary/10 border border-lume-primary/20 text-lume-primary font-semibold uppercase tracking-wider">
                 {activeItem.category}
               </span>
             )}
@@ -358,7 +324,7 @@ export function ExperienceTile({
                 }}
                 aria-label="Previous role"
                 title="Previous role (Swipe Down / Up Arrow)"
-                className="p-1 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95"
+                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
               >
                 <ChevronUp className="size-3.5" />
               </button>
@@ -371,7 +337,7 @@ export function ExperienceTile({
                 }}
                 aria-label="Next role"
                 title="Next role (Swipe Up / Down Arrow)"
-                className="p-1 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95"
+                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
               >
                 <ChevronDown className="size-3.5" />
               </button>
@@ -422,13 +388,17 @@ export function ExperienceTile({
                   }}
                   aria-label={`Go to ${item.company}`}
                   title={`${item.role} · ${item.company} (${item.date})`}
-                  className={cn(
-                    "transition-all duration-300 rounded-full",
-                    isCurrent
-                      ? "w-1.5 h-3.5 bg-lume-primary shadow-[0_0_8px_rgba(74,255,180,0.7)]"
-                      : "w-1.5 h-1.5 bg-white/20 hover:bg-white/50 hover:scale-125"
-                  )}
-                />
+                  className="p-1 flex items-center justify-center min-w-[20px] min-h-[20px]"
+                >
+                  <span
+                    className={cn(
+                      "transition-all duration-300 rounded-full",
+                      isCurrent
+                        ? "w-1.5 h-3.5 bg-lume-primary shadow-[0_0_8px_rgba(74,255,180,0.7)]"
+                        : "w-1.5 h-1.5 bg-white/20 hover:bg-white/50 hover:scale-125"
+                    )}
+                  />
+                </button>
               )
             })}
           </div>
@@ -467,8 +437,9 @@ export function ExperienceTile({
               animate="center"
               exit="exit"
               drag="y"
+              dragDirectionLock={true}
               dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={0.25}
+              dragElastic={0.2}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y"
@@ -477,7 +448,7 @@ export function ExperienceTile({
                 <h3 className={cn(typo.heading, "font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight")}>
                   {activeItem.role}
                 </h3>
-                <p className={cn(typo.meta, "text-white/40 mb-3 text-xs")}>
+                <p className={cn(typo.meta, "text-white/50 mb-3 text-xs sm:text-sm")}>
                   {activeItem.company} · {activeItem.date}
                 </p>
 
@@ -494,7 +465,7 @@ export function ExperienceTile({
                       <span
                         className={cn(
                           typo.body,
-                          "text-white/60 group-hover/item:text-white/80 transition-colors leading-snug line-clamp-2 text-xs"
+                          "text-white/70 group-hover/item:text-white/90 transition-colors leading-snug line-clamp-2 text-xs sm:text-sm"
                         )}
                       >
                         {highlight}
@@ -505,9 +476,9 @@ export function ExperienceTile({
               </div>
 
               <div className="mt-auto pt-3 flex items-center justify-between border-t border-white/5 select-none">
-                <span className={cn(typo.meta, "text-white/30 text-[10px]")}>{activeItem.date}</span>
-                <div className="flex items-center gap-1 text-[9px] font-mono text-white/30">
-                  <Sparkles className="size-2.5 text-lume-primary/60" />
+                <span className={cn(typo.meta, "text-white/40 text-xs")}>{activeItem.date}</span>
+                <div className="flex items-center gap-1 text-xs font-mono text-white/40">
+                  <Sparkles className="size-3 text-lume-primary/70" />
                   <span>Swipe up/down</span>
                 </div>
               </div>
