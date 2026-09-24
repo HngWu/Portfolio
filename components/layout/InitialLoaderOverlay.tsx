@@ -29,10 +29,6 @@ export function InitialLoaderOverlay() {
     }
   }, [pathname, forceComplete])
 
-  if (pathname && pathname !== "/") {
-    return null
-  }
-
   const [finishedSequence, setFinishedSequence] = useState(false)
   const [isOvercharging, setIsOvercharging] = useState(false)
 
@@ -42,6 +38,8 @@ export function InitialLoaderOverlay() {
 
   // 1. Canvas Lifecycle & rAF Loop (runs until component unmounts from DOM)
   useEffect(() => {
+    if (pathname && pathname !== "/") return
+
     const prefersReduced =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -121,7 +119,7 @@ export function InitialLoaderOverlay() {
 
   // 3. Smooth steady progress simulation (~1.5s total load pacing)
   useEffect(() => {
-    if (finishedSequence) return
+    if (finishedSequence || (pathname && pathname !== "/")) return
 
     const interval = setInterval(() => {
       const current = useSiteLoaderStore.getState().progress
@@ -135,7 +133,7 @@ export function InitialLoaderOverlay() {
     }, 35)
 
     return () => clearInterval(interval)
-  }, [setProgress, finishedSequence])
+  }, [setProgress, finishedSequence, pathname])
 
   const phase = useSiteLoaderStore((s) => s.phase)
   const heroAnchorRect = useSiteLoaderStore((s) => s.heroAnchorRect)
@@ -227,7 +225,7 @@ export function InitialLoaderOverlay() {
       ? "COMPILING PBR SHADERS"
       : "LOCKING SINGULARITY // READY"
 
-  if (phase === "settled") return null
+  if (phase === "settled" || (pathname && pathname !== "/")) return null
 
   return (
     <div className="fixed inset-0 z-[10002] font-mono select-none overflow-hidden pointer-events-none">
