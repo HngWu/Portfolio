@@ -20,6 +20,18 @@ export function InitialLoaderOverlay() {
   const isModelReady = useSiteLoaderStore((s) => s.isModelReady)
   const setBootFinished = useSiteLoaderStore((s) => s.setBootFinished)
   const markModelReady = useSiteLoaderStore((s) => s.markModelReady)
+  const forceComplete = useSiteLoaderStore((s) => s.forceComplete)
+
+  // Immediately settle loader on subpages (e.g. /cv) so they render without delay
+  useEffect(() => {
+    if (pathname && pathname !== "/") {
+      forceComplete()
+    }
+  }, [pathname, forceComplete])
+
+  if (pathname && pathname !== "/") {
+    return null
+  }
 
   const [finishedSequence, setFinishedSequence] = useState(false)
   const [isOvercharging, setIsOvercharging] = useState(false)

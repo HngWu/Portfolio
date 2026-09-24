@@ -194,7 +194,7 @@ export function ContactTile({
   const availability = deep?.availability as string || "Available Q3 2026"
 
   // Dynamic social links with production defaults to guarantee they show up
-  const linkedinUrl = linkedin || "https://linkedin.com/in/hngwu"
+  const linkedinUrl = linkedin || "https://www.linkedin.com/in/tan-hng-wu-8ab093262/"
   const telegramUrl = telegram || "https://t.me/hngwu"
   const githubUrl = github || "https://github.com/HngWu"
 

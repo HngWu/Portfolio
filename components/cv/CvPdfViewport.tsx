@@ -37,6 +37,10 @@ export function CvPdfViewport({
   const [useCanvas, setUseCanvas] = React.useState(true)
   const [reloadCounter, setReloadCounter] = React.useState(0)
   const canvasContainerRef = React.useRef<HTMLDivElement | null>(null)
+  const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
+  const touchStartDistRef = React.useRef<number | null>(null)
+  const initialTouchZoomRef = React.useRef<number>(100)
+  const currentRatioRef = React.useRef<number>(1)
 
   // Load PDF.js library dynamically
   React.useEffect(() => {
@@ -98,7 +102,7 @@ export function CvPdfViewport({
 
           const pageWrapper = document.createElement("div")
           pageWrapper.className =
-            "rounded-xl shadow-2xl overflow-hidden border border-white/10 bg-white transition-all duration-150 relative"
+            "rounded-sm shadow-xl overflow-hidden border border-white/10 bg-white transition-all duration-150 relative"
           pageWrapper.style.width = `${(viewport.width / (1.5 * Math.min(dpr, 2))) * (zoom / 100)}px`
           pageWrapper.style.maxWidth = "100%"
 
@@ -133,8 +137,64 @@ export function CvPdfViewport({
     }
   }, [activeUrl, zoom, reloadCounter])
 
-  const handleZoomIn = () => setZoom((z) => Math.min(160, z + 15))
-  const handleZoomOut = () => setZoom((z) => Math.max(70, z - 15))
+  // Mobile touch pinch-to-zoom gesture
+  React.useEffect(() => {
+    const el = scrollContainerRef.current
+    const target = canvasContainerRef.current
+    if (!el || !target) return
+
+    const getDistance = (touches: TouchList) => {
+      if (touches.length < 2) return 0
+      const dx = touches[0].clientX - touches[1].clientX
+      const dy = touches[0].clientY - touches[1].clientY
+      return Math.hypot(dx, dy)
+    }
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        touchStartDistRef.current = getDistance(e.touches)
+        initialTouchZoomRef.current = zoom
+        currentRatioRef.current = 1
+      }
+    }
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && touchStartDistRef.current) {
+        const currentDist = getDistance(e.touches)
+        const ratio = currentDist / touchStartDistRef.current
+        currentRatioRef.current = ratio
+        // Apply smooth visual scale during active pinch
+        target.style.transform = `scale(${ratio})`
+        target.style.transformOrigin = "top center"
+      }
+    }
+
+    const onTouchEnd = () => {
+      if (touchStartDistRef.current && currentRatioRef.current !== 1) {
+        const calculatedZoom = Math.round((initialTouchZoomRef.current * currentRatioRef.current) / 5) * 5
+        const finalZoom = Math.min(180, Math.max(60, calculatedZoom))
+        target.style.transform = ""
+        setZoom(finalZoom)
+      }
+      touchStartDistRef.current = null
+      currentRatioRef.current = 1
+    }
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true })
+    el.addEventListener("touchmove", onTouchMove, { passive: true })
+    el.addEventListener("touchend", onTouchEnd, { passive: true })
+    el.addEventListener("touchcancel", onTouchEnd, { passive: true })
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart)
+      el.removeEventListener("touchmove", onTouchMove)
+      el.removeEventListener("touchend", onTouchEnd)
+      el.removeEventListener("touchcancel", onTouchEnd)
+    }
+  }, [zoom])
+
+  const handleZoomIn = () => setZoom((z) => Math.min(180, z + 15))
+  const handleZoomOut = () => setZoom((z) => Math.max(60, z - 15))
   const handleResetZoom = () => setZoom(100)
 
   const handleReload = () => {
@@ -168,7 +228,7 @@ export function CvPdfViewport({
         <div className="flex items-center gap-2 shrink-0">
           {/* Zoom controls (Active for Canvas View) */}
           {useCanvas && (
-            <div className="hidden sm:flex items-center bg-white/[0.04] border border-white/10 rounded-lg p-0.5">
+            <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-lg p-0.5">
               <button
                 type="button"
                 onClick={handleZoomOut}
@@ -180,7 +240,7 @@ export function CvPdfViewport({
               <button
                 type="button"
                 onClick={handleResetZoom}
-                className="px-2 text-[11px] text-white/60 hover:text-white transition-colors cursor-pointer"
+                className="px-1.5 sm:px-2 text-[10px] sm:text-[11px] text-white/60 hover:text-white transition-colors cursor-pointer"
                 title="Reset zoom"
               >
                 {zoom}%
@@ -231,11 +291,45 @@ export function CvPdfViewport({
 
         {useCanvas ? (
           /* PDF.js Canvas Rendering Container with sleek Custom Scrollbar */
-          <div className="w-full h-full overflow-y-auto custom-scrollbar p-4 sm:p-8 pb-20 flex flex-col items-center gap-6">
+          <div
+            ref={scrollContainerRef}
+            className="w-full h-full overflow-y-auto custom-scrollbar p-2 sm:p-6 pb-24 flex flex-col items-center gap-3 relative"
+          >
             <div
               ref={canvasContainerRef}
-              className="w-full flex flex-col items-center gap-8 max-w-4xl"
+              className="w-full flex flex-col items-center gap-3 max-w-4xl origin-top"
             />
+
+            {/* Mobile Floating Zoom Pill for ergonomic thumb reach */}
+            <div className="sm:hidden absolute bottom-4 right-4 z-30 flex items-center bg-[#0c1017]/90 backdrop-blur-xl border border-white/15 rounded-full p-1 shadow-2xl">
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                className="p-1.5 rounded-full hover:bg-white/10 text-white/80 active:scale-95 transition-all cursor-pointer"
+                title="Zoom out"
+                aria-label="Zoom out"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleResetZoom}
+                className="px-2 text-xs font-mono font-medium text-white/90 hover:text-[#4AFFB4] transition-colors cursor-pointer"
+                title="Reset zoom"
+                aria-label="Reset zoom"
+              >
+                {zoom}%
+              </button>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                className="p-1.5 rounded-full hover:bg-white/10 text-white/80 active:scale-95 transition-all cursor-pointer"
+                title="Zoom in"
+                aria-label="Zoom in"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         ) : (
           /* Native Fallback Iframe */
