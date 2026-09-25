@@ -24,6 +24,12 @@ This document tracks completed features, system architecture status, technical d
   - [x] `HeroTile.tsx`
   - [x] `ContactTile.tsx`
   - [x] `ExperienceTile.tsx`
+    - [x] `ExperienceSpellbook.tsx` (3D/2D arcane spellbook with leaf page-turn engine)
+    - [x] `SpellPageSpread.tsx` & `PageFlipLeaf.tsx` (dual-face 3D perspective flip physics)
+    - [x] `BookCoverFace.tsx` & `BookBackCoverFace.tsx` (gold runic filigree & crests)
+    - [x] `SpellOpeningFlourish.tsx` & `SpellAmbientMana.tsx` (mana particle bursts)
+    - [x] Handcrafted Career Spells (`lib/content/experienceSpells.ts` for DBS Bank & TTP)
+    - [x] Spatial Audio System (`lib/experience/bookAudio.ts` with book open & page flip SFX)
   - [x] `EducationTile.tsx`
   - [x] `ProjectTile.tsx`
   - [x] `SkillsTile.tsx`
@@ -48,6 +54,7 @@ This document tracks completed features, system architecture status, technical d
 
 - [x] **UI Casing Standardization** (`components/ui/Button.tsx` and `components/ui/button.tsx` re-export)
 - [x] **Centralized Type Definitions** (`types/admin.ts`, `types/bento.ts`, `types/supabase.ts`)
+- [x] **Git Hygiene & Superpowers Doc Isolation Mandate** (Strict artifact isolation: zero generated docs in git, session-scoped staging only, verified push scope in `AGENTS.md`, `GEMINI.md`, and Superpowers plugin skills)
 - [ ] **HexCore 3D Canvas Modularization** (Planned decomposition of `PolyhedronCanvas.tsx` into `components/canvas/hexcore/`)
 - [ ] **Database Access Layer Split** (Planned split of `lib/db/index.ts` into `core.ts`, `tiles.ts`, `items.ts`, `admin.ts`)
 

@@ -60,6 +60,9 @@ next-env.d.ts
 # superpowers & documentation
 .superpowers/
 docs/
+docs/**
+.worktrees/
+worktrees/
 .playwright-mcp/
 .gemini/
 autoresearch.sh

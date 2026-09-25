@@ -277,9 +277,39 @@ Glow:        Blue (--lume-secondary)
 ```
 Quick-Pitch: Role heading + Company/Date. 
              List of 5 categorized highlights with dynamic icons (Zap, Layers, BarChart, etc.)
-Deep Dive:   "Professional Impact" linear layout. 
-             Full descriptions grouped by the 5 highlights categories.
-Footer:      Company name (DBS Bank), symmetric spacing.
+Deep Dive:   Interactive 3D/2D Arcane Spellbook System (see Section 5.4).
+Footer:      Company name (DBS Bank / TTP), symmetric spacing.
+```
+
+### 5.4 Arcane Experience Spellbook System (`components/experience/`)
+
+The Experience Deep Dive expands the tile into a full-bleed magical grimoire with tactile page flips, spatial audio, and handcrafted spell profiles.
+
+```
+Anatomy:
+  1. Front Cover (BookCoverFace.tsx):
+     - Gilded runic filigree with etched borders and career seal
+     - Unlatch trigger with smooth open animation and audio cue
+  2. Two-Page Spread (SpellPageSpread.tsx):
+     - Left Leaf (SpellPageLeft.tsx):
+       * Realm & Era header (Organization & Tenure)
+       * School of Mastery (Specialization domain)
+       * Sigil Emblem (Transmutation / Alchemy / Conjuration)
+       * Spell Ingredients (Core technologies & tools with elemental symbols)
+     - Right Leaf (SpellPageRight.tsx):
+       * Incantations (Structured architectural responsibilities & initiatives)
+       * Spell Effects & Runes (Production deliverables & quantified metrics)
+  3. Interactive Page Turning (PageFlipLeaf.tsx):
+     - 3D CSS perspective transforms with preserve-3d and backface visibility isolation
+     - Smooth spring-damped turn physics with audio-synced parchment page turn SFX
+  4. Back Cover (BookBackCoverFace.tsx):
+     - Ancient grimoire colophon and return navigation trigger
+  5. Atmospheric Effects:
+     - SpellOpeningFlourish.tsx (radiant magical burst on first open)
+     - SpellAmbientMana.tsx (drifting floating mana particles)
+  6. Audio Integration (lib/experience/bookAudio.ts):
+     - Synthesized Web Audio SFX for book opening latch and tactile page rustles
+     - Mute/Unmute state toggle with persistent audio lock prevention
 ```
 
 ### 5.5 Terminal / CLI Overlay
@@ -298,8 +328,10 @@ Commands:
 ### 6.5 HexCore 3D Visual (Hero)
 
 ```
-Architecture:   3x3 Rubik's Cube Shell (54 Square Pyramids)
+Architecture:   3x3 Rubik's Cube Shell (54 Square Pyramids) + Dual FX Layers
 Material:       MeshStandardMaterial (Matte Indigo #1c1b43)
+Visual FX:      - LightningArcs.tsx: Dynamic electric arc shader lines bridging between pyramids and core
+                - RunicDustStreams.tsx: GPU point cloud particle streams orbiting along logarithmic spirals
 Features:       - 3D Square Pyramids with golden wireframe edges
                 - Opaque pyramids completely hide core in closed state
                 - Unique golden Runes on every pyramid face (Text component)

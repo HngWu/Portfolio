@@ -25,6 +25,7 @@ This file contains the foundational mandates, architectural patterns, and develo
     - View Mode conditional rendering (Quick-Pitch vs Deep Dive).
     - Page transition triggers.
 - **Sizes**: Use `getSizeClasses` in `lib/utils.ts`. Supported sizes include standard (1x1, 2x2) and specialized (4x5 Mega Tile).
+- **Arcane Experience Spellbook**: The Experience tile expands in Deep Dive mode into an interactive 3D/2D arcane spellbook (`components/experience/ExperienceSpellbook.tsx`) with realistic leaf page turns, audio cues, and handcrafted career spells (`lib/content/experienceSpells.ts`).
 
 ### 1.4 View Mode Logic
 - **Quick-Pitch**: High-level, optimized for speed and scanning.
@@ -41,7 +42,8 @@ This file contains the foundational mandates, architectural patterns, and develo
 - **Spacing**: Maintain symmetric divider spacing (typically `mt-6 pt-6`) in tile footers.
 
 ### 2.2 3D Hero Artifact (HexCore)
-- **Geometry**: 3x3 Rubik's Cube shell composed of 54 square pyramids.
+- **Geometry**: 3x3 Rubik's Cube shell composed of 54 square pyramids (`components/bento/tiles/PolyhedronCanvas.tsx`).
+- **Visual FX**: Includes dynamic electric arc shader geometry (`LightningArcs.tsx`) and GPU point cloud streams (`RunicDustStreams.tsx`).
 - **Animation**: Do not add new mouse/scroll listeners to the core without explicit request. Maintain the synchronized Rubik burst rotation sequence.
 
 ---
@@ -56,6 +58,11 @@ This file contains the foundational mandates, architectural patterns, and develo
 ### 3.2 Admin Portal
 - **Dashboard**: Use the `/admin` dashboard for system health monitoring.
 - **Security**: All admin routes are protected by Supabase Auth middleware.
+
+### 3.3 Git Hygiene & Session Scoping
+- **Documentation Isolation**: Never stage or commit generated documentation, specs, plans, or scratch logs (`docs/`, `.superpowers/`) to Git.
+- **Selective Staging**: Never run blanket staging commands (`git add .`, `git add -A`, `git commit -a`, `git commit -am`). Always explicitly stage specific files modified in the active session (`git add <file1> <file2>`).
+- **Session-Scoped Pushes**: When pushing (`git push`), verify that outgoing commits strictly only contain files modified during the active session. Pre-existing uncommitted files or unrelated modifications must remain untouched.
 
 ---
 
