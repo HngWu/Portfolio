@@ -5,6 +5,8 @@ import type { ParsedExperience } from "@/lib/content/portfolio"
 import { toSpellData, HANDCRAFTED_SPELLS, type SpellData } from "@/lib/content/experienceSpells"
 import { SpellPageSpread } from "./SpellPageSpread"
 import { SpellAmbientMana } from "./SpellAmbientMana"
+import { ExperienceBackBtn } from "./ExperienceBackBtn"
+import { usePageTransition } from "@/hooks/usePageTransition"
 import { playPageTurnSound, playBookOpenSound } from "@/lib/experience/bookAudio"
 import {
   ChevronLeft,
@@ -20,6 +22,8 @@ interface ExperienceSpellbookProps {
 }
 
 export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps) {
+  const { navigateWithTransition } = usePageTransition()
+
   // Map experiences to book data (strictly verified 2 career roles: DBS Bank & TTP)
   const spells: SpellData[] = React.useMemo(() => {
     const validExps = (experienceList || []).filter((e) => {
@@ -52,7 +56,14 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
   const [isCoverOpen, setIsCoverOpen] = React.useState(false)
   const [isOpeningCover, setIsOpeningCover] = React.useState(false)
   const [isClosingCover, setIsClosingCover] = React.useState(false)
+  const [isClosedBack, setIsClosedBack] = React.useState(false)
   const [audioEnabled, setAudioEnabled] = React.useState(false)
+
+  // Audio ref tracking to prevent re-opening loops
+  const audioEnabledRef = React.useRef(audioEnabled)
+  React.useEffect(() => {
+    audioEnabledRef.current = audioEnabled
+  }, [audioEnabled])
 
   // Page Turn States
   const [activeIndex, setActiveIndex] = React.useState(0)
@@ -60,20 +71,35 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
   const [direction, setDirection] = React.useState<1 | -1 | 0>(0)
   const [isTurning, setIsTurning] = React.useState(false)
 
-  // Ref tracking to guarantee race-free completion
+  // Ref tracking to guarantee race-free completion & atomic debounce lock
   const targetIndexRef = React.useRef(targetIndex)
   React.useEffect(() => {
     targetIndexRef.current = targetIndex
   }, [targetIndex])
 
-  // Auto-trigger book opening sequence after brief mount delay
+  const isLockedRef = React.useRef(false)
+  const isExitingRef = React.useRef(false)
+
+  // Auto-trigger book opening sequence on initial mount
   React.useEffect(() => {
+    if (typeof window === "undefined") return
+
+    // Check prefers-reduced-motion
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (prefersReduced) {
+      setIsCoverOpen(true)
+      setIsOpeningCover(false)
+      return
+    }
+
+    // Always start closed on page mount, pause 800ms to allow user to view front cover, then swing cover open
     const openTimer = setTimeout(() => {
       setIsOpeningCover(true)
-      playBookOpenSound(audioEnabled)
-    }, 320)
+      playBookOpenSound(audioEnabledRef.current)
+    }, 800)
+
     return () => clearTimeout(openTimer)
-  }, [audioEnabled])
+  }, [])
 
   const handleCoverOpenComplete = React.useCallback(() => {
     setIsCoverOpen(true)
@@ -85,6 +111,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     setIsCoverOpen(false)
     setIsOpeningCover(false)
     setIsClosingCover(false)
+    setIsClosedBack(true)
     setActiveIndex(0)
   }, [])
 
@@ -93,7 +120,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     if (isOpeningCover) {
       const openFallback = setTimeout(() => {
         handleCoverOpenComplete()
-      }, 1200)
+      }, 1400)
       return () => clearTimeout(openFallback)
     }
   }, [isOpeningCover, handleCoverOpenComplete])
@@ -103,24 +130,67 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     if (isClosingCover) {
       const closeFallback = setTimeout(() => {
         handleCoverCloseComplete()
-      }, 1200)
+      }, 1400)
       return () => clearTimeout(closeFallback)
     }
   }, [isClosingCover, handleCoverCloseComplete])
 
   const handleManualOpen = React.useCallback(() => {
-    if (!isCoverOpen && !isOpeningCover && !isClosingCover) {
+    if (!isCoverOpen && !isOpeningCover && !isClosingCover && !isExitingRef.current) {
       setIsOpeningCover(true)
-      playBookOpenSound(audioEnabled)
+      playBookOpenSound(audioEnabledRef.current)
     }
-  }, [isCoverOpen, isOpeningCover, isClosingCover, audioEnabled])
+  }, [isCoverOpen, isOpeningCover, isClosingCover])
 
-  const handleCloseBook = React.useCallback(() => {
-    if (isCoverOpen && !isTurning && !isOpeningCover && !isClosingCover) {
+  // Centralized Exit Navigation Closing Animation
+  const handleExit = React.useCallback(
+    (targetPath = "/") => {
+      if (isExitingRef.current) return
+      isExitingRef.current = true
+      isLockedRef.current = true
+
+      const prefersReduced =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+      if (prefersReduced) {
+        navigateWithTransition(targetPath)
+        return
+      }
+
       setIsClosingCover(true)
-      playBookOpenSound(audioEnabled)
+      playBookOpenSound(audioEnabledRef.current)
+
+      // Total exit timing:
+      // 480ms (3D closing leaf swing) + 380ms (collapse to 580px centered) + ~390ms (view back cover) = 1250ms
+      const exitTimer = setTimeout(() => {
+        navigateWithTransition(targetPath)
+      }, 1250)
+
+      return () => clearTimeout(exitTimer)
+    },
+    [navigateWithTransition]
+  )
+
+  // Intercept browser back button to trigger closing animation before leaving
+  React.useEffect(() => {
+    if (typeof window === "undefined") return
+
+    // Push dummy entry so clicking Back triggers popstate first
+    window.history.pushState({ spellbook: true }, "", window.location.href)
+
+    const handlePopState = () => {
+      if (!isExitingRef.current) {
+        window.history.pushState({ spellbook: true }, "", window.location.href)
+        handleExit("/")
+      }
     }
-  }, [isCoverOpen, isTurning, isOpeningCover, isClosingCover, audioEnabled])
+
+    window.addEventListener("popstate", handlePopState)
+    return () => {
+      window.removeEventListener("popstate", handlePopState)
+    }
+  }, [handleExit])
 
   const handleFlipComplete = React.useCallback(() => {
     if (targetIndexRef.current !== null) {
@@ -129,6 +199,10 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     setTargetIndex(null)
     setIsTurning(false)
     setDirection(0)
+    // 150ms settle buffer before releasing input lock
+    setTimeout(() => {
+      isLockedRef.current = false
+    }, 150)
   }, [])
 
   // Page turn safety timeout: ensures UI never gets stuck even if browser throttles animations
@@ -141,32 +215,65 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     }
   }, [isTurning, handleFlipComplete])
 
-  // Page Navigation Handlers
+  // Page Navigation Handlers with atomic locking
   const goToNext = React.useCallback(() => {
-    if (activeIndex >= spells.length - 1 || isTurning || !isCoverOpen || isOpeningCover || isClosingCover) return
+    if (
+      activeIndex >= spells.length - 1 ||
+      isTurning ||
+      isLockedRef.current ||
+      !isCoverOpen ||
+      isOpeningCover ||
+      isClosingCover ||
+      isExitingRef.current
+    )
+      return
+
+    isLockedRef.current = true
     setIsTurning(true)
     setDirection(1)
     setTargetIndex(activeIndex + 1)
-    playPageTurnSound(audioEnabled)
-  }, [activeIndex, spells.length, isTurning, isCoverOpen, isOpeningCover, isClosingCover, audioEnabled])
+    playPageTurnSound(audioEnabledRef.current)
+  }, [activeIndex, spells.length, isTurning, isCoverOpen, isOpeningCover, isClosingCover])
 
   const goToPrev = React.useCallback(() => {
-    if (activeIndex <= 0 || isTurning || !isCoverOpen || isOpeningCover || isClosingCover) return
+    if (
+      activeIndex <= 0 ||
+      isTurning ||
+      isLockedRef.current ||
+      !isCoverOpen ||
+      isOpeningCover ||
+      isClosingCover ||
+      isExitingRef.current
+    )
+      return
+
+    isLockedRef.current = true
     setIsTurning(true)
     setDirection(-1)
     setTargetIndex(activeIndex - 1)
-    playPageTurnSound(audioEnabled)
-  }, [activeIndex, isTurning, isCoverOpen, isOpeningCover, isClosingCover, audioEnabled])
+    playPageTurnSound(audioEnabledRef.current)
+  }, [activeIndex, isTurning, isCoverOpen, isOpeningCover, isClosingCover])
 
   const goToIndex = React.useCallback(
     (index: number) => {
-      if (index === activeIndex || isTurning || !isCoverOpen || isOpeningCover || isClosingCover) return
+      if (
+        index === activeIndex ||
+        isTurning ||
+        isLockedRef.current ||
+        !isCoverOpen ||
+        isOpeningCover ||
+        isClosingCover ||
+        isExitingRef.current
+      )
+        return
+
+      isLockedRef.current = true
       setIsTurning(true)
       setDirection(index > activeIndex ? 1 : -1)
       setTargetIndex(index)
-      playPageTurnSound(audioEnabled)
+      playPageTurnSound(audioEnabledRef.current)
     },
-    [activeIndex, isTurning, isCoverOpen, isOpeningCover, isClosingCover, audioEnabled]
+    [activeIndex, isTurning, isCoverOpen, isOpeningCover, isClosingCover]
   )
 
   // Keyboard Navigation
@@ -188,18 +295,21 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
         goToPrev()
       } else if (e.key === "Escape") {
         e.preventDefault()
-        handleCloseBook()
+        handleExit("/")
       }
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [goToNext, goToPrev, isCoverOpen, handleManualOpen, handleCloseBook])
+  }, [goToNext, goToPrev, isCoverOpen, handleManualOpen, handleExit])
 
   const currentSpell = spells[activeIndex] || spells[0]
   const targetSpell = targetIndex !== null ? spells[targetIndex] || null : null
 
   return (
     <div className="relative w-full h-full flex flex-col justify-center items-center select-none">
+      {/* Return to Home Back Button with Smooth Exit Closing Animation */}
+      <ExperienceBackBtn onBack={() => handleExit("/")} />
+
       {/* Ambient Luminous Dust Particles */}
       <SpellAmbientMana />
 
@@ -209,6 +319,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
           isCoverOpen={isCoverOpen}
           isOpeningCover={isOpeningCover}
           isClosingCover={isClosingCover}
+          isClosedBack={isClosedBack}
           onCoverOpenComplete={handleCoverOpenComplete}
           onCoverCloseComplete={handleCoverCloseComplete}
           onManualOpenCover={handleManualOpen}
@@ -228,7 +339,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
       </div>
 
       {/* Bottom Floating Navigation & Chapter HUD */}
-      {isCoverOpen && !isClosingCover && (
+      {isCoverOpen && !isClosingCover && !isClosedBack && (
         <div className="relative z-20 mt-3 md:mt-4 flex flex-col items-center gap-2 shrink-0 px-2 animate-in fade-in duration-300">
           <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 p-1.5 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl shadow-[0_10px_35px_rgba(0,0,0,0.6)]">
             {/* Previous Role Button */}
@@ -306,9 +417,9 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
               {/* Close Tome Button */}
               <button
                 type="button"
-                onClick={handleCloseBook}
-                title="Close Dossier"
-                aria-label="Close Dossier"
+                onClick={() => handleExit("/")}
+                title="Close Dossier & Return Home"
+                aria-label="Close Dossier & Return Home"
                 className="p-2 rounded-xl bg-white/[0.03] border border-white/10 text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-all cursor-pointer"
               >
                 <RotateCcw className="size-3.5" />

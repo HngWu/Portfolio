@@ -12,7 +12,7 @@ export function BookCoverFace({ onOpen }: BookCoverFaceProps) {
   return (
     <div
       onClick={onOpen}
-      className="relative w-full h-full flex flex-col justify-between p-8 md:p-12 select-none overflow-hidden bg-[#070913] border-r border-white/20 rounded-r-3xl shadow-[inset_0_0_80px_rgba(0,0,0,0.85)] cursor-pointer group/cover"
+      className="relative w-full h-full flex flex-col justify-between p-6 sm:p-8 md:p-12 select-none overflow-hidden bg-[#070913] rounded-2xl sm:rounded-3xl shadow-[inset_0_0_80px_rgba(0,0,0,0.85)] cursor-pointer group/cover"
     >
       {/* Decorative Gilded Inner Foil Frame */}
       <div className="absolute inset-3 border border-white/[0.08] rounded-2xl pointer-events-none" />

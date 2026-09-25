@@ -5,9 +5,12 @@ import { motion } from "framer-motion"
 import { SpellPageLeft } from "./SpellPageLeft"
 import { SpellPageRight } from "./SpellPageRight"
 import { CoverEndpaper } from "./CoverEndpaper"
+import { BookCoverFace } from "./BookCoverFace"
+import { BookBackCoverFace } from "./BookBackCoverFace"
 import { PageFlipLeaf } from "./PageFlipLeaf"
 import { BookmarkRibbon } from "./BookmarkRibbon"
 import { BookThumbTabs } from "./BookThumbTabs"
+import { SpellOpeningFlourish } from "./SpellOpeningFlourish"
 import type { SpellData } from "@/lib/content/experienceSpells"
 import { ChevronLeft, ChevronRight, Compass } from "lucide-react"
 
@@ -15,6 +18,7 @@ interface SpellPageSpreadProps {
   isCoverOpen: boolean
   isOpeningCover: boolean
   isClosingCover: boolean
+  isClosedBack?: boolean
   onCoverOpenComplete: () => void
   onCoverCloseComplete: () => void
   onManualOpenCover: () => void
@@ -38,6 +42,7 @@ export function SpellPageSpread({
   isCoverOpen,
   isOpeningCover,
   isClosingCover,
+  isClosedBack = false,
   onCoverOpenComplete,
   onCoverCloseComplete,
   onManualOpenCover,
@@ -80,10 +85,29 @@ export function SpellPageSpread({
   const baseRightSpell = isTurning && direction === 1 && targetSpell ? targetSpell : currentSpell
   const baseRightPage = isTurning && direction === 1 && targetIndex !== null ? targetIndex + 1 : currentIndex + 1
 
-  const showCoverLeaf = !isCoverOpen || isOpeningCover || isClosingCover
+  const isClosed = (!isCoverOpen && !isOpeningCover && !isClosingCover) || isClosedBack
+  const showCoverLeaf = isOpeningCover || isClosingCover
 
   return (
-    <div className="relative w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] mx-auto h-[74vh] max-h-[740px] min-h-[520px] flex items-center justify-center p-1 md:p-2 select-none">
+    <motion.div
+      className="relative w-full mx-auto h-[74vh] max-h-[740px] min-h-[520px] flex items-center justify-center p-1 md:p-2 select-none"
+      initial={{
+        maxWidth: "580px",
+      }}
+      animate={{
+        maxWidth: isClosed ? "580px" : "1240px",
+      }}
+      transition={{
+        duration: isClosedBack ? 0.38 : isClosingCover ? 0.48 : 0.88,
+        ease: isClosedBack ? [0.22, 1, 0.36, 1] : isClosingCover ? [0.4, 0, 0.2, 1] : [0.22, 1, 0.36, 1],
+      }}
+    >
+      {/* MULTI-TIER 3D AMBIENT GROUND SHADOWS */}
+      {/* Tier 1: Diffuse Ground Drop Shadow */}
+      <div className="absolute -bottom-6 inset-x-8 sm:inset-x-12 h-14 bg-black/90 blur-2xl rounded-full pointer-events-none z-0" />
+      {/* Tier 2: Faint Emerald Mana Floor Halo */}
+      <div className="absolute -bottom-8 inset-x-16 sm:inset-x-24 h-16 bg-[var(--lume-primary,#4affb4)]/10 blur-3xl rounded-full pointer-events-none z-0" />
+
       {/* Indexed Thumb Tabs along the right outer edge (Desktop xl+) */}
       {isCoverOpen && !isClosingCover && (
         <BookThumbTabs
@@ -95,33 +119,50 @@ export function SpellPageSpread({
         />
       )}
 
-      {/* 3D Perspective Book Frame — Constant Dimensions to Prevent Layout Jumps */}
+      {/* 3D Perspective Hardcover Outer Casing */}
       <div
-        className="relative w-full h-full rounded-3xl overflow-hidden border border-white/15 shadow-[0_25px_80px_rgba(0,0,0,0.85),0_0_60px_rgba(74,255,180,0.06)] backdrop-blur-2xl bg-[#06080e]/95"
+        className="relative w-full h-full rounded-[28px] p-1 bg-gradient-to-b from-[#181f35] via-[#0b0f1d] to-[#04060d] border border-white/20 shadow-[0_30px_90px_rgba(0,0,0,0.92),0_12px_35px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-2xl z-10"
         style={{
           perspective: "2600px",
           transformStyle: "preserve-3d",
         }}
       >
-        {/* Subtle Ambient Book Edge Highlight */}
-        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--lume-primary,#4affb4)]/30 to-transparent pointer-events-none z-40" />
+        {/* Inner Deckle Page Block Frame with Paper Strata Borders */}
+        <div className="relative w-full h-full rounded-3xl overflow-hidden border-x-[3px] border-b-[3px] border-x-[#1b233a]/80 border-b-[#121828]/80 bg-[#06080e]/95 shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]">
+          {/* Subtle Ambient Book Edge Highlight */}
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--lume-primary,#4affb4)]/40 to-transparent pointer-events-none z-40" />
 
-        {/* Technical Corner Ornaments */}
-        <div className="absolute top-2.5 left-2.5 size-4 border-t-2 border-l-2 border-[var(--lume-primary,#4affb4)]/50 rounded-tl pointer-events-none z-40" />
-        <div className="absolute top-2.5 right-2.5 size-4 border-t-2 border-r-2 border-[var(--lume-primary,#4affb4)]/50 rounded-tr pointer-events-none z-40" />
-        <div className="absolute bottom-2.5 left-2.5 size-4 border-b-2 border-l-2 border-[var(--lume-primary,#4affb4)]/50 rounded-bl pointer-events-none z-40" />
-        <div className="absolute bottom-2.5 right-2.5 size-4 border-b-2 border-r-2 border-[var(--lume-primary,#4affb4)]/50 rounded-br pointer-events-none z-40" />
+          {/* Technical Corner Ornaments */}
+          <div className="absolute top-2.5 left-2.5 size-4 border-t-2 border-l-2 border-[var(--lume-primary,#4affb4)]/60 rounded-tl pointer-events-none z-40" />
+          <div className="absolute top-2.5 right-2.5 size-4 border-t-2 border-r-2 border-[var(--lume-primary,#4affb4)]/60 rounded-tr pointer-events-none z-40" />
+          <div className="absolute bottom-2.5 left-2.5 size-4 border-b-2 border-l-2 border-[var(--lume-primary,#4affb4)]/60 rounded-bl pointer-events-none z-40" />
+          <div className="absolute bottom-2.5 right-2.5 size-4 border-b-2 border-r-2 border-[var(--lume-primary,#4affb4)]/60 rounded-br pointer-events-none z-40" />
 
-        {/* Central Spine Crease & Dynamic Shadow */}
-        <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 bg-gradient-to-b from-white/20 via-white/10 to-white/20 z-30 pointer-events-none">
-          <div
-            className={`absolute inset-y-0 -left-12 w-24 bg-gradient-to-r from-transparent via-black/85 to-transparent pointer-events-none transition-all duration-300 ${
-              isTurning || isOpeningCover || isClosingCover
-                ? "opacity-95 scale-x-125"
-                : "opacity-40 scale-x-100"
-            }`}
+          {/* Central 3D Spine Channel with Cylindrical Shading & Stitching Pins */}
+          {!isClosed && (
+            <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-7 -translate-x-1/2 z-30 pointer-events-none">
+              {/* Cylindrical lighting barrel */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-white/[0.07] to-black/90 shadow-[inset_0_0_10px_rgba(0,0,0,0.95)]" />
+              {/* Center spine crease wire */}
+              <div className="absolute left-1/2 top-0 bottom-0 w-[1.5px] -translate-x-1/2 bg-white/25 shadow-[0_0_6px_rgba(0,0,0,1)]" />
+              {/* Metallic spine binder pins */}
+              <div className="absolute top-6 left-1/2 -translate-x-1/2 size-1.5 rounded-full bg-[var(--lume-primary,#4affb4)]/70 shadow-[0_0_6px_var(--lume-primary)]" />
+              <div className="absolute top-1/3 left-1/2 -translate-x-1/2 size-1 rounded-full bg-white/40" />
+              <div className="absolute top-2/3 left-1/2 -translate-x-1/2 size-1 rounded-full bg-white/40" />
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 size-1.5 rounded-full bg-[var(--lume-primary,#4affb4)]/70 shadow-[0_0_6px_var(--lume-primary)]" />
+              {/* Dynamic cast shadow during turning */}
+              <div
+                className={`absolute inset-y-0 -left-12 -right-12 bg-gradient-to-r from-transparent via-black/85 to-transparent pointer-events-none transition-all duration-300 ${
+                  isTurning || isOpeningCover || isClosingCover ? "opacity-95 scale-x-125" : "opacity-35 scale-x-100"
+                }`}
+              />
+            </div>
+          )}
+
+          {/* Magical Opening & Closing Flourish Burst */}
+          <SpellOpeningFlourish
+            mode={isOpeningCover ? "opening" : isClosingCover ? "closing" : "idle"}
           />
-        </div>
 
         {/* Silk Bookmark Ribbon hanging from top center spine */}
         {isCoverOpen && !isClosingCover && (
@@ -189,54 +230,60 @@ export function SpellPageSpread({
         )}
 
         {/* STATIONARY BASE SPREAD LAYER */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full">
+        <div className={`grid ${isClosed ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"} w-full h-full`}>
           {/* Left Folio Base */}
-          <div
-            className={`relative border-b lg:border-b-0 lg:border-r border-white/10 bg-white/[0.01] h-full overflow-hidden ${
-              mobileFolioTab === "left" ? "block" : "hidden lg:block"
-            }`}
-          >
-            {showCoverLeaf ? (
-              <CoverEndpaper />
-            ) : (
+          {!isClosed && (
+            <div
+              className={`relative border-b lg:border-b-0 lg:border-r border-white/10 bg-white/[0.01] h-full overflow-hidden ${
+                mobileFolioTab === "left" ? "block" : "hidden lg:block"
+              }`}
+            >
               <SpellPageLeft
                 spell={baseLeftSpell}
                 pageNumber={baseLeftPage}
                 totalSpells={totalSpells}
+                isRevealing={isOpeningCover}
               />
-            )}
 
-            {/* Ambient occlusion shadow under lifting page when turning Prev */}
-            {isCoverOpen && isTurning && direction === -1 && (
-              <motion.div
-                className="absolute inset-0 bg-black pointer-events-none"
-                initial={{ opacity: 0.55 }}
-                animate={{ opacity: 0 }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
-              />
-            )}
-          </div>
+              {/* Ambient occlusion shadow under lifting page when turning Prev */}
+              {isCoverOpen && isTurning && direction === -1 && (
+                <motion.div
+                  className="absolute inset-0 bg-black pointer-events-none"
+                  initial={{ opacity: 0.55 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ duration: 0.7, ease: "easeOut" }}
+                />
+              )}
+            </div>
+          )}
 
           {/* Right Folio Base */}
           <div
             className={`relative bg-white/[0.01] h-full overflow-hidden ${
-              mobileFolioTab === "right" ? "block" : "hidden lg:block"
+              isClosed ? "col-span-1" : mobileFolioTab === "right" ? "block" : "hidden lg:block"
             }`}
           >
-            <SpellPageRight
-              spell={baseRightSpell}
-              pageNumber={baseRightPage}
-              isLastPage={baseRightPage === totalSpells}
-              onNextPage={onNextPage}
-            />
+            {isClosedBack ? (
+              <BookBackCoverFace />
+            ) : isClosed ? (
+              <BookCoverFace onOpen={onManualOpenCover} />
+            ) : (
+              <SpellPageRight
+                spell={baseRightSpell}
+                pageNumber={baseRightPage}
+                isLastPage={baseRightPage === totalSpells}
+                onNextPage={onNextPage}
+                isRevealing={isOpeningCover}
+              />
+            )}
 
-            {/* Ambient occlusion shadow under lifting leaf when turning Next */}
-            {isCoverOpen && isTurning && direction === 1 && (
+            {/* Ambient occlusion shadow under lifting leaf when turning Next or Closing */}
+            {((isCoverOpen && isTurning && direction === 1) || isClosingCover) && (
               <motion.div
                 className="absolute inset-0 bg-black pointer-events-none"
                 initial={{ opacity: 0.55 }}
-                animate={{ opacity: 0 }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
+                animate={{ opacity: 0.8 }}
+                transition={{ duration: 0.48, ease: "easeOut" }}
               />
             )}
 
@@ -252,12 +299,13 @@ export function SpellPageSpread({
           </div>
         </div>
 
-        {/* 3D BOOK COVER LEAF (Opening / Closing / Closed Entrance) */}
+        {/* 3D BOOK COVER LEAF (Opening / Closing Animation) */}
         {showCoverLeaf && (
           <PageFlipLeaf
             isCover={true}
-            coverAction={isOpeningCover ? "opening" : isClosingCover ? "closing" : "closed"}
+            coverAction={isOpeningCover ? "opening" : "closing"}
             currentSpell={currentSpell}
+            currentPageNumber={currentIndex + 1}
             totalSpells={totalSpells}
             onFlipComplete={
               isOpeningCover ? onCoverOpenComplete : isClosingCover ? onCoverCloseComplete : undefined
@@ -278,7 +326,8 @@ export function SpellPageSpread({
             onFlipComplete={onFlipComplete}
           />
         )}
+        </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

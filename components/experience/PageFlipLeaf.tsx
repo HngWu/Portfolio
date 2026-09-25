@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import { SpellPageLeft } from "./SpellPageLeft"
 import { SpellPageRight } from "./SpellPageRight"
 import { BookCoverFace } from "./BookCoverFace"
+import { BookBackCoverFace } from "./BookBackCoverFace"
 import type { SpellData } from "@/lib/content/experienceSpells"
 
 export interface PageFlipLeafProps {
@@ -39,18 +40,21 @@ export function PageFlipLeaf({
   // Distinguish between static closed cover, cover opening/closing, and normal page turn
   const isStaticCoverClosed = isCover && coverAction === "closed"
 
-  // Rotation and flex dynamics
+  // Rotation, curvature, and compound flex dynamics
   let initialRotateY = 0
   let targetRotateY = -180
-  let scaleXKeyframes = [1, 0.955, 1]
-  let skewYKeyframes = isRightHalfLeaf ? [0, -1.2, 0] : [0, 1.2, 0]
-  let animDuration = 0.7
-  const animEase = [0.28, 0.85, 0.32, 1] as const
+  let scaleXKeyframes = [1, 0.935, 1]
+  let skewYKeyframes = isRightHalfLeaf ? [0, -2.2, 0] : [0, 2.2, 0]
+  let rotateZKeyframes = isRightHalfLeaf ? [0, -3.5, 0] : [0, 3.5, 0]
+  let animDuration = 0.62
+  let animEase: readonly number[] = [0.25, 0.85, 0.35, 1]
 
   if (isCover) {
-    animDuration = 0.86
-    scaleXKeyframes = [1, 0.98, 1]
-    skewYKeyframes = [0, -0.8, 0]
+    animDuration = 0.88
+    animEase = [0.22, 1, 0.36, 1] // Heavy hardcover ease with subtle settle overshoot
+    scaleXKeyframes = [1, 0.94, 0.98, 1]
+    skewYKeyframes = [0, -1.8, -0.6, 0]
+    rotateZKeyframes = [0, -2.4, -0.8, 0]
 
     if (coverAction === "closed") {
       initialRotateY = 0
@@ -59,9 +63,13 @@ export function PageFlipLeaf({
       initialRotateY = 0
       targetRotateY = -180
     } else if (coverAction === "closing") {
-      initialRotateY = -180
-      targetRotateY = 0
-      skewYKeyframes = [0, 0.8, 0]
+      initialRotateY = 0
+      targetRotateY = -180
+      animDuration = 0.48
+      animEase = [0.4, 0, 0.2, 1] // Weighted accelerating shut
+      scaleXKeyframes = [1, 0.95, 0.99, 1]
+      skewYKeyframes = [0, -1.4, 0]
+      rotateZKeyframes = [0, -1.8, 0]
     }
   } else {
     // Normal role page turn
@@ -69,7 +77,8 @@ export function PageFlipLeaf({
       // Prev: left page flips right (+180deg)
       initialRotateY = 0
       targetRotateY = 180
-      skewYKeyframes = [0, 1.2, 0]
+      skewYKeyframes = [0, 2.2, 0]
+      rotateZKeyframes = [0, 3.5, 0]
     }
   }
 
@@ -93,15 +102,17 @@ export function PageFlipLeaf({
           rotateY: initialRotateY,
           scaleX: 1,
           skewY: 0,
+          rotateZ: 0,
         }}
         animate={{
           rotateY: targetRotateY,
           scaleX: isStaticCoverClosed ? 1 : scaleXKeyframes,
           skewY: isStaticCoverClosed ? 0 : skewYKeyframes,
+          rotateZ: isStaticCoverClosed ? 0 : rotateZKeyframes,
         }}
         transition={{
           duration: isStaticCoverClosed ? 0.01 : animDuration,
-          ease: animEase,
+          ease: animEase as unknown as [number, number, number, number],
         }}
         onAnimationComplete={() => {
           // Trigger completion for any animating turn or cover transition
@@ -126,7 +137,16 @@ export function PageFlipLeaf({
           }}
         >
           {isCover ? (
-            <BookCoverFace onOpen={onManualOpenCover} />
+            coverAction === "closing" ? (
+              <SpellPageRight
+                spell={currentSpell}
+                pageNumber={currentPageNumber}
+                isLastPage={false}
+                onNextPage={() => {}}
+              />
+            ) : (
+              <BookCoverFace onOpen={onManualOpenCover} />
+            )
           ) : isRightHalfLeaf ? (
             <SpellPageRight
               spell={currentSpell}
@@ -142,12 +162,37 @@ export function PageFlipLeaf({
             />
           )}
 
-          {/* Dynamic darkening shadow as page lifts away from camera */}
+          {/* Dynamic Traveling Fold Shadow as page lifts and bends */}
           {!isStaticCoverClosed && (
             <motion.div
-              className="absolute inset-0 bg-black/85 pointer-events-none"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0.45, 0.85] }}
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: isRightHalfLeaf
+                  ? "linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 40%, transparent 100%)"
+                  : "linear-gradient(to left, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 40%, transparent 100%)",
+              }}
+              initial={{ opacity: 0, x: isRightHalfLeaf ? "0%" : "0%" }}
+              animate={{
+                opacity: [0, 0.7, 0.95],
+                x: isRightHalfLeaf ? ["0%", "15%", "35%"] : ["0%", "-15%", "-35%"],
+              }}
+              transition={{ duration: animDuration, ease: "easeInOut" }}
+            />
+          )}
+
+          {/* Dynamic Specular Sheen line sweeping across curvature crest */}
+          {!isStaticCoverClosed && (
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "linear-gradient(to right, transparent 0%, rgba(74,255,180,0.25) 50%, transparent 100%)",
+              }}
+              initial={{ opacity: 0, x: isRightHalfLeaf ? "-60%" : "60%" }}
+              animate={{
+                opacity: [0, 0.8, 0],
+                x: isRightHalfLeaf ? ["-60%", "20%", "120%"] : ["60%", "-20%", "-120%"],
+              }}
               transition={{ duration: animDuration, ease: "easeInOut" }}
             />
           )}
@@ -170,11 +215,15 @@ export function PageFlipLeaf({
           }}
         >
           {isCover ? (
-            <SpellPageLeft
-              spell={currentSpell}
-              pageNumber={1}
-              totalSpells={totalSpells}
-            />
+            coverAction === "closing" ? (
+              <BookBackCoverFace />
+            ) : (
+              <SpellPageLeft
+                spell={currentSpell}
+                pageNumber={1}
+                totalSpells={totalSpells}
+              />
+            )
           ) : isRightHalfLeaf ? (
             <SpellPageLeft
               spell={targetSpell ?? currentSpell}
@@ -190,16 +239,49 @@ export function PageFlipLeaf({
             />
           )}
 
+          {/* Dynamic back-face traveling fold shadow dispersing as it lands flat */}
+          {!isStaticCoverClosed && (
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: isRightHalfLeaf
+                  ? "linear-gradient(to left, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.25) 40%, transparent 100%)"
+                  : "linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.25) 40%, transparent 100%)",
+              }}
+              initial={{ opacity: 0.9 }}
+              animate={{ opacity: [0.9, 0.4, 0] }}
+              transition={{ duration: animDuration, ease: "easeOut" }}
+            />
+          )}
+
           {/* Dynamic luminous sheen as back face settles flat into position */}
           {!isStaticCoverClosed && (
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--lume-primary,#4affb4)]/20 to-transparent pointer-events-none"
-              initial={{ opacity: 0.7, x: isRightHalfLeaf ? "100%" : "-100%" }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--lume-primary,#4affb4)]/25 to-transparent pointer-events-none"
+              initial={{ opacity: 0.8, x: isRightHalfLeaf ? "100%" : "-100%" }}
               animate={{ opacity: 0, x: isRightHalfLeaf ? "-100%" : "100%" }}
               transition={{ duration: animDuration, ease: "easeOut" }}
             />
           )}
         </div>
+
+        {/* FAINT PARTICLE / SPARK TRAIL ALONG THE TURNING OUTER EDGE */}
+        {!isStaticCoverClosed && (
+          <motion.div
+            className={`absolute top-0 bottom-0 w-2 pointer-events-none z-50 ${
+              isRightHalfLeaf ? "right-0" : "left-0"
+            }`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.9, 0] }}
+            transition={{ duration: animDuration, times: [0, 0.5, 1], ease: "easeInOut" }}
+          >
+            <div className="w-full h-full bg-gradient-to-b from-transparent via-[var(--lume-primary,#4affb4)]/80 to-transparent blur-[1px]" />
+            {/* Micro-spark dots */}
+            <div className="absolute top-1/4 left-0 size-1 rounded-full bg-white shadow-[0_0_6px_var(--lume-primary)]" />
+            <div className="absolute top-1/2 left-0.5 size-1.5 rounded-full bg-[var(--mode-accent-bright,#6affff)] shadow-[0_0_8px_var(--mode-accent-bright)]" />
+            <div className="absolute top-3/4 left-0 size-1 rounded-full bg-white shadow-[0_0_6px_var(--lume-primary)]" />
+          </motion.div>
+        )}
       </motion.div>
     </div>
   )

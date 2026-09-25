@@ -25,6 +25,8 @@ export interface SpellData {
   school: string
   tier: string
   sigilType: "conjuration" | "transmutation" | "alchemy" | "enchantment"
+  logoType?: "dbs" | "ttp" | "default"
+  logoUrl?: string
   ingredients: SpellIngredient[]
   incantation: SpellVerse[]
   effects: SpellEffect[]
@@ -38,6 +40,8 @@ export const HANDCRAFTED_SPELLS: Record<string, Partial<SpellData>> = {
     school: "Enterprise & Fintech",
     tier: "Full-Stack & Cloud Architecture",
     sigilType: "transmutation",
+    logoType: "dbs",
+    logoUrl: "/images/experience/dbs-bank.svg",
     ingredients: [
       { name: "Java Spring Boot", category: "Backend Architecture", symbol: "⚡" },
       { name: "MariaDB & Liquibase", category: "Database & Migration", symbol: "💎" },
@@ -84,9 +88,11 @@ export const HANDCRAFTED_SPELLS: Record<string, Partial<SpellData>> = {
     spellName: "Junior IT Application Support Engineer",
     realm: "To The Point Pte Ltd (TTP)",
     era: "Sep 2024 - Present",
-    school: "IT Solutions & Systems Support",
+    school: "IT Systems Support",
     tier: "Quality Assurance & Debugging",
     sigilType: "transmutation",
+    logoType: "ttp",
+    logoUrl: "/images/experience/to-the-point.png",
     ingredients: [
       { name: "UAT & SIT Testing", category: "Quality Assurance", symbol: "🧪" },
       { name: "System Debugging", category: "Diagnostics & Analysis", symbol: "🔍" },
@@ -217,6 +223,20 @@ export function toSpellData(exp: ParsedExperience, index: number, total: number)
     school: handcrafted?.school || fallbackSchool,
     tier: handcrafted?.tier || fallbackTier,
     sigilType: handcrafted?.sigilType || defaultSigil,
+    logoType: handcrafted?.logoType || (
+      (exp.id || "").toLowerCase().includes("dbs") || (exp.company || "").toLowerCase().includes("dbs")
+        ? "dbs"
+        : (exp.id || "").toLowerCase().includes("ttp") || (exp.company || "").toLowerCase().includes("point")
+        ? "ttp"
+        : "default"
+    ),
+    logoUrl: handcrafted?.logoUrl || (
+      (exp.id || "").toLowerCase().includes("dbs") || (exp.company || "").toLowerCase().includes("dbs")
+        ? "/images/experience/dbs-bank.svg"
+        : (exp.id || "").toLowerCase().includes("ttp") || (exp.company || "").toLowerCase().includes("point")
+        ? "/images/experience/to-the-point.png"
+        : undefined
+    ),
     ingredients: handcrafted?.ingredients || derivedIngredients,
     incantation: (handcrafted?.incantation && handcrafted.incantation.length > 0)
       ? handcrafted.incantation

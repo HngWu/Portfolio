@@ -15,7 +15,12 @@ export function Navbar() {
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
   const { navigateWithTransition } = usePageTransition()
 
-  if (pathname?.startsWith("/admin") || pathname === "/cv" || pathname === "/education") {
+  if (
+    pathname?.startsWith("/admin") ||
+    pathname === "/cv" ||
+    pathname === "/education" ||
+    pathname === "/experience"
+  ) {
     return null
   }
 

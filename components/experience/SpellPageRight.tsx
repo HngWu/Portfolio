@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { motion } from "framer-motion"
 import type { SpellData } from "@/lib/content/experienceSpells"
 import { Terminal, CheckCircle2, ArrowRight, Zap, Award } from "lucide-react"
 
@@ -9,6 +10,7 @@ interface SpellPageRightProps {
   pageNumber: number
   isLastPage: boolean
   onNextPage: () => void
+  isRevealing?: boolean
 }
 
 export function SpellPageRight({
@@ -16,9 +18,15 @@ export function SpellPageRight({
   pageNumber,
   isLastPage,
   onNextPage,
+  isRevealing = false,
 }: SpellPageRightProps) {
   return (
-    <div className="relative flex flex-col justify-between h-full w-full p-4 sm:p-5 md:p-6 lg:p-8 select-none overflow-hidden group/rightpage">
+    <motion.div
+      className="relative flex flex-col justify-between h-full w-full p-4 sm:p-5 md:p-6 lg:p-8 select-none overflow-hidden group/rightpage"
+      initial={isRevealing ? { opacity: 0, y: 8 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.42, delay: isRevealing ? 0.48 : 0, ease: "easeOut" }}
+    >
       {/* Decorative Gilded Page Inner Border */}
       <div className="absolute inset-2 sm:inset-3 border border-white/[0.06] rounded-2xl pointer-events-none" />
 
@@ -145,6 +153,6 @@ export function SpellPageRight({
 
       {/* Subtle outer paper edge stacking lines (simulating book depth) */}
       <div className="absolute right-0 top-3 bottom-3 w-[2px] border-r border-white/15 pointer-events-none opacity-50" />
-    </div>
+    </motion.div>
   )
 }
