@@ -88,11 +88,11 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
       return
     }
 
-    // Start closed on page mount, pause 800ms to allow user to view front cover, then swing cover open
+    // Start closed on page mount, pause 650ms to allow user to view front cover, then swing cover open
     const openTimer = setTimeout(() => {
       setLifecycle("opening-cover")
       playBookOpenSound(audioEnabledRef.current)
-    }, 800)
+    }, 650)
 
     return () => clearTimeout(openTimer)
   }, [])
@@ -104,19 +104,19 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     if (lifecycle === "opening-cover") {
       watchdog = setTimeout(() => {
         setLifecycle("opening-flutter")
-      }, 1400)
+      }, 1100)
     } else if (lifecycle === "opening-flutter") {
       watchdog = setTimeout(() => {
         setLifecycle("idle")
-      }, 1200)
+      }, 950)
     } else if (lifecycle === "closing-flutter") {
       watchdog = setTimeout(() => {
         setLifecycle("closing-cover")
-      }, 1100)
+      }, 900)
     } else if (lifecycle === "closing-cover") {
       watchdog = setTimeout(() => {
         setLifecycle("closed-back")
-      }, 1200)
+      }, 950)
     }
 
     return () => {
@@ -160,7 +160,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
       const exitTimer = setTimeout(() => {
         setLifecycle("exiting")
         navigateWithTransition("/")
-      }, 350)
+      }, 280)
       return () => clearTimeout(exitTimer)
     }
   }, [lifecycle, navigateWithTransition])

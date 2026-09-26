@@ -70,16 +70,6 @@ export function SpellPageSpread({
 
   // Mobile folio tab switcher (Overview vs Responsibilities for screens < lg)
   const [mobileFolioTab, setMobileFolioTab] = React.useState<"left" | "right">("left")
-  const [isDesktop, setIsDesktop] = React.useState(true)
-
-  React.useEffect(() => {
-    if (typeof window === "undefined") return
-    const mq = window.matchMedia("(min-width: 1024px)")
-    setIsDesktop(mq.matches)
-    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
-    mq.addEventListener("change", handler)
-    return () => mq.removeEventListener("change", handler)
-  }, [])
 
   // Reset to left tab whenever chapter changes
   React.useEffect(() => {
@@ -95,6 +85,9 @@ export function SpellPageSpread({
   const isExiting = lifecycle === "exiting"
   const isIdle = lifecycle === "idle" || lifecycle === "turning-page"
 
+  // Is the book in a single-volume (580px) footprint?
+  const isSingleVolume = isClosedFront || isClosingCover || isClosedBack || isExiting
+
   // Base folio spell display logic during interactive chapter flips
   const baseLeftSpell = isTurning && direction === -1 && targetSpell ? targetSpell : currentSpell
   const baseLeftPage = isTurning && direction === -1 && targetIndex !== null ? targetIndex + 1 : currentIndex + 1
@@ -102,7 +95,7 @@ export function SpellPageSpread({
   const baseRightSpell = isTurning && direction === 1 && targetSpell ? targetSpell : currentSpell
   const baseRightPage = isTurning && direction === 1 && targetIndex !== null ? targetIndex + 1 : currentIndex + 1
 
-  // Sound trigger on closing cover completion
+  // Sound trigger and state advance on closing cover completion
   const handleCoverCloseFinished = React.useCallback(() => {
     playBookCloseSound(audioEnabled)
     onLifecycleAdvance("closed-back")
@@ -116,23 +109,19 @@ export function SpellPageSpread({
         x: "0%",
       }}
       animate={{
-        maxWidth: isClosedFront ? "580px" : "1240px",
-        x: isDesktop && (isClosingCover || isClosedBack || isExiting) ? "25%" : "0%",
+        maxWidth: isSingleVolume ? "580px" : "1240px",
+        x: "0%",
       }}
       transition={{
         maxWidth: {
-          duration: isOpeningCover ? 0.88 : 0.4,
-          ease: [0.22, 1, 0.36, 1],
-        },
-        x: {
-          duration: 0.58,
-          ease: [0.4, 0, 0.2, 1],
+          duration: isOpeningCover ? 0.78 : isClosingCover ? 0.58 : 0.4,
+          ease: isClosingCover ? [0.4, 0, 0.2, 1] : [0.22, 1, 0.36, 1],
         },
       }}
     >
-      {/* MULTI-TIER 3D AMBIENT GROUND SHADOWS */}
-      <div className="absolute -bottom-6 inset-x-8 sm:inset-x-12 h-14 bg-black/90 blur-2xl rounded-full pointer-events-none z-0" />
-      <div className="absolute -bottom-8 inset-x-16 sm:inset-x-24 h-16 bg-[var(--lume-primary,#4affb4)]/10 blur-3xl rounded-full pointer-events-none z-0" />
+      {/* MULTI-TIER 3D AMBIENT GROUND SHADOWS (Strictly bound to container width) */}
+      <div className="absolute -bottom-6 inset-x-6 sm:inset-x-10 h-14 bg-black/90 blur-2xl rounded-full pointer-events-none z-0" />
+      <div className="absolute -bottom-8 inset-x-12 sm:inset-x-16 h-16 bg-[var(--lume-primary,#4affb4)]/10 blur-3xl rounded-full pointer-events-none z-0" />
 
       {/* Indexed Thumb Tabs along the right outer edge (Desktop xl+) */}
       {isIdle && (
@@ -145,41 +134,27 @@ export function SpellPageSpread({
         />
       )}
 
-      {/* 3D Perspective Hardcover Outer Casing */}
+      {/* 3D Perspective Hardcover Outer Casing (Contained cleanly within maxWidth) */}
       <div
-        className={`relative w-full h-full p-1 shadow-[0_30px_90px_rgba(0,0,0,0.92),0_12px_35px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-2xl z-10 transition-colors duration-500 ${
-          isClosingCover || isClosedBack || isExiting
-            ? "border-l border-y border-white/20 rounded-l-[28px]"
-            : "border border-white/20 rounded-[28px] bg-gradient-to-b from-[#181f35] via-[#0b0f1d] to-[#04060d]"
-        }`}
+        className="relative w-full h-full p-1 border border-white/20 rounded-[28px] bg-gradient-to-b from-[#181f35] via-[#0b0f1d] to-[#04060d] shadow-[0_30px_90px_rgba(0,0,0,0.92),0_12px_35px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-2xl z-10"
         style={{
           perspective: "2600px",
           transformStyle: "preserve-3d",
         }}
       >
-        {/* Inner Deckle Page Block Frame */}
-        <div
-          className={`relative w-full h-full overflow-hidden shadow-[inset_0_0_40px_rgba(0,0,0,0.9)] transition-colors duration-500 ${
-            isClosingCover || isClosedBack || isExiting
-              ? "border-l-[3px] border-y-[3px] border-l-[#1b233a]/80 border-y-[#121828]/80 rounded-l-3xl"
-              : "border-x-[3px] border-b-[3px] border-x-[#1b233a]/80 border-b-[#121828]/80 rounded-3xl bg-[#06080e]/95"
-          }`}
-        >
+        {/* Inner Deckle Page Block Frame (Strictly bounded to book width, zero bleeding lines) */}
+        <div className="relative w-full h-full overflow-hidden border-x-[3px] border-b-[3px] border-x-[#1b233a]/80 border-b-[#121828]/80 rounded-3xl bg-[#06080e]/95 shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]">
           {/* Subtle Ambient Book Edge Highlight */}
           <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--lume-primary,#4affb4)]/40 to-transparent pointer-events-none z-40" />
 
           {/* Technical Corner Ornaments */}
           <div className="absolute top-2.5 left-2.5 size-4 border-t-2 border-l-2 border-[var(--lume-primary,#4affb4)]/60 rounded-tl pointer-events-none z-40" />
+          <div className="absolute top-2.5 right-2.5 size-4 border-t-2 border-r-2 border-[var(--lume-primary,#4affb4)]/60 rounded-tr pointer-events-none z-40" />
           <div className="absolute bottom-2.5 left-2.5 size-4 border-b-2 border-l-2 border-[var(--lume-primary,#4affb4)]/60 rounded-bl pointer-events-none z-40" />
-          {!isClosedBack && !isExiting && (
-            <>
-              <div className="absolute top-2.5 right-2.5 size-4 border-t-2 border-r-2 border-[var(--lume-primary,#4affb4)]/60 rounded-tr pointer-events-none z-40" />
-              <div className="absolute bottom-2.5 right-2.5 size-4 border-b-2 border-r-2 border-[var(--lume-primary,#4affb4)]/60 rounded-br pointer-events-none z-40" />
-            </>
-          )}
+          <div className="absolute bottom-2.5 right-2.5 size-4 border-b-2 border-r-2 border-[var(--lume-primary,#4affb4)]/60 rounded-br pointer-events-none z-40" />
 
           {/* Central 3D Spine Channel */}
-          {!isClosedFront && !isClosedBack && !isExiting && (
+          {!isSingleVolume && (
             <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-7 -translate-x-1/2 z-30 pointer-events-none">
               <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-white/[0.07] to-black/90 shadow-[inset_0_0_10px_rgba(0,0,0,0.95)]" />
               <div className="absolute left-1/2 top-0 bottom-0 w-[1.5px] -translate-x-1/2 bg-white/25 shadow-[0_0_6px_rgba(0,0,0,1)]" />
@@ -260,14 +235,20 @@ export function SpellPageSpread({
           {/* STATIONARY BASE SPREAD LAYER */}
           <div
             className={`grid ${
-              isClosedFront ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
+              isSingleVolume && (isClosedFront || isClosedBack || isExiting)
+                ? "grid-cols-1"
+                : "grid-cols-1 lg:grid-cols-2"
             } w-full h-full`}
           >
             {/* Left Folio Base */}
             {!isClosedFront && (
               <div
                 className={`relative border-b lg:border-b-0 lg:border-r border-white/10 bg-white/[0.01] h-full overflow-hidden ${
-                  mobileFolioTab === "left" ? "block" : "hidden lg:block"
+                  isClosedBack || isExiting
+                    ? "col-span-1"
+                    : mobileFolioTab === "left"
+                    ? "block"
+                    : "hidden lg:block"
                 }`}
               >
                 {isClosedBack || isExiting ? (
@@ -281,12 +262,12 @@ export function SpellPageSpread({
                   />
                 )}
 
-                {/* Ambient shadow during closing right wing fold */}
+                {/* Ambient shadow under closing cover */}
                 {isClosingCover && (
                   <motion.div
                     className="absolute inset-0 bg-black pointer-events-none z-20"
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.9 }}
+                    animate={{ opacity: 0.92 }}
                     transition={{ duration: 0.58, ease: [0.4, 0, 0.2, 1] }}
                   />
                 )}
@@ -308,7 +289,9 @@ export function SpellPageSpread({
               className={`relative bg-white/[0.01] h-full overflow-hidden transition-opacity duration-300 ${
                 isClosedFront
                   ? "col-span-1"
-                  : isClosingCover || isClosedBack || isExiting
+                  : isClosedBack || isExiting
+                  ? "hidden"
+                  : isClosingCover
                   ? "opacity-0 pointer-events-none"
                   : mobileFolioTab === "right"
                   ? "block"
@@ -352,7 +335,7 @@ export function SpellPageSpread({
             />
           )}
 
-          {/* CASCADING MULTI-PAGE FLUTTER (Entrance) */}
+          {/* CASCADING MULTI-PAGE BLANK RUNIC FLUTTER (Entrance) */}
           {isOpeningFlutter && (
             <MultiPageFlutter
               mode="opening"
@@ -361,7 +344,7 @@ export function SpellPageSpread({
             />
           )}
 
-          {/* CASCADING MULTI-PAGE FLUTTER (Exit) */}
+          {/* CASCADING MULTI-PAGE BLANK RUNIC FLUTTER (Exit) */}
           {isClosingFlutter && (
             <MultiPageFlutter
               mode="closing"
