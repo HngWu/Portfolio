@@ -79,10 +79,36 @@ export function StatTile({
       </div>
       <div className="flex flex-col items-center justify-center flex-1 w-full h-full pb-2">
         <div className={cn(
-          "font-mono text-lume-primary tracking-tighter drop-shadow-[0_0_10px_rgba(74,255,180,0.3)] leading-none",
+          "font-mono text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.15)] leading-none",
           size === '1x1' ? "text-2xl md:text-3xl" : "text-3xl sm:text-4xl md:text-5xl"
         )}>
-          {value}
+          {String(value).split('').map((char, i) => {
+            const digit = parseInt(char)
+            const isDigit = !isNaN(digit)
+
+            if (!isDigit) {
+              return (
+                <span key={i} className="inline-block">
+                  {char === ' ' ? '\u00A0' : char}
+                </span>
+              )
+            }
+
+            return (
+              <span key={i} className="inline-block overflow-hidden h-[1em] leading-[1] align-bottom">
+                <span className="block" style={{ transform: `translateY(${-digit}em)` }}>
+                  <span
+                    className="flex flex-col group-hover/stat:animate-odometer-roll"
+                    style={{ animationDelay: `${i * 60}ms` }}
+                  >
+                    {[0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9].map((n, j) => (
+                      <span key={j} className="block h-[1em] leading-[1]">{n}</span>
+                    ))}
+                  </span>
+                </span>
+              </span>
+            )
+          })}
         </div>
       </div>
     </BentoTile>

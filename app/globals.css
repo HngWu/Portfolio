@@ -32,6 +32,7 @@
   --animate-border-beam: border-beam-rotate 4s linear infinite;
   --animate-border-beam-fast: border-beam-rotate 2s linear infinite;
   --animate-shimmer-pulse: shimmer-pulse-wave 1.5s linear infinite;
+  --animate-odometer-roll: odometer-roll 800ms cubic-bezier(0.16, 1, 0.3, 1);
 
   @keyframes liquid-1 {
     0% { transform: translate(0, 0) scale(1); }
@@ -60,6 +61,11 @@
   @keyframes shimmer-pulse-wave {
     0% { background-position: -150% 0; }
     100% { background-position: 150% 0; }
+  }
+
+  @keyframes odometer-roll {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-10em); }
   }
 
   @keyframes vt-fade-out {
