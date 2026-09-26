@@ -68,13 +68,12 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
   const [direction, setDirection] = React.useState<1 | -1 | 0>(0)
   const [isTurning, setIsTurning] = React.useState(false)
 
-  // Ref tracking to guarantee race-free completion & atomic debounce lock
+  // Ref tracking to guarantee race-free completion
   const targetIndexRef = React.useRef(targetIndex)
   React.useEffect(() => {
     targetIndexRef.current = targetIndex
   }, [targetIndex])
 
-  const isLockedRef = React.useRef(false)
   const isExitingRef = React.useRef(false)
 
   // Auto-trigger book opening sequence on initial mount
@@ -137,7 +136,6 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     (targetPath = "/") => {
       if (isExitingRef.current) return
       isExitingRef.current = true
-      isLockedRef.current = true
 
       const prefersReduced =
         typeof window !== "undefined" &&
@@ -193,10 +191,6 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     setIsTurning(false)
     setDirection(0)
     setLifecycle("idle")
-    // 150ms settle buffer before releasing input lock
-    setTimeout(() => {
-      isLockedRef.current = false
-    }, 150)
   }, [])
 
   // Page turn safety timeout: ensures UI never gets stuck even if browser throttles animations
@@ -209,43 +203,41 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     }
   }, [isTurning, handleFlipComplete])
 
-  const canNavigate = lifecycle === "idle" && !isTurning && !isLockedRef.current && !isExitingRef.current
-
-  // Page Navigation Handlers with atomic locking
+  // Page Navigation Handlers driven cleanly by activeIndex, isTurning, and lifecycle
   const goToNext = React.useCallback(() => {
-    if (activeIndex >= spells.length - 1 || !canNavigate) return
+    if (isTurning || lifecycle !== "idle" || isExitingRef.current) return
+    if (activeIndex >= spells.length - 1) return
 
-    isLockedRef.current = true
     setIsTurning(true)
     setLifecycle("turning-page")
     setDirection(1)
     setTargetIndex(activeIndex + 1)
     playPageTurnSound(audioEnabledRef.current)
-  }, [activeIndex, spells.length, canNavigate])
+  }, [activeIndex, spells.length, isTurning, lifecycle])
 
   const goToPrev = React.useCallback(() => {
-    if (activeIndex <= 0 || !canNavigate) return
+    if (isTurning || lifecycle !== "idle" || isExitingRef.current) return
+    if (activeIndex <= 0) return
 
-    isLockedRef.current = true
     setIsTurning(true)
     setLifecycle("turning-page")
     setDirection(-1)
     setTargetIndex(activeIndex - 1)
     playPageTurnSound(audioEnabledRef.current)
-  }, [activeIndex, canNavigate])
+  }, [activeIndex, isTurning, lifecycle])
 
   const goToIndex = React.useCallback(
     (index: number) => {
-      if (index === activeIndex || !canNavigate) return
+      if (isTurning || lifecycle !== "idle" || isExitingRef.current) return
+      if (index === activeIndex || index < 0 || index >= spells.length) return
 
-      isLockedRef.current = true
       setIsTurning(true)
       setLifecycle("turning-page")
       setDirection(index > activeIndex ? 1 : -1)
       setTargetIndex(index)
       playPageTurnSound(audioEnabledRef.current)
     },
-    [activeIndex, canNavigate]
+    [activeIndex, spells.length, isTurning, lifecycle]
   )
 
   // Keyboard Navigation
@@ -290,10 +282,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
       <SpellAmbientMana />
 
       {/* Main 3D Book Stage */}
-      <div 
-        style={{ viewTransitionName: "hero-surface" }}
-        className="relative z-10 w-full flex-1 flex items-center justify-center my-auto min-h-0"
-      >
+      <div className="relative z-10 w-full flex-1 flex items-center justify-center my-auto min-h-0">
         <SpellPageSpread
           lifecycle={lifecycle}
           onLifecycleAdvance={setLifecycle}

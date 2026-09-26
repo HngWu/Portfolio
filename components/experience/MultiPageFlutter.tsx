@@ -19,9 +19,9 @@ interface FlutterLeafConfig {
 }
 
 const RUNIC_LEAVES: FlutterLeafConfig[] = [
-  { id: 1, variant: 1, delay: 0, duration: 0.44 },
-  { id: 2, variant: 2, delay: 0.11, duration: 0.44 },
-  { id: 3, variant: 3, delay: 0.22, duration: 0.46 },
+  { id: 1, variant: 1, delay: 0, duration: 0.52 },
+  { id: 2, variant: 2, delay: 0.14, duration: 0.52 },
+  { id: 3, variant: 3, delay: 0.28, duration: 0.54 },
 ]
 
 export function MultiPageFlutter({
@@ -40,7 +40,7 @@ export function MultiPageFlutter({
   React.useEffect(() => {
     const fallbackTimer = setTimeout(() => {
       onComplete()
-    }, 950)
+    }, 1100)
     return () => clearTimeout(fallbackTimer)
   }, [onComplete])
 
@@ -89,7 +89,7 @@ export function MultiPageFlutter({
               animate={{
                 rotateY: -180,
                 scaleX: [1, 0.92, 0.97, 1],
-                skewY: [0, -2.4, 0],
+                skewY: [0, -2.5, 0],
                 rotateZ: [0, -3.2, 0],
               }}
               transition={{
@@ -111,16 +111,16 @@ export function MultiPageFlutter({
               >
                 <BlankRunicPage side="right" variant={leaf.variant} />
 
-                {/* Dynamic Specular Sheen sweeping across curvature */}
+                {/* Dynamic Radiant Specular Sheen sweeping across curvature */}
                 <motion.div
                   className="absolute inset-0 pointer-events-none"
                   style={{
                     background:
-                      "linear-gradient(to right, transparent 0%, rgba(74,255,180,0.25) 50%, rgba(255,215,0,0.18) 70%, transparent 100%)",
+                      "linear-gradient(to right, transparent 0%, rgba(74,255,180,0.35) 45%, rgba(255,215,0,0.28) 65%, transparent 100%)",
                   }}
                   initial={{ opacity: 0, x: "-60%" }}
                   animate={{
-                    opacity: [0, 0.9, 0],
+                    opacity: [0, 1, 0],
                     x: ["-60%", "25%", "120%"],
                   }}
                   transition={{
@@ -132,9 +132,9 @@ export function MultiPageFlutter({
 
                 {/* Dynamic Traveling Shadow along folding crest */}
                 <motion.div
-                  className="absolute inset-0 pointer-events-none bg-gradient-to-r from-black/85 via-black/40 to-transparent"
+                  className="absolute inset-0 pointer-events-none bg-gradient-to-r from-black/90 via-black/45 to-transparent"
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: [0, 0.7, 0.95] }}
+                  animate={{ opacity: [0, 0.75, 0.95] }}
                   transition={{
                     delay: leaf.delay,
                     duration: leaf.duration,
@@ -157,12 +157,12 @@ export function MultiPageFlutter({
 
                 {/* Settle sheen dispersing as back face lands flat */}
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--lume-primary,#4affb4)]/25 to-transparent pointer-events-none"
-                  initial={{ opacity: 0.85, x: "100%" }}
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--lume-primary,#4affb4)]/30 to-transparent pointer-events-none"
+                  initial={{ opacity: 0.9, x: "100%" }}
                   animate={{ opacity: 0, x: "-100%" }}
                   transition={{
                     delay: leaf.delay + 0.15,
-                    duration: 0.35,
+                    duration: 0.38,
                     ease: "easeOut",
                   }}
                 />

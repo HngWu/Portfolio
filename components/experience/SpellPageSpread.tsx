@@ -6,6 +6,7 @@ import { SpellPageLeft } from "./SpellPageLeft"
 import { SpellPageRight } from "./SpellPageRight"
 import { BookCoverFace } from "./BookCoverFace"
 import { BookBackCoverFace } from "./BookBackCoverFace"
+import { BlankRunicPage } from "./BlankRunicPage"
 import { PageFlipLeaf } from "./PageFlipLeaf"
 import { MultiPageFlutter } from "./MultiPageFlutter"
 import { BookmarkRibbon } from "./BookmarkRibbon"
@@ -85,7 +86,7 @@ export function SpellPageSpread({
   const isExiting = lifecycle === "exiting"
   const isIdle = lifecycle === "idle" || lifecycle === "turning-page"
 
-  // Is the book in a single-volume (580px) footprint?
+  // Single volume footprint (580px) vs 2-page open spread (1160px)
   const isSingleVolume = isClosedFront || isClosingCover || isClosedBack || isExiting
 
   // Base folio spell display logic during interactive chapter flips
@@ -109,7 +110,7 @@ export function SpellPageSpread({
         x: "0%",
       }}
       animate={{
-        maxWidth: isSingleVolume ? "580px" : "1240px",
+        maxWidth: isSingleVolume ? "580px" : "1160px",
         x: "0%",
       }}
       transition={{
@@ -119,7 +120,7 @@ export function SpellPageSpread({
         },
       }}
     >
-      {/* MULTI-TIER 3D AMBIENT GROUND SHADOWS (Strictly bound to container width) */}
+      {/* MULTI-TIER 3D AMBIENT GROUND SHADOWS */}
       <div className="absolute -bottom-6 inset-x-6 sm:inset-x-10 h-14 bg-black/90 blur-2xl rounded-full pointer-events-none z-0" />
       <div className="absolute -bottom-8 inset-x-12 sm:inset-x-16 h-16 bg-[var(--lume-primary,#4affb4)]/10 blur-3xl rounded-full pointer-events-none z-0" />
 
@@ -134,7 +135,7 @@ export function SpellPageSpread({
         />
       )}
 
-      {/* 3D Perspective Hardcover Outer Casing (Contained cleanly within maxWidth) */}
+      {/* 3D Perspective Hardcover Outer Casing */}
       <div
         className="relative w-full h-full p-1 border border-white/20 rounded-[28px] bg-gradient-to-b from-[#181f35] via-[#0b0f1d] to-[#04060d] shadow-[0_30px_90px_rgba(0,0,0,0.92),0_12px_35px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-2xl z-10"
         style={{
@@ -253,6 +254,9 @@ export function SpellPageSpread({
               >
                 {isClosedBack || isExiting ? (
                   <BookBackCoverFace />
+                ) : isOpeningCover || isOpeningFlutter ? (
+                  /* Display authentic blank runic manuscript page while opening and fluttering */
+                  <BlankRunicPage side="left" variant={1} />
                 ) : (
                   <SpellPageLeft
                     spell={baseLeftSpell}
@@ -300,6 +304,9 @@ export function SpellPageSpread({
             >
               {isClosedFront ? (
                 <BookCoverFace onOpen={onManualOpenCover} />
+              ) : isOpeningCover ? (
+                /* Display authentic blank runic manuscript page while opening */
+                <BlankRunicPage side="right" variant={2} />
               ) : (
                 <SpellPageRight
                   spell={baseRightSpell}
