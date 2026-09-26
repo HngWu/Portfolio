@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { BentoTile } from "../BentoTile"
 import { Download } from "lucide-react"
 import { useViewModeStore } from "@/store/useViewModeStore"
@@ -56,6 +57,45 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
     link.click()
     document.body.removeChild(link)
   }
+
+  const router = useRouter()
+  const prefetchedRef = React.useRef(false)
+
+  const prefetchCvAssets = React.useCallback(() => {
+    if (prefetchedRef.current) return
+    prefetchedRef.current = true
+
+    // Prefetch Next.js route chunks for /cv
+    try {
+      router.prefetch("/cv")
+    } catch {}
+
+    // Preload PDF document and local PDF.js script into browser HTTP cache
+    const urlsToPreload = [
+      { href: "/resume.pdf", as: "fetch" },
+      { href: "/assets/pdfjs/pdf.min.js", as: "script" },
+      { href: "/assets/pdfjs/pdf.worker.min.js", as: "fetch" },
+    ]
+
+    urlsToPreload.forEach(({ href, as }) => {
+      const existing = document.querySelector(`link[href="${href}"]`)
+      if (existing) return
+      const link = document.createElement("link")
+      link.rel = "preload"
+      link.href = href
+      link.as = as
+      if (as === "fetch") link.crossOrigin = "anonymous"
+      document.head.appendChild(link)
+    })
+  }, [router])
+
+  React.useEffect(() => {
+    // Warm up CV assets during idle time after initial mount (1.5s delay)
+    const timer = setTimeout(() => {
+      prefetchCvAssets()
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [prefetchCvAssets])
 
   const intervalsRef = React.useRef<{ [key: string]: NodeJS.Timeout }>({})
 
@@ -146,6 +186,8 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleDownloadAndOpen}
+                onMouseEnter={prefetchCvAssets}
+                onFocus={prefetchCvAssets}
                 aria-label="Download CV and open dossier in a new tab"
                 className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-[#4AFFB4]/10 border border-white/5 hover:border-[#4AFFB4]/30 rounded-xl text-white/50 hover:text-[#4AFFB4] transition-all duration-300 select-none cursor-pointer group/cv"
               >
@@ -221,6 +263,8 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
               target="_blank"
               rel="noopener noreferrer"
               onClick={handleDownloadAndOpen}
+              onMouseEnter={prefetchCvAssets}
+              onFocus={prefetchCvAssets}
               aria-label="Download CV and open dossier in a new tab"
               className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-[#4AFFB4]/10 border border-white/5 hover:border-[#4AFFB4]/30 rounded-xl text-white/50 hover:text-[#4AFFB4] transition-all duration-300 select-none cursor-pointer group/cv"
             >
