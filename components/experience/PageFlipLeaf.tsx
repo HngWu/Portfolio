@@ -6,6 +6,7 @@ import { SpellPageLeft } from "./SpellPageLeft"
 import { SpellPageRight } from "./SpellPageRight"
 import { BookCoverFace } from "./BookCoverFace"
 import { BookBackCoverFace } from "./BookBackCoverFace"
+import { BlankRunicPage } from "./BlankRunicPage"
 import type { SpellData } from "@/lib/content/experienceSpells"
 
 export interface PageFlipLeafProps {
@@ -65,11 +66,11 @@ export function PageFlipLeaf({
     } else if (coverAction === "closing") {
       initialRotateY = 0
       targetRotateY = -180
-      animDuration = 0.48
-      animEase = [0.4, 0, 0.2, 1] // Weighted accelerating shut
-      scaleXKeyframes = [1, 0.95, 0.99, 1]
-      skewYKeyframes = [0, -1.4, 0]
-      rotateZKeyframes = [0, -1.8, 0]
+      animDuration = 0.68
+      animEase = [0.25, 0.85, 0.35, 1] // Weighted accelerating shut
+      scaleXKeyframes = [1, 0.96, 1]
+      skewYKeyframes = [0, -1.2, 0]
+      rotateZKeyframes = [0, -1.5, 0]
     }
   } else {
     // Normal role page turn
@@ -162,6 +163,16 @@ export function PageFlipLeaf({
             />
           )}
 
+          {/* Reverse-face bevel along outer edge when closing */}
+          {isCover && coverAction === "closing" && (
+            <motion.div
+              className="absolute right-0 top-0 bottom-0 w-3 bg-gradient-to-l from-[#181f35] to-transparent border-r-2 border-[var(--lume-primary,#4affb4)]/60 pointer-events-none z-30"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.8, 1] }}
+              transition={{ duration: animDuration, ease: "easeInOut" }}
+            />
+          )}
+
           {/* Dynamic Traveling Fold Shadow as page lifts and bends */}
           {!isStaticCoverClosed && (
             <motion.div
@@ -218,11 +229,7 @@ export function PageFlipLeaf({
             coverAction === "closing" ? (
               <BookBackCoverFace />
             ) : (
-              <SpellPageLeft
-                spell={currentSpell}
-                pageNumber={1}
-                totalSpells={totalSpells}
-              />
+              <BlankRunicPage side="left" variant={1} />
             )
           ) : isRightHalfLeaf ? (
             <SpellPageLeft
@@ -240,7 +247,7 @@ export function PageFlipLeaf({
           )}
 
           {/* Dynamic back-face traveling fold shadow dispersing as it lands flat */}
-          {!isStaticCoverClosed && (
+          {!isStaticCoverClosed && coverAction !== "closing" && (
             <motion.div
               className="absolute inset-0 pointer-events-none"
               style={{

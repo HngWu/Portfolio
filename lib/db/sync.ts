@@ -31,7 +31,7 @@ export function getLastSyncStatus(): SyncStatus {
  * Uses upsert on remote tables and prunes any remote rows that do not exist locally.
  */
 export async function pushSqliteToSupabase(): Promise<SyncResult> {
-  const test = await testSupabaseConnection()
+  const test = await testSupabaseConnection(true)
   if (!test.ok) {
     return {
       success: false,
@@ -134,7 +134,7 @@ export async function pushSqliteToSupabase(): Promise<SyncResult> {
  * Uses an atomic SQLite db.transaction to prevent partial updates or corruption.
  */
 export async function pullSupabaseToSqlite(options?: { allowEmpty?: boolean }): Promise<SyncResult> {
-  const test = await testSupabaseConnection()
+  const test = await testSupabaseConnection(true)
   if (!test.ok) {
     return {
       success: false,

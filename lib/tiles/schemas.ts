@@ -71,6 +71,19 @@ export interface HeroContent {
   description: string
 }
 
+export interface ProjectItem {
+  id?: string
+  name: string
+  description: string
+  techStack: string[]
+  githubUrl?: string
+  liveUrl?: string
+  featured?: boolean
+  category?: string
+  year?: string
+  notes?: string
+}
+
 export interface ProjectContent {
   name: string
   description: string
@@ -78,6 +91,7 @@ export interface ProjectContent {
   githubUrl: string
   liveUrl: string
   featured: boolean
+  items?: ProjectItem[]
 }
 
 export interface ExperienceItem {
@@ -170,6 +184,7 @@ export interface StatDeepDive {
 
 export interface ProjectDeepDive {
   notes?: string
+  items?: ProjectItem[]
 }
 
 export interface ContactDeepDive {
@@ -231,15 +246,45 @@ const parseHero = (raw: unknown): ParseResult<HeroContent> => {
   })
 }
 
+const parseProjectItem = (raw: unknown): ProjectItem | null => {
+  if (!isObject(raw)) return null
+  const name = asString(raw.name) || asString(raw.title) || ""
+  if (!name) return null
+  return {
+    id: asString(raw.id),
+    name,
+    description: asString(raw.description) || asString(raw.subtitle) || "",
+    techStack: asStringArray(raw.techStack) ?? asStringArray(raw.tech_stack) ?? [],
+    githubUrl: asString(raw.githubUrl) ?? asString(raw.github_url) ?? "",
+    liveUrl: asString(raw.liveUrl) ?? asString(raw.live_url) ?? "",
+    featured: raw.featured === true,
+    category: asString(raw.category),
+    year: asString(raw.year) || asString(raw.date) || asString(raw.date_range),
+    notes: asString(raw.notes),
+  }
+}
+
 const parseProject = (raw: unknown): ParseResult<ProjectContent> => {
   if (!isObject(raw)) return err("project content must be an object")
+
+  let items: ProjectItem[] | undefined
+  if (Array.isArray(raw.items)) {
+    const parsedItems = raw.items
+      .map(parseProjectItem)
+      .filter((item): item is ProjectItem => item !== null)
+    if (parsedItems.length > 0) {
+      items = parsedItems
+    }
+  }
+
   return ok({
-    name: asStringOrFallback(raw.name, "Untitled Project"),
-    description: asStringOrFallback(raw.description, ""),
-    techStack: asStringArray(raw.tech_stack) ?? [],
-    githubUrl: asString(raw.github_url) ?? "",
-    liveUrl: asString(raw.live_url) ?? "",
-    featured: raw.featured === true,
+    name: asStringOrFallback(raw.name, items?.[0]?.name ?? "Untitled Project"),
+    description: asStringOrFallback(raw.description, items?.[0]?.description ?? ""),
+    techStack: asStringArray(raw.tech_stack) ?? asStringArray(raw.techStack) ?? items?.[0]?.techStack ?? [],
+    githubUrl: asString(raw.github_url) ?? asString(raw.githubUrl) ?? items?.[0]?.githubUrl ?? "",
+    liveUrl: asString(raw.live_url) ?? asString(raw.liveUrl) ?? items?.[0]?.liveUrl ?? "",
+    featured: raw.featured === true || items?.[0]?.featured === true,
+    ...(items ? { items } : {}),
   })
 }
 
@@ -432,7 +477,19 @@ const parseStatDeepDive = (raw: unknown): StatDeepDive => {
 const parseProjectDeepDive = (raw: unknown): ProjectDeepDive => {
   if (!isObject(raw)) return {}
   const notes = asString(raw.notes)
-  return notes ? { notes } : {}
+  let items: ProjectItem[] | undefined
+  if (Array.isArray(raw.items)) {
+    const parsedItems = raw.items
+      .map(parseProjectItem)
+      .filter((item): item is ProjectItem => item !== null)
+    if (parsedItems.length > 0) {
+      items = parsedItems
+    }
+  }
+  return {
+    ...(notes ? { notes } : {}),
+    ...(items ? { items } : {}),
+  }
 }
 
 const parseContactDeepDive = (raw: unknown): ContactDeepDive => {

@@ -39,7 +39,7 @@ export async function switchDatabaseProviderAction(
   }
 
   if (provider === "supabase") {
-    const testResult = await testSupabaseConnection()
+    const testResult = await testSupabaseConnection(true)
     if (!testResult.ok) {
       return {
         success: false,

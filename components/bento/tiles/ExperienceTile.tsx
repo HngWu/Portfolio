@@ -12,7 +12,6 @@ import {
   Layout,
   ChevronUp,
   ChevronDown,
-  Sparkles,
   Code,
   Terminal,
 } from "lucide-react"
@@ -58,7 +57,7 @@ const DEFAULT_EXPERIENCE_ITEMS: ExperienceItem[] = [
     role: "Junior IT Application Support Engineer",
     company: "To The Point Pte Ltd (TTP)",
     date: "Sep 2024 - Present",
-    category: "IT Solutions & Systems Support",
+    category: "IT Systems Support",
     highlights: [
       "Executed end-to-end UAT and SIT testing cycles to validate software releases",
       "Investigated and debugged application issues and system anomalies across logs",
@@ -218,23 +217,28 @@ export function ExperienceTile({
           className="flex flex-col h-full overflow-hidden select-none outline-none"
         >
           {/* Header */}
-          <div className="flex justify-between items-start mb-2 shrink-0">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className={cn(typo.heading, "text-white/90")}>Key Responsibilities</h3>
+          <div className="flex justify-between items-start gap-3 mb-2 shrink-0 min-w-0">
+            <div className="min-w-0 shrink">
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight shrink-0">
+                  Key Responsibilities
+                </h3>
                 {activeItem.category && (
-                  <span className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-lume-primary/10 border border-lume-primary/20 text-lume-primary font-semibold uppercase tracking-wider">
+                  <span
+                    title={activeItem.category}
+                    className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-lume-primary/10 border border-lume-primary/20 text-lume-primary font-semibold uppercase tracking-wider truncate whitespace-nowrap max-w-[120px] sm:max-w-[150px] lg:max-w-[180px] shrink"
+                  >
                     {activeItem.category}
                   </span>
                 )}
               </div>
-              <p className={cn(typo.meta, "text-lume-primary mt-1.5 uppercase tracking-widest")}>
+              <p className="text-lume-primary mt-1 text-xs font-mono uppercase tracking-widest truncate">
                 {activeItem.company} · {activeItem.date}
               </p>
             </div>
 
             {/* Desktop Chevrons for Deep Dive */}
-            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
               <span className="text-[10px] font-mono text-white/30 mr-1 select-none">
                 {String(safeIndex + 1).padStart(2, "0")}/{String(items.length).padStart(2, "0")}
               </span>
@@ -267,20 +271,17 @@ export function ExperienceTile({
           </div>
 
           {/* Deep Dive Body */}
-          <div className="flex-1 space-y-3.5 pr-2 pb-4 overflow-y-auto custom-scrollbar">
+          <div className="flex-1 space-y-2.5 pr-2 pb-2 overflow-y-auto custom-scrollbar">
             {deepHighlights.map((highlight, i) => (
-              <div key={i} className="flex items-start gap-3 group/item">
+              <div key={i} className="flex items-start gap-2.5 group/item">
                 <div className="shrink-0 p-1 mt-0.5 bg-transparent rounded-md border border-white/10 group-hover/item:border-lume-primary/30 transition-colors">
                   {getHighlightIcon(
                     highlight,
-                    "size-3 text-lume-primary/50 group-hover/item:text-lume-primary transition-colors"
+                    "size-3 text-lume-primary/60 group-hover/item:text-lume-primary transition-colors"
                   )}
                 </div>
                 <span
-                  className={cn(
-                    typo.body,
-                    "text-white/70 group-hover/item:text-white/90 transition-colors leading-snug text-xs sm:text-sm"
-                  )}
+                  className="text-xs md:text-[13px] text-white/70 group-hover/item:text-white/90 transition-colors leading-relaxed"
                 >
                   {highlight}
                 </span>
@@ -297,21 +298,24 @@ export function ExperienceTile({
         className="relative flex flex-col h-full w-full outline-none"
       >
         {/* Top Header with Category badge and Desktop Controls */}
-        <div className="flex items-center justify-between mb-1.5 shrink-0 relative z-30">
-          <div className="flex items-center gap-2">
-            <span className={cn(typo.meta, "text-white/40 uppercase tracking-widest flex items-center gap-1.5")}>
+        <div className="flex items-center justify-between gap-3 mb-1.5 shrink-0 relative z-30 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 shrink">
+            <span className={cn(typo.meta, "text-white/40 uppercase tracking-widest flex items-center gap-1.5 shrink-0")}>
               <Briefcase className={cn(typo.icon, "text-lume-primary")} />
               Experience
             </span>
             {activeItem.category && (
-              <span className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-lume-primary/10 border border-lume-primary/20 text-lume-primary font-semibold uppercase tracking-wider">
+              <span
+                title={activeItem.category}
+                className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-lume-primary/10 border border-lume-primary/20 text-lume-primary font-semibold uppercase tracking-wider truncate whitespace-nowrap max-w-[120px] sm:max-w-[150px] lg:max-w-[180px] shrink"
+              >
                 {activeItem.category}
               </span>
             )}
           </div>
 
           {/* Desktop Controls & Counter */}
-          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
             <span className="text-[10px] font-mono text-white/30 mr-1 select-none">
               {String(safeIndex + 1).padStart(2, "0")}/{String(items.length).padStart(2, "0")}
             </span>
@@ -445,28 +449,25 @@ export function ExperienceTile({
               className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y"
             >
               <div className="pr-5 select-none">
-                <h3 className={cn(typo.heading, "font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight")}>
+                <h3 className="font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-snug">
                   {activeItem.role}
                 </h3>
-                <p className={cn(typo.meta, "text-white/50 mb-3 text-xs sm:text-sm")}>
+                <p className="text-white/50 mb-2.5 text-xs font-mono tracking-wide">
                   {activeItem.company} · {activeItem.date}
                 </p>
 
                 {/* Highlights List */}
-                <div className="space-y-2 md:space-y-2.5">
+                <div className="space-y-1.5 md:space-y-2">
                   {quickHighlights.slice(0, 4).map((highlight, i) => (
-                    <div key={i} className="flex items-start gap-2.5 group/item">
+                    <div key={i} className="flex items-start gap-2 group/item">
                       <div className="shrink-0 p-1 mt-0.5 bg-transparent rounded-md border border-white/10 group-hover/item:border-lume-primary/30 transition-colors">
                         {getHighlightIcon(
                           highlight,
-                          "size-3 text-lume-primary/50 group-hover/item:text-lume-primary transition-colors"
+                          "size-2.5 md:size-3 text-lume-primary/60 group-hover/item:text-lume-primary transition-colors"
                         )}
                       </div>
                       <span
-                        className={cn(
-                          typo.body,
-                          "text-white/70 group-hover/item:text-white/90 transition-colors leading-snug line-clamp-2 text-xs sm:text-sm"
-                        )}
+                        className="text-xs md:text-[12.5px] text-white/70 group-hover/item:text-white/90 transition-colors leading-snug line-clamp-2"
                       >
                         {highlight}
                       </span>
@@ -475,12 +476,8 @@ export function ExperienceTile({
                 </div>
               </div>
 
-              <div className="mt-auto pt-3 flex items-center justify-between border-t border-white/5 select-none">
-                <span className={cn(typo.meta, "text-white/40 text-xs")}>{activeItem.date}</span>
-                <div className="flex items-center gap-1 text-xs font-mono text-white/40">
-                  <Sparkles className="size-3 text-lume-primary/70" />
-                  <span>Swipe up/down</span>
-                </div>
+              <div className="mt-auto pt-2.5 flex items-center justify-between border-t border-white/5 select-none">
+                <span className="text-white/40 text-xs font-mono">{activeItem.date}</span>
               </div>
             </motion.div>
           </AnimatePresence>

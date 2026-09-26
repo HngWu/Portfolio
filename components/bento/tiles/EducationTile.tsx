@@ -5,7 +5,7 @@ import { BentoTile } from "../BentoTile"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
 import { useViewModeStore } from "@/store/useViewModeStore"
-import { GraduationCap, TrendingUp, Award, ChevronDown } from "lucide-react"
+import { GraduationCap, TrendingUp, Award, ChevronUp, ChevronDown } from "lucide-react"
 import { parseTileDeepDive, type EducationContent, type EducationItem } from "@/lib/tiles/schemas"
 import type { Json } from "@/types/supabase"
 import { motion, AnimatePresence, type PanInfo } from "framer-motion"
@@ -214,10 +214,24 @@ export function EducationTile({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation()
+                    goToPrev()
+                  }}
+                  aria-label="Previous education level"
+                  title="Previous level (Swipe Down / Up Arrow)"
+                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                >
+                  <ChevronUp className="size-3.5" />
+                </button>
+                <div className="w-[1px] h-3 bg-white/10" />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
                     goToNext()
                   }}
                   aria-label="Next education level"
-                  className="p-1 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95"
+                  title="Next level (Swipe Up / Down Arrow)"
+                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
                 >
                   <ChevronDown className="size-3.5" />
                 </button>
@@ -324,6 +338,19 @@ export function EducationTile({
               {String(safeIndex + 1).padStart(2, "0")}/{String(items.length).padStart(2, "0")}
             </span>
             <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-lg p-0.5 shadow-sm">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  goToPrev()
+                }}
+                aria-label="Previous education level"
+                title="Previous level (Swipe Down / Up Arrow)"
+                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+              >
+                <ChevronUp className="size-3.5" />
+              </button>
+              <div className="w-[1px] h-3 bg-white/10" />
               <button
                 type="button"
                 onClick={(e) => {

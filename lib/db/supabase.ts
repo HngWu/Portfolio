@@ -11,6 +11,14 @@ export type DetailedItemInsert = Database['public']['Tables']['detailed_items'][
 export type DetailedItemUpdate = Database['public']['Tables']['detailed_items']['Update']
 
 let supabaseClient: SupabaseClient<Database> | null = null
+let cachedUrl: string | undefined
+let cachedKey: string | undefined
+
+export function resetSupabaseClient(): void {
+  supabaseClient = null
+  cachedUrl = undefined
+  cachedKey = undefined
+}
 
 export function getSupabaseCredentials(): { url: string | undefined; key: string | undefined } {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -23,18 +31,21 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(url && key)
 }
 
-export function getSupabaseClient(): SupabaseClient<Database> {
-  if (!supabaseClient) {
-    const { url, key } = getSupabaseCredentials()
-    if (!url || !key) {
-      throw new Error("Supabase is not configured. Missing NEXT_PUBLIC_SUPABASE_URL or API key.")
-    }
+export function getSupabaseClient(forceFresh = false): SupabaseClient<Database> {
+  const { url, key } = getSupabaseCredentials()
+  if (!url || !key) {
+    throw new Error("Supabase is not configured. Missing NEXT_PUBLIC_SUPABASE_URL or API key.")
+  }
+
+  if (!supabaseClient || forceFresh || cachedUrl !== url || cachedKey !== key) {
     supabaseClient = createClient<Database>(url, key, {
       auth: {
         persistSession: false,
         autoRefreshToken: false
       }
     })
+    cachedUrl = url
+    cachedKey = key
   }
   return supabaseClient
 }
@@ -42,7 +53,7 @@ export function getSupabaseClient(): SupabaseClient<Database> {
 /**
  * Tests connection to Supabase and measures round-trip latency.
  */
-export async function testSupabaseConnection(): Promise<ConnectionTestResult> {
+export async function testSupabaseConnection(forceFresh = false): Promise<ConnectionTestResult> {
   const { url, key } = getSupabaseCredentials()
   if (!url || !key) {
     return {
@@ -53,7 +64,7 @@ export async function testSupabaseConnection(): Promise<ConnectionTestResult> {
 
   const startTime = Date.now()
   try {
-    const client = getSupabaseClient()
+    const client = getSupabaseClient(forceFresh)
     const { error } = await client
       .from('tiles')
       .select('id', { count: 'exact', head: true })
@@ -61,10 +72,15 @@ export async function testSupabaseConnection(): Promise<ConnectionTestResult> {
     const latencyMs = Date.now() - startTime
 
     if (error) {
+      let detailedMsg = error.message
+      if (error.message && error.message.includes('fetch failed')) {
+        const details = (error as any).details || ''
+        detailedMsg = `Unable to reach Supabase at ${url}. ${details}`.trim()
+      }
       return {
         ok: false,
         latencyMs,
-        error: error.message || "Failed to query tiles table in Supabase."
+        error: detailedMsg || "Failed to query tiles table in Supabase."
       }
     }
 
@@ -74,10 +90,13 @@ export async function testSupabaseConnection(): Promise<ConnectionTestResult> {
     }
   } catch (err) {
     const latencyMs = Date.now() - startTime
+    const message = err instanceof Error ? err.message : "Connection to Supabase timed out or failed."
     return {
       ok: false,
       latencyMs,
-      error: err instanceof Error ? err.message : "Connection to Supabase timed out or failed."
+      error: message.includes('fetch failed')
+        ? `Unable to reach Supabase at ${url}. Please verify internet connection or host reachability.`
+        : message
     }
   }
 }

@@ -3,10 +3,13 @@
 import * as React from "react"
 import { motion } from "framer-motion"
 import { BlankRunicPage } from "./BlankRunicPage"
+import { SpellPageLeft } from "./SpellPageLeft"
 import { playMultiPageFlutterSound } from "@/lib/experience/bookAudio"
+import type { SpellData } from "@/lib/content/experienceSpells"
 
 export interface MultiPageFlutterProps {
-  mode: "opening" | "closing"
+  currentSpell: SpellData
+  totalSpells: number
   onComplete: () => void
   audioEnabled?: boolean
 }
@@ -18,14 +21,16 @@ interface FlutterLeafConfig {
   duration: number
 }
 
+// Staggered cascade that runs simultaneously behind the opening front cover
 const RUNIC_LEAVES: FlutterLeafConfig[] = [
-  { id: 1, variant: 1, delay: 0, duration: 0.52 },
-  { id: 2, variant: 2, delay: 0.14, duration: 0.52 },
-  { id: 3, variant: 3, delay: 0.28, duration: 0.54 },
+  { id: 1, variant: 1, delay: 0.12, duration: 0.72 },
+  { id: 2, variant: 2, delay: 0.24, duration: 0.65 },
+  { id: 3, variant: 3, delay: 0.36, duration: 0.60 },
 ]
 
 export function MultiPageFlutter({
-  mode,
+  currentSpell,
+  totalSpells,
   onComplete,
   audioEnabled = false,
 }: MultiPageFlutterProps) {
@@ -40,7 +45,7 @@ export function MultiPageFlutter({
   React.useEffect(() => {
     const fallbackTimer = setTimeout(() => {
       onComplete()
-    }, 1100)
+    }, 1200)
     return () => clearTimeout(fallbackTimer)
   }, [onComplete])
 
@@ -153,7 +158,15 @@ export function MultiPageFlutter({
                   transformStyle: "preserve-3d",
                 }}
               >
-                <BlankRunicPage side="left" variant={leaf.variant} />
+                {leaf.id === 3 ? (
+                  <SpellPageLeft
+                    spell={currentSpell}
+                    pageNumber={1}
+                    totalSpells={totalSpells}
+                  />
+                ) : (
+                  <BlankRunicPage side="left" variant={leaf.variant} />
+                )}
 
                 {/* Settle sheen dispersing as back face lands flat */}
                 <motion.div
