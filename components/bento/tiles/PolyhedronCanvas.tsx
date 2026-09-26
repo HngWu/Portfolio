@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import gsap from "gsap"
 import { RunicDustStreams } from "./hexcore/RunicDustStreams"
 import { RingLightningArcs } from "./hexcore/LightningArcs"
+import { DodecahedronCore } from "./hexcore/DodecahedronCore"
 import { useIgniteStore } from "@/store/useIgniteStore"
 import { useModeTransitionStore } from "@/store/useModeTransitionStore"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
@@ -51,11 +52,11 @@ if (typeof window !== 'undefined') {
 
 // Pre-allocated static colors to avoid 60fps GC allocation overhead
 const COLOR_GOLD = new THREE.Color("#c9a227")
-const COLOR_DEFAULT = new THREE.Color("#05061f")
+const COLOR_DEFAULT = new THREE.Color("#030308")
 const COLOR_GOLD_EDGE1 = new THREE.Color("#ffe875")
 const COLOR_GOLD_EDGE2 = new THREE.Color("#ffb44a")
-const COLOR_DEFAULT_EDGE1 = new THREE.Color("#4A8FFF")
-const COLOR_DEFAULT_EDGE2 = new THREE.Color("#4AFFB4")
+const COLOR_DEFAULT_EDGE1 = new THREE.Color("#4AFFB4")
+const COLOR_DEFAULT_EDGE2 = new THREE.Color("#4A8FFF")
 const COLOR_IGNITE_GLOW = new THREE.Color("#ff4500")
 const COLOR_LOCKDOWN_BASE = new THREE.Color("#05070a")
 
@@ -68,12 +69,13 @@ const COLOR_WHITE = new THREE.Color("#ffffff")
 const COLOR_GLASS_GOLD_BASE = new THREE.Color("#1a1005")
 const COLOR_GLASS_INDIGO_BASE = new THREE.Color("#0e0b1f")
 const COLOR_GLASS_GOLD_ATTEN = new THREE.Color("#ffb44a")
-const COLOR_GLASS_INDIGO_ATTEN = new THREE.Color("#1e3a6a")
+const COLOR_GLASS_INDIGO_ATTEN = new THREE.Color("#0e2e22")
 
 // Global scratch variables for zero-allocation hot loops
 const _scratchColor1 = new THREE.Color()
 const _scratchColor2 = new THREE.Color()
 const _scratchColor3 = new THREE.Color()
+const _scratchColor4 = new THREE.Color()
 
 const _scratchVector1 = new THREE.Vector3()
 const _scratchVector2 = new THREE.Vector3()
@@ -318,17 +320,77 @@ function makeRectangularTorus(
   return geo
 }
 
+function attachEdgeFlowAttributes(edgeGeo: THREE.BufferGeometry): THREE.BufferGeometry {
+  const pos = edgeGeo.getAttribute('position') as THREE.BufferAttribute
+  if (!pos) return edgeGeo
+  const count = pos.count
+  const lineCoords = new Float32Array(count)
+  const edgeTypes = new Float32Array(count)
+
+  for (let i = 0; i < count; i += 2) {
+    const x0 = pos.getX(i), y0 = pos.getY(i)
+    const x1 = pos.getX(i + 1), y1 = pos.getY(i + 1)
+    
+    // Calculate polar angle around ring center in the XY plane
+    const angle0 = Math.atan2(y0, x0)
+    const angle1 = Math.atan2(y1, x1)
+    
+    // Map angle [-PI, PI] to [0, 8]
+    let u0 = ((angle0 + Math.PI) / (Math.PI * 2)) * 8.0
+    let u1 = ((angle1 + Math.PI) / (Math.PI * 2)) * 8.0
+    
+    // Fix wrap-around discontinuity across the -PI / +PI boundary
+    if (u1 - u0 > 4.0) u0 += 8.0
+    else if (u0 - u1 > 4.0) u1 += 8.0
+    
+    lineCoords[i] = u0
+    lineCoords[i + 1] = u1
+    edgeTypes[i] = 1.0
+    edgeTypes[i + 1] = 1.0
+  }
+  edgeGeo.setAttribute('aLineCoord', new THREE.BufferAttribute(lineCoords, 1))
+  edgeGeo.setAttribute('aEdgeType', new THREE.BufferAttribute(edgeTypes, 1))
+  return edgeGeo
+}
+
+function attachPolyhedronEdgeFlowAttributes(edgeGeo: THREE.BufferGeometry): THREE.BufferGeometry {
+  const pos = edgeGeo.getAttribute('position') as THREE.BufferAttribute
+  if (!pos) return edgeGeo
+  const count = pos.count
+  const lineCoords = new Float32Array(count)
+  const edgeTypes = new Float32Array(count)
+
+  for (let i = 0; i < count; i += 2) {
+    const x0 = pos.getX(i), y0 = pos.getY(i), z0 = pos.getZ(i)
+    const x1 = pos.getX(i + 1), y1 = pos.getY(i + 1), z1 = pos.getZ(i + 1)
+
+    // Spatial coordinate mapping for fluid continuous traveling energy along 3D edges
+    const u0 = (Math.atan2(y0, x0) + Math.PI) * 1.5 + z0 * 2.0
+    const u1 = (Math.atan2(y1, x1) + Math.PI) * 1.5 + z1 * 2.0
+
+    lineCoords[i] = u0
+    lineCoords[i + 1] = u1
+    edgeTypes[i] = 1.0
+    edgeTypes[i + 1] = 1.0
+  }
+  edgeGeo.setAttribute('aLineCoord', new THREE.BufferAttribute(lineCoords, 1))
+  edgeGeo.setAttribute('aEdgeType', new THREE.BufferAttribute(edgeTypes, 1))
+  return edgeGeo
+}
+
 /**
- * CUSTOM PLASMA ENERGY HEART SHADER - ARCANE DOMAIN-WARPED FBM
+ * ARCANE RELIC STAR SHADERS (V2)
+ * Layer 1: Translucent Smoky Obsidian Glass Octahedron Prism (Zero Wireframe Lines)
+ * Layer 2: Radiant Symmetrical Spherical Arcane Star
  */
-export const DomainWarpPlasmaShader = {
+export const ObsidianGlassPrismShader = {
   vertexShader: `
     varying vec3 vNormal;
     varying vec3 vViewPosition;
     varying vec3 vWorldPosition;
-    varying vec2 vUv;
+    varying vec3 vLocalPosition;
     void main() {
-      vUv = uv;
+      vLocalPosition = position;
       vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
       vViewPosition = -mvPosition.xyz;
       vNormal = normalize(normalMatrix * normal);
@@ -344,145 +406,257 @@ export const DomainWarpPlasmaShader = {
     uniform float uLockdownActive;
     uniform float uModeProgress;
     uniform float uHeartbeatPulse;
-    uniform float uLowPowerMode;
     varying vec3 vNormal;
     varying vec3 vViewPosition;
     varying vec3 vWorldPosition;
-    varying vec2 vUv;
-
-    ${FBM_DOMAIN_WARPING_GLSL}
+    varying vec3 vLocalPosition;
 
     void main() {
-      // Mode interpolation: Quick Pitch (0.0, Gold theme) vs Deep Dive (1.0, Default Arcane)
-      vec3 colorVoidBase  = vec3(0.09, 0.03, 0.18); // Arcane Deep Violet
-      vec3 colorTealBase  = vec3(0.02, 0.94, 0.70); // Arcane Electric Teal
-      vec3 colorWhiteBase = vec3(1.0, 1.0, 1.0);
-
-      vec3 colorVoidGold  = vec3(0.18, 0.08, 0.0);  // Warm Gold Void
-      vec3 colorTealGold  = vec3(1.0, 0.73, 0.08);  // Shiny Yellow Gold
-
-      vec3 colorVoid  = mix(colorVoidGold, colorVoidBase, uModeProgress);
-      vec3 colorTeal  = mix(colorTealGold, colorTealBase, uModeProgress);
-      vec3 colorWhite = colorWhiteBase;
+      // Inky dark obsidian glass base (NO PURPLE)
+      vec3 obsidianBase = vec3(0.012, 0.015, 0.022);
+      
+      // Mode energy caustics: Quick Pitch Gold (#ffb44a) vs Deep Dive Emerald Teal (#4AFFB4)
+      vec3 colorGold = vec3(1.0, 0.72, 0.22);
+      vec3 colorTeal = vec3(0.29, 1.0, 0.706);
+      vec3 accentColor = mix(colorGold, colorTeal, uModeProgress);
 
       if (uIgniteActive > 0.5) {
-        colorVoid  = vec3(0.18, 0.01, 0.01); // Dark Magma
-        colorTeal  = vec3(1.0, 0.47, 0.0);   // Smoldering Gold/Orange
+        accentColor = vec3(1.0, 0.42, 0.08); // Blazing magma orange
+        obsidianBase = vec3(0.035, 0.01, 0.01);
       } else if (uLockdownActive > 0.5) {
-        colorVoid  = vec3(0.06, 0.08, 0.14); // Low-power Slate Blue
-        colorTeal  = vec3(0.48, 0.27, 0.05); // Dim Amber
+        accentColor = vec3(0.25, 0.35, 0.45); // Dim EMP slate
+        obsidianBase = vec3(0.01, 0.012, 0.015);
       }
 
-      // Domain-warped FBM liquid energy simulation
-      float warp = domainWarpNoise(vWorldPosition * 2.2, uTime * 0.85);
-      
-      // Multi-zone color blending (Void -> Midtone -> Electric Corona)
-      float mix1 = smoothstep(-0.35, 0.35, warp);
-      vec3 mixColor = mix(colorVoid, colorTeal, mix1);
-      
-      // Smooth Fresnel energy corona without sudden white flare
       vec3 normal = normalize(vNormal);
       vec3 viewDir = normalize(vViewPosition);
-      float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 2.8);
-      mixColor = mix(mixColor, colorWhite, fresnel * 0.5 * uHeartbeatPulse);
+      float NdotV = max(dot(normal, viewDir), 0.0);
       
-      // Lissajous Energy Filaments in UV Space
-      float fil1 = sin(vUv.x * 28.0 + sin(uTime * 1.8)) * cos(vUv.y * 28.0 - cos(uTime * 1.8));
-      float fil2 = sin(vUv.y * 38.0 - uTime * 2.2) * cos(vUv.x * 18.0 + uTime * 1.2);
-      float filament = pow(abs(fil1 * fil2), 3.2) * 0.35;
-      vec3 filamentColor = (uIgniteActive > 0.5) ? vec3(1.0, 0.9, 0.4) : mix(vec3(1.0, 0.88, 0.5), vec3(0.8, 0.95, 1.0), uModeProgress);
-      mixColor += filament * filamentColor;
+      // Crisp Fresnel rim reflection on glass facets
+      float fresnel = pow(1.0 - NdotV, 3.2);
 
-      // Emanating radial halo wave rings
-      float dist = length(vViewPosition.xy);
-      float ringWave = sin(dist * 14.0 - uTime * 6.0) * 0.5 + 0.5;
-      float ring = pow(ringWave, 8.0) * 0.15 * (1.0 - clamp(dist / 3.0, 0.0, 1.0));
-      mixColor += ring * colorTeal;
+      // Directional specular glints across flat facet faces
+      vec3 lightDir1 = normalize(vec3(0.8, 1.0, 0.6));
+      vec3 lightDir2 = normalize(vec3(-0.8, -0.5, 1.0));
+      float glint1 = pow(max(dot(reflect(-lightDir1, normal), viewDir), 0.0), 16.0);
+      float glint2 = pow(max(dot(reflect(-lightDir2, normal), viewDir), 0.0), 12.0);
+      float facetSpecular = glint1 * 0.6 + glint2 * 0.4;
 
-      float finalGlow = uGlowIntensity * uHeartbeatPulse;
-      gl_FragColor = vec4(mixColor * finalGlow, 0.96);
+      // Subtle prismatic edge dispersion without wireframe lines
+      float facetEdge = pow(1.0 - abs(dot(normal, viewDir)), 4.0) * 0.35;
+
+      // Composite: Translucent obsidian glass prism with radiant facet gleams
+      vec3 glassColor = obsidianBase + accentColor * (fresnel * 0.70 + facetSpecular * 0.90 + facetEdge);
+      
+      // Translucent glass alpha (lets the inner radiant star shine through cleanly!)
+      float alpha = (uLockdownActive > 0.5) ? 0.60 : 0.40;
+
+      gl_FragColor = vec4(glassColor, alpha);
     }
   `,
   uniforms: {
     uTime: { value: 0 },
-    uGlowIntensity: { value: 1.4 },
+    uGlowIntensity: { value: 1.05 },
     uHoverActive: { value: 0 },
     uIgniteActive: { value: 0 },
     uLockdownActive: { value: 0 },
     uModeProgress: { value: 0.0 },
-    uHeartbeatPulse: { value: 1.0 },
-    uLowPowerMode: { value: 0.0 }
+    uHeartbeatPulse: { value: 1.0 }
   }
 }
 
-function createPlasmaMaterial() {
+export const ArcaneStarShader = {
+  vertexShader: `
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec3 vLocalPosition;
+    void main() {
+      vLocalPosition = position;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vViewPosition = -mvPosition.xyz;
+      vNormal = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `,
+  fragmentShader: `
+    uniform float uTime;
+    uniform float uGlowIntensity;
+    uniform float uIgniteActive;
+    uniform float uLockdownActive;
+    uniform float uModeProgress;
+    uniform float uHeartbeatPulse;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec3 vLocalPosition;
+
+    void main() {
+      vec3 colorGold = vec3(1.0, 0.72, 0.22);
+      vec3 colorTeal = vec3(0.29, 1.0, 0.706);
+      vec3 accentColor = mix(colorGold, colorTeal, uModeProgress);
+
+      if (uIgniteActive > 0.5) {
+        accentColor = vec3(1.0, 0.50, 0.12);
+      } else if (uLockdownActive > 0.5) {
+        accentColor = vec3(0.20, 0.30, 0.40);
+      }
+
+      vec3 normal = normalize(vNormal);
+      vec3 viewDir = normalize(vViewPosition);
+      float NdotV = max(dot(normal, viewDir), 0.0);
+      float rim = pow(1.0 - NdotV, 1.8);
+
+      // Living solar surface harmonic turbulence
+      float surfaceWave = sin(vLocalPosition.x * 10.0 + uTime * 3.0) * 
+                          cos(vLocalPosition.y * 10.0 - uTime * 2.5) * 
+                          sin(vLocalPosition.z * 10.0 + uTime * 3.5);
+      float turbulence = surfaceWave * 0.18;
+
+      // Volumetric radiant core: pure brilliant center with glowing solar corona
+      vec3 coreColor = mix(accentColor * 1.5, vec3(1.0), 0.35);
+      vec3 coronaColor = accentColor * (1.2 + rim * 1.4 + turbulence);
+      vec3 finalStar = mix(coreColor, coronaColor, pow(1.0 - NdotV, 0.8));
+
+      float intensity = uGlowIntensity * uHeartbeatPulse * 1.5;
+      gl_FragColor = vec4(finalStar * intensity, 0.98);
+    }
+  `,
+  uniforms: {
+    uTime: { value: 0 },
+    uGlowIntensity: { value: 1.05 },
+    uIgniteActive: { value: 0 },
+    uLockdownActive: { value: 0 },
+    uModeProgress: { value: 0.0 },
+    uHeartbeatPulse: { value: 1.0 }
+  }
+}
+
+function createPrismMaterial() {
   return new THREE.ShaderMaterial({
-    vertexShader: DomainWarpPlasmaShader.vertexShader,
-    fragmentShader: DomainWarpPlasmaShader.fragmentShader,
+    vertexShader: ObsidianGlassPrismShader.vertexShader,
+    fragmentShader: ObsidianGlassPrismShader.fragmentShader,
     uniforms: {
       uTime: { value: 0 },
-      uGlowIntensity: { value: 1.4 },
+      uGlowIntensity: { value: 1.05 },
       uHoverActive: { value: 0 },
       uIgniteActive: { value: 0 },
       uLockdownActive: { value: 0 },
       uModeProgress: { value: 0.0 },
-      uHeartbeatPulse: { value: 1.0 },
-      uLowPowerMode: { value: 0.0 }
+      uHeartbeatPulse: { value: 1.0 }
     },
-    transparent: true
+    transparent: true,
+    depthWrite: false
   })
 }
 
+function createStarMaterial() {
+  return new THREE.ShaderMaterial({
+    vertexShader: ArcaneStarShader.vertexShader,
+    fragmentShader: ArcaneStarShader.fragmentShader,
+    uniforms: {
+      uTime: { value: 0 },
+      uGlowIntensity: { value: 1.05 },
+      uIgniteActive: { value: 0 },
+      uLockdownActive: { value: 0 },
+      uModeProgress: { value: 0.0 },
+      uHeartbeatPulse: { value: 1.0 }
+    },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  })
+}
+
+// Backwards-compatible aliases
+export const ArcaneCrystalShader = ObsidianGlassPrismShader
+export const SingularitySeedShader = ArcaneStarShader
+export const DomainWarpPlasmaShader = ObsidianGlassPrismShader
+function createCrystalMaterial() { return createPrismMaterial() }
+function createSeedMaterial() { return createStarMaterial() }
+function createPlasmaMaterial() { return createPrismMaterial() }
+
 /**
- * ANIMATED LATTICE EDGE GLOW SHADER
+ * ANIMATED FLOWING LATTICE EDGE GLOW SHADER
  */
 function createEdgeGlowMaterial() {
   return new THREE.ShaderMaterial({
     vertexShader: `
+      attribute float aLineCoord;
+      attribute float aEdgeType;
       varying vec3 vWorldPosition;
+      varying vec3 vLocalPosition;
+      varying float vLineCoord;
+      varying float vEdgeType;
       void main() {
+        vLocalPosition = position;
+        vLineCoord = aLineCoord;
+        vEdgeType = aEdgeType;
         vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
     fragmentShader: `
       uniform float uTime;
-      uniform vec3 uColor1; 
-      uniform vec3 uColor2; 
+      uniform vec3 uRuneColor;
+      uniform vec3 uColor1;
+      uniform vec3 uColor2;
       uniform float uHover;
       uniform float uIgnite;
       uniform float uLockdown;
       uniform float uPulseScale;
       varying vec3 vWorldPosition;
-      void main() {
-        float wave = sin(vWorldPosition.y * 2.5 - uTime * 3.5) * 0.5 + 0.5;
-        vec3 col = mix(uColor1, uColor2, wave);
+      varying vec3 vLocalPosition;
+      varying float vLineCoord;
+      varying float vEdgeType;
 
+      void main() {
+        // Direct continuous coordinate mapping along all line segments
+        float coord = vLineCoord;
+        
+        // Graceful, energetic flow speed
+        float speed = (uIgnite > 0.5) ? 3.2 : (uLockdown > 0.5 ? 0.35 : (1.4 + uHover * 0.45));
+
+        // Primary continuous traveling energy wave
+        float wave1 = sin(coord * 3.2 - uTime * speed) * 0.5 + 0.5;
+        float surge1 = pow(wave1, 1.8);
+
+        // Interleaved secondary harmonic wave to maintain unbroken, consistent flow
+        float wave2 = sin(coord * 3.2 - uTime * (speed * 0.85) + 2.2) * 0.5 + 0.5;
+        float surge2 = pow(wave2, 2.0) * 0.50;
+
+        float flowSurge = max(surge1, surge2);
+
+        // Subtle harmonic shimmer along the edge
+        float shimmer = sin(coord * 2.5 - uTime * (speed * 0.7)) * 0.06;
+
+        // Flowing dual-color wave gradient between uColor1 and uColor2
+        float colorFlow = sin(coord * 1.8 - uTime * (speed * 0.6)) * 0.5 + 0.5;
+        vec3 col = mix(uColor1, uColor2, colorFlow) * (1.0 + shimmer);
+
+        // Moderated baseline glow so edges are clearly defined without overpowering,
+        // allowing the bright traveling energy surges to POP dramatically with high visual contrast
+        float baseGlow = (uLockdown > 0.5) ? 0.20 : (0.42 + uHover * 0.15);
+        float flowBoost = (uLockdown > 0.5) ? 0.35 : (1.35 + uHover * 0.35);
         if (uIgnite > 0.5) {
-          col = mix(vec3(1.0, 0.29, 0.0), vec3(1.0, 0.82, 0.0), wave);
-        } else if (uLockdown > 0.5) {
-          col = mix(vec3(0.1, 0.13, 0.22), vec3(0.48, 0.27, 0.05), wave);
+          baseGlow = 1.15;
+          flowBoost = 1.35;
         }
 
-        // Energy current dashed sparks
-        float dash = sin(vWorldPosition.x * 8.0 + vWorldPosition.y * 8.0 + vWorldPosition.z * 8.0 - uTime * 5.0) * 0.5 + 0.5;
-        dash = 0.35 + 0.65 * pow(dash, 3.5);
+        float intensity = (baseGlow + flowSurge * flowBoost) * uPulseScale;
 
-        // VIBRANT, HIGH-CONTRAST GLOW - Boosted Baseline & Peak
-        float opacity = 0.85 + 0.15 * dash;
-        if (uLockdown > 0.5) opacity *= 0.25;
+        // Rich saturated core highlight during energy crest
+        vec3 finalColor = mix(col, col * 1.35, flowSurge * 0.35);
 
-        // Multiply col by an HDR multiplier so it glows brilliantly under Bloom
-        float glowIntensity = (1.15 + uHover * 0.25) * uPulseScale;
-        if (uIgnite > 0.5) glowIntensity *= 1.5;
+        // Clear baseline opacity so wireframe remains crisp, peaking to 1.0 along surges
+        float opacity = (uLockdown > 0.5) ? 0.35 : clamp(0.70 + flowSurge * 0.30, 0.0, 1.0);
 
-        gl_FragColor = vec4(col * glowIntensity, opacity * 0.82);
+        gl_FragColor = vec4(finalColor * intensity, opacity);
       }
     `,
     uniforms: {
       uTime: { value: 0 },
-      uColor1: { value: new THREE.Color("#ffe875") }, // Golden default
-      uColor2: { value: new THREE.Color("#ffb44a") }, 
+      uRuneColor: { value: new THREE.Color("#ffb44a") },
+      uColor1: { value: new THREE.Color("#ffe875") },
+      uColor2: { value: new THREE.Color("#ffb44a") },
       uHover: { value: 0 },
       uIgnite: { value: 0 },
       uLockdown: { value: 0 },
@@ -817,18 +991,17 @@ function PolyhedronScene({
   onHoverFragment: (rune: string | null, name: string | null, desc: string | null) => void 
 }) {
   const groupRef = useRef<THREE.Group>(null)
-  const coreRef = useRef<THREE.Mesh>(null)
   const ring1Ref = useRef<THREE.Group>(null)
   const ring2Ref = useRef<THREE.Group>(null)
   const ring3Ref = useRef<THREE.Group>(null)
   const ring1GlassRef = useRef<THREE.MeshPhysicalMaterial>(null)
   const ring2GlassRef = useRef<THREE.MeshPhysicalMaterial>(null)
   const ring3GlassRef = useRef<THREE.MeshPhysicalMaterial>(null)
-  const coreLightRef = useRef<THREE.PointLight>(null)
   const pyramidsGroupRef = useRef<THREE.Group>(null)
 
   const ring1TextRefs = useRef<(THREE.Mesh | null)[]>([])
   const ring2TextRefs = useRef<(THREE.Mesh | null)[]>([])
+  const ring3TextRefs = useRef<(THREE.Mesh | null)[]>([])
   const smoothScroll = useRef(0)
   const scrollPercentRef = useRef(0)
 
@@ -886,6 +1059,7 @@ function PolyhedronScene({
     const r1 = makeRectangularTorus(1.5, 0.28, 0.45, 2.2)
     const r2 = makeRectangularTorus(1.9, 0.28, 0.45, 2.2)
     const r3 = makeRectangularTorus(2.3, 0.22, 0.45, 2.2)
+
     return {
       ring1Geo: r1,
       ring2Geo: r2,
@@ -893,37 +1067,36 @@ function PolyhedronScene({
       innerRing1Geo: new THREE.TorusGeometry(1.5, 0.28 * 0.84, 16, 100),
       innerRing2Geo: new THREE.TorusGeometry(1.9, 0.28 * 0.84, 16, 100),
       innerRing3Geo: new THREE.TorusGeometry(2.3, 0.22 * 0.84, 16, 100),
-      ring1EdgeGeo: new THREE.EdgesGeometry(r1, 30),
-      ring2EdgeGeo: new THREE.EdgesGeometry(r2, 30),
-      ring3EdgeGeo: new THREE.EdgesGeometry(r3, 30)
+      ring1EdgeGeo: attachEdgeFlowAttributes(new THREE.EdgesGeometry(r1, 30)),
+      ring2EdgeGeo: attachEdgeFlowAttributes(new THREE.EdgesGeometry(r2, 30)),
+      ring3EdgeGeo: attachEdgeFlowAttributes(new THREE.EdgesGeometry(r3, 30))
     }
   }, [])
 
   // Shaders
-  const coreMaterial = useMemo(() => createPlasmaMaterial(), [])
   const edgeMaterial = useMemo(() => createEdgeGlowMaterial(), [])
 
   // Concentric Rings: Beautiful custom Runic Shader Materials
   const ring1Uniforms = useMemo(() => ({
     uTime: { value: 0 },
-    uRuneColor: { value: new THREE.Color("#ffe875") },
+    uRuneColor: { value: new THREE.Color(isDeepDive ? "#4AFFB4" : "#ffb44a") },
     uHoverActive: { value: 0 },
     uPulseScale: { value: 1.0 }
-  }), [])
+  }), [isDeepDive])
 
   const ring2Uniforms = useMemo(() => ({
     uTime: { value: 0 },
-    uRuneColor: { value: new THREE.Color("#4A8FFF") },
+    uRuneColor: { value: new THREE.Color(isDeepDive ? "#4AFFB4" : "#ffb44a") },
     uHoverActive: { value: 0 },
     uPulseScale: { value: 1.0 }
-  }), [])
+  }), [isDeepDive])
 
   const ring3Uniforms = useMemo(() => ({
     uTime: { value: 0 },
-    uRuneColor: { value: new THREE.Color("#9f4aff") },
+    uRuneColor: { value: new THREE.Color(isDeepDive ? "#4AFFB4" : "#ffb44a") },
     uHoverActive: { value: 0 },
     uPulseScale: { value: 1.0 }
-  }), [])
+  }), [isDeepDive])
 
   const ring1Material = useMemo(() => {
     return new THREE.ShaderMaterial({
@@ -958,21 +1131,80 @@ function PolyhedronScene({
     })
   }, [ring3Uniforms])
 
-  // Shared single PBR material for optimal 54-pyramid rendering and smooth mode color transition
+  // Procedural brushed black metallic texture & anisotropic micro-groove bump map
+  const metallicTexture = useMemo(() => {
+    if (typeof document === 'undefined') return null
+    const canvas = document.createElement('canvas')
+    canvas.width = 256
+    canvas.height = 256
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.fillStyle = '#08090f'
+      ctx.fillRect(0, 0, 256, 256)
+      const imgData = ctx.getImageData(0, 0, 256, 256)
+      const d = imgData.data
+      for (let i = 0; i < d.length; i += 4) {
+        const grain = (Math.random() - 0.5) * 16
+        d[i] = Math.min(255, Math.max(0, 9 + grain))
+        d[i + 1] = Math.min(255, Math.max(0, 11 + grain))
+        d[i + 2] = Math.min(255, Math.max(0, 17 + grain))
+        d[i + 3] = 255
+      }
+      ctx.putImageData(imgData, 0, 0)
+    }
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.wrapS = THREE.RepeatWrapping
+    tex.wrapT = THREE.RepeatWrapping
+    tex.repeat.set(2, 2)
+    return tex
+  }, [])
+
+  const metallicBumpMap = useMemo(() => {
+    if (typeof document === 'undefined') return null
+    const canvas = document.createElement('canvas')
+    canvas.width = 256
+    canvas.height = 256
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      const imgData = ctx.createImageData(256, 256)
+      const d = imgData.data
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+          const idx = (y * 256 + x) * 4
+          const streak = Math.sin(x * 1.5 + (Math.random() - 0.5) * 2.0) * 10
+          const n = 128 + streak + (Math.random() - 0.5) * 12
+          const val = Math.min(255, Math.max(0, n))
+          d[idx] = val
+          d[idx + 1] = val
+          d[idx + 2] = val
+          d[idx + 3] = 255
+        }
+      }
+      ctx.putImageData(imgData, 0, 0)
+    }
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.wrapS = THREE.RepeatWrapping
+    tex.wrapT = THREE.RepeatWrapping
+    tex.repeat.set(4, 4)
+    return tex
+  }, [])
+
+  // Shared single PBR material with authentic black metallic texture in Deep Dive mode
   const sharedMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: new THREE.Color(isDeepDive ? "#05061f" : "#c9a227"),
-    roughness: isDeepDive ? 0.18 : 0.12,
-    metalness: isDeepDive ? 0.90 : 0.95,
-    bumpScale: 0.05,
-    side: THREE.DoubleSide,
+    color: new THREE.Color(isDeepDive ? "#08090f" : "#c9a227"),
+    roughness: isDeepDive ? 0.32 : 0.20,
+    metalness: isDeepDive ? 0.95 : 0.92,
+    map: isDeepDive ? metallicTexture : null,
+    bumpMap: isDeepDive ? metallicBumpMap : null,
+    bumpScale: 0.025,
+    side: THREE.FrontSide,
     polygonOffset: true,
     polygonOffsetFactor: 1.0,
     polygonOffsetUnits: 1.0
-  }), [isDeepDive])
+  }), [isDeepDive, metallicTexture, metallicBumpMap])
 
   // Wrap materials in a ref for zero-warning useFrame modification
   const materialsRef = useRef({
-    core: coreMaterial,
     edge: edgeMaterial,
     ring1: ring1Material,
     ring2: ring2Material,
@@ -1017,31 +1249,20 @@ function PolyhedronScene({
         overwrite: "auto"
       })
 
-      // Core plasma heart bloom ignition flare
-      if (materialsRef.current?.core?.uniforms?.uGlowIntensity) {
-        gsap.fromTo(
-          materialsRef.current.core.uniforms.uGlowIntensity,
-          { value: 4.5 },
-          {
-            value: 1.05,
-            duration: 0.55,
-            ease: "sine.inOut",
-            overwrite: "auto"
-          }
-        )
-      }
+
     }
   }, [loaderPhase, isLoaded])
 
   // Clean up materials and geometries on unmount to prevent leaks
   useEffect(() => {
     return () => {
-      coreMaterial.dispose()
       edgeMaterial.dispose()
       ring1Material.dispose()
       ring2Material.dispose()
       ring3Material.dispose()
       sharedMaterial.dispose()
+      metallicTexture?.dispose()
+      metallicBumpMap?.dispose()
 
       ring1Geo.dispose()
       ring2Geo.dispose()
@@ -1054,12 +1275,13 @@ function PolyhedronScene({
       ring3EdgeGeo.dispose()
     }
   }, [
-    coreMaterial,
     edgeMaterial,
     ring1Material,
     ring2Material,
     ring3Material,
     sharedMaterial,
+    metallicTexture,
+    metallicBumpMap,
     ring1Geo,
     ring2Geo,
     ring3Geo,
@@ -1068,7 +1290,6 @@ function PolyhedronScene({
     innerRing3Geo,
     ring1EdgeGeo,
     ring2EdgeGeo,
-    ring3EdgeGeo
   ])
 
   const ring1Runes = useMemo<RuneData[]>(() => {
@@ -1104,6 +1325,25 @@ function PolyhedronScene({
       )
       const rot = new THREE.Euler().setFromRotationMatrix(matrix)
       const runeIndex = (i * 11 + 5) % RUNES.length
+      runesData.push({ pos, rot, rune: RUNES[runeIndex] })
+    }
+    return runesData
+  }, [])
+
+  const ring3Runes = useMemo<RuneData[]>(() => {
+    const N = 20
+    const radiusRune = 2.3 + (0.22 * Math.cos(Math.PI / 4) * 0.45) + 0.015
+    const runesData: RuneData[] = []
+    for (let i = 0; i < N; i++) {
+      const theta = (2 * Math.PI * i) / N
+      const pos = new THREE.Vector3(radiusRune * Math.cos(theta), radiusRune * Math.sin(theta), 0)
+      const matrix = new THREE.Matrix4().makeBasis(
+        new THREE.Vector3(-Math.sin(theta), Math.cos(theta), 0),
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(Math.cos(theta), Math.sin(theta), 0)
+      )
+      const rot = new THREE.Euler().setFromRotationMatrix(matrix)
+      const runeIndex = (i * 13 + 7) % RUNES.length
       runesData.push({ pos, rot, rune: RUNES[runeIndex] })
     }
     return runesData
@@ -1148,14 +1388,7 @@ function PolyhedronScene({
       tracker.elapsedTime = 0
     }
 
-    const targetLowPower = tracker.isLowPower ? 1.0 : 0.0
-    if (mats.core?.uniforms?.uLowPowerMode) {
-      mats.core.uniforms.uLowPowerMode.value = THREE.MathUtils.lerp(
-        mats.core.uniforms.uLowPowerMode.value,
-        targetLowPower,
-        delta * 3.0
-      )
-    }
+
 
     // 1. Smooth mode transition logic: Quick Pitch (isDeepDive=false -> Gold) to Deep Dive (isDeepDive=true -> Indigo PBR)
     const targetMode = isDeepDive ? 1.0 : 0.0
@@ -1200,9 +1433,7 @@ function PolyhedronScene({
 
     sharedSpellState.heartbeatPulse = 1.0
 
-    // Drive modeProgress and steady pulse into Core Shader
-    mats.core.uniforms.uModeProgress.value = sharedSpellState.modeProgress
-    mats.core.uniforms.uHeartbeatPulse.value = sharedSpellState.pulseScale
+
 
     // Target base face material color transitions (smoothly blending modes, ignite overloads, and EMP slate lockdowns)
     const targetFaceColor = _scratchColor1.copy(COLOR_GOLD).lerp(COLOR_DEFAULT, sharedSpellState.modeProgress)
@@ -1213,27 +1444,44 @@ function PolyhedronScene({
     }
     mats.shared.color.lerp(targetFaceColor, delta * 6.0)
     
-    mats.shared.roughness = THREE.MathUtils.lerp(0.12, 0.18, sharedSpellState.modeProgress)
-    mats.shared.metalness = THREE.MathUtils.lerp(0.95, 0.90, sharedSpellState.modeProgress)
+    mats.shared.roughness = THREE.MathUtils.lerp(0.20, 0.32, sharedSpellState.modeProgress)
+    mats.shared.metalness = THREE.MathUtils.lerp(0.92, 0.95, sharedSpellState.modeProgress)
 
-    // Smooth transition for edge colors & pulse scale (steady without periodic flare bursts)
-    mats.edge.uniforms.uColor1.value.copy(COLOR_GOLD_EDGE1).lerp(COLOR_DEFAULT_EDGE1, sharedSpellState.modeProgress)
-    mats.edge.uniforms.uColor2.value.copy(COLOR_GOLD_EDGE2).lerp(COLOR_DEFAULT_EDGE2, sharedSpellState.modeProgress)
+    // Edge glow color matches the runes identically in all modes and spell states
+    const targetRuneEdgeCol = _scratchColor2.copy(COLOR_RUNE_GOLD).lerp(COLOR_RUNE_DEFAULT, sharedSpellState.modeProgress)
+    if (sharedSpellState.ignite) {
+      targetRuneEdgeCol.copy(COLOR_RUNE_IGNITE)
+    } else if (sharedSpellState.lockdown) {
+      targetRuneEdgeCol.copy(COLOR_RUNE_LOCKDOWN)
+    }
+    mats.edge.uniforms.uRuneColor.value.lerp(targetRuneEdgeCol, delta * 8.0)
+
+    // Dual-tone edge gradient: Quick Pitch (gold1 / gold2) vs Deep Dive (neon green / neon electric blue)
+    const targetEdgeCol1 = _scratchColor3.copy(COLOR_GOLD_EDGE1).lerp(COLOR_DEFAULT_EDGE1, sharedSpellState.modeProgress)
+    const targetEdgeCol2 = _scratchColor4.copy(COLOR_GOLD_EDGE2).lerp(COLOR_DEFAULT_EDGE2, sharedSpellState.modeProgress)
+    if (sharedSpellState.ignite) {
+      targetEdgeCol1.copy(COLOR_RUNE_IGNITE)
+      targetEdgeCol2.copy(COLOR_IGNITE_GLOW)
+    } else if (sharedSpellState.lockdown) {
+      targetEdgeCol1.copy(COLOR_RUNE_LOCKDOWN)
+      targetEdgeCol2.copy(COLOR_LOCKDOWN_BASE)
+    }
+    mats.edge.uniforms.uColor1.value.lerp(targetEdgeCol1, delta * 8.0)
+    mats.edge.uniforms.uColor2.value.lerp(targetEdgeCol2, delta * 8.0)
     mats.edge.uniforms.uPulseScale.value = sharedSpellState.pulseScale * (sharedSpellState.lockdown ? 0.3 : 1.0)
+    mats.edge.uniforms.uHover.value = THREE.MathUtils.lerp(mats.edge.uniforms.uHover.value, (isHovered || isDeepDive) ? 1.0 : 0.0, delta * 6.0)
 
     // Drive Shaders Time uniform
-    mats.core.uniforms.uTime.value = t
     mats.edge.uniforms.uTime.value = t
     
     // Smooth transition for ring runic colors and uniforms
-    const goldColor = _scratchColor1.set("#ffe875")
-
+    const ringBaseColor = _scratchColor1.copy(COLOR_RUNE_GOLD)
 
     // Update ring 1 uniforms
     mats.ring1.uniforms.uTime.value = t
     mats.ring1.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.ring1.uniforms.uHoverActive.value, (isHovered || isDeepDive) ? 1.0 : 0.0, delta * 6.0)
     mats.ring1.uniforms.uPulseScale.value = sharedSpellState.pulseScale
-    const ring1TargetColor = _scratchColor2.copy(goldColor).lerp(_scratchColor3.set("#4AFFB4"), modeProg)
+    const ring1TargetColor = _scratchColor2.copy(ringBaseColor).lerp(COLOR_RUNE_DEFAULT, modeProg)
     if (sharedSpellState.ignite) {
       ring1TargetColor.copy(COLOR_RUNE_IGNITE)
     } else if (sharedSpellState.lockdown) {
@@ -1245,7 +1493,7 @@ function PolyhedronScene({
     mats.ring2.uniforms.uTime.value = t
     mats.ring2.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.ring2.uniforms.uHoverActive.value, (isHovered || isDeepDive) ? 1.0 : 0.0, delta * 6.0)
     mats.ring2.uniforms.uPulseScale.value = sharedSpellState.pulseScale
-    const ring2TargetColor = _scratchColor2.copy(goldColor).lerp(_scratchColor3.set("#4A8FFF"), modeProg)
+    const ring2TargetColor = _scratchColor2.copy(ringBaseColor).lerp(COLOR_RUNE_DEFAULT, modeProg)
     if (sharedSpellState.ignite) {
       ring2TargetColor.copy(COLOR_RUNE_IGNITE)
     } else if (sharedSpellState.lockdown) {
@@ -1257,7 +1505,7 @@ function PolyhedronScene({
     mats.ring3.uniforms.uTime.value = t
     mats.ring3.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.ring3.uniforms.uHoverActive.value, (isHovered || isDeepDive) ? 1.0 : 0.0, delta * 6.0)
     mats.ring3.uniforms.uPulseScale.value = sharedSpellState.pulseScale
-    const ring3TargetColor = _scratchColor2.copy(goldColor).lerp(_scratchColor3.set("#9f4aff"), modeProg)
+    const ring3TargetColor = _scratchColor2.copy(ringBaseColor).lerp(COLOR_RUNE_DEFAULT, modeProg)
     if (sharedSpellState.ignite) {
       ring3TargetColor.copy(COLOR_RUNE_IGNITE)
     } else if (sharedSpellState.lockdown) {
@@ -1266,8 +1514,6 @@ function PolyhedronScene({
     mats.ring3.uniforms.uRuneColor.value.lerp(ring3TargetColor, delta * 6.0)
 
     // Drive special Spell states to Shaders
-    mats.core.uniforms.uIgniteActive.value = sharedSpellState.ignite ? 1.0 : 0.0
-    mats.core.uniforms.uLockdownActive.value = sharedSpellState.lockdown ? 1.0 : 0.0
     mats.edge.uniforms.uIgnite.value = sharedSpellState.ignite ? 1.0 : 0.0
     mats.edge.uniforms.uLockdown.value = sharedSpellState.lockdown ? 1.0 : 0.0
 
@@ -1381,37 +1627,12 @@ function PolyhedronScene({
         mat.color.copy(mats.ring2.uniforms.uRuneColor.value)
       }
     })
-
-    // Core smooth scale & steady luminosity (toned down for sleek cinematic look)
-    if (coreRef.current) {
-      let corePulse = 1.0
-      
-      if (sharedSpellState.ignite) {
-        corePulse = 1.10 + Math.sin(t * 18.0) * 0.15
-        mats.core.uniforms.uGlowIntensity.value = 3.2 + Math.sin(t * 18.0) * 0.6
-      } else if (sharedSpellState.lockdown) {
-        corePulse = 0.88
-        mats.core.uniforms.uGlowIntensity.value = 0.35
-      } else {
-        mats.core.uniforms.uGlowIntensity.value = 1.05
+    ring3TextRefs.current.forEach(t => {
+      if (t && t.material && !Array.isArray(t.material)) {
+        const mat = t.material as THREE.MeshBasicMaterial
+        mat.color.copy(mats.ring3.uniforms.uRuneColor.value)
       }
-
-      coreRef.current.scale.setScalar(0.72 * corePulse * sharedSpellState.pulseScale)
-    }
-
-    if (coreLightRef.current) {
-      const targetLightColor = _scratchColor1.copy(COLOR_GOLD_EDGE2).lerp(COLOR_DEFAULT_EDGE2, sharedSpellState.modeProgress)
-      if (sharedSpellState.ignite) {
-        targetLightColor.copy(COLOR_IGNITE_GLOW)
-        coreLightRef.current.intensity = THREE.MathUtils.lerp(coreLightRef.current.intensity, 12, delta * 6.0)
-      } else if (sharedSpellState.lockdown) {
-        targetLightColor.copy(COLOR_LOCKDOWN_BASE)
-        coreLightRef.current.intensity = THREE.MathUtils.lerp(coreLightRef.current.intensity, 1.0, delta * 6.0)
-      } else {
-        coreLightRef.current.intensity = THREE.MathUtils.lerp(coreLightRef.current.intensity, 6.0 * sharedSpellState.pulseScale, delta * 6.0)
-      }
-      coreLightRef.current.color.lerp(targetLightColor, delta * 6.0)
-    }
+    })
 
     // 5.1 Hover Magnetic spring-damped Tilt
     let targetTiltX = 0
@@ -1419,10 +1640,8 @@ function PolyhedronScene({
     if (isHovered || isDeepDive) {
       targetTiltX = pointer.y * 0.28 // Pitch up/down
       targetTiltY = pointer.x * 0.32 // Yaw left/right
-      mats.core.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.core.uniforms.uHoverActive.value, 0.0, delta * 6.0)
       mats.edge.uniforms.uHover.value = THREE.MathUtils.lerp(mats.edge.uniforms.uHover.value, 0.0, delta * 6.0)
     } else {
-      mats.core.uniforms.uHoverActive.value = THREE.MathUtils.lerp(mats.core.uniforms.uHoverActive.value, 0.0, delta * 6.0)
       mats.edge.uniforms.uHover.value = THREE.MathUtils.lerp(mats.edge.uniforms.uHover.value, 0.0, delta * 6.0)
     }
 
@@ -1456,13 +1675,8 @@ function PolyhedronScene({
     <group ref={groupRef}>
       <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.2}>
         
-        {/* Core sphere with glowing GLSL shader */}
-        <mesh ref={coreRef}>
-          <sphereGeometry args={[1.0, 32, 32]} />
-          <primitive object={coreMaterial} attach="material" />
-        </mesh>
-
-        <pointLight ref={coreLightRef} intensity={6} color="#ffb44a" distance={8} />
+        {/* Arcane Dodecahedron Core */}
+        <DodecahedronCore isDeepDive={isDeepDive} isHovered={isHovered} />
 
 
 
@@ -1537,6 +1751,21 @@ function PolyhedronScene({
             <meshPhysicalMaterial ref={ring3GlassRef} {...glassMaterialProps} />
           </mesh>
           <lineSegments geometry={ring3EdgeGeo} material={edgeMaterial} />
+          {ring3Runes.map((rd, i) => (
+            <Text
+              key={i}
+              ref={(el) => { ring3TextRefs.current[i] = el as THREE.Mesh | null }}
+              position={rd.pos}
+              rotation={rd.rot}
+              fontSize={0.24}
+              font="/fonts/NotoSansRunic-Regular.ttf"
+              anchorX="center"
+              anchorY="middle"
+            >
+              <meshBasicMaterial color="#ffe875" toneMapped={false} depthWrite={false} transparent opacity={0.95} />
+              {rd.rune}
+            </Text>
+          ))}
         </group>
 
         {/* 54 Pyramid fragments wrapped in dedicated group to prevent empty raycast issues */}
@@ -1643,9 +1872,9 @@ function PyramidFragment({
     const rv = data.vertices.map(v => new THREE.Vector3().subVectors(v, data.center).multiplyScalar(1.2))
     
     const vertices = new Float32Array([
-      // Base
-      rv[0].x, rv[0].y, rv[0].z, rv[1].x, rv[1].y, rv[1].z, rv[2].x, rv[2].y, rv[2].z,
-      rv[0].x, rv[0].y, rv[0].z, rv[2].x, rv[2].y, rv[2].z, rv[3].x, rv[3].y, rv[3].z,
+      // Base (wound facing backward: normal points away from apex)
+      rv[0].x, rv[0].y, rv[0].z, rv[2].x, rv[2].y, rv[2].z, rv[1].x, rv[1].y, rv[1].z,
+      rv[0].x, rv[0].y, rv[0].z, rv[3].x, rv[3].y, rv[3].z, rv[2].x, rv[2].y, rv[2].z,
       // Sides
       rv[0].x, rv[0].y, rv[0].z, rv[1].x, rv[1].y, rv[1].z, apex.x, apex.y, apex.z,
       rv[1].x, rv[1].y, rv[1].z, rv[2].x, rv[2].y, rv[2].z, apex.x, apex.y, apex.z,
@@ -1653,7 +1882,19 @@ function PyramidFragment({
       rv[3].x, rv[3].y, rv[3].z, rv[0].x, rv[0].y, rv[0].z, apex.x, apex.y, apex.z,
     ])
     
+    const uvs = new Float32Array([
+      // Base
+      0, 0,  1, 1,  1, 0,
+      0, 0,  0, 1,  1, 1,
+      // Sides
+      0, 0,  1, 0,  0.5, 1,
+      0, 0,  1, 0,  0.5, 1,
+      0, 0,  1, 0,  0.5, 1,
+      0, 0,  1, 0,  0.5, 1,
+    ])
+
     geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
     geo.computeVertexNormals()
 
     const sides = [[rv[0], rv[1], apex], [rv[1], rv[2], apex], [rv[2], rv[3], apex], [rv[3], rv[0], apex]]
@@ -1676,7 +1917,7 @@ function PyramidFragment({
       }
     })
 
-    // Add glowing rune to the back base face of the pyramid
+    // Glowing rune on the back base face of the pyramid shell
     const baseCenter = new THREE.Vector3().add(rv[0]).add(rv[1]).add(rv[2]).add(rv[3]).divideScalar(4)
     const baseNormal = data.normal.clone().negate().normalize()
     const baseHash = data.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + 4
@@ -1690,7 +1931,49 @@ function PyramidFragment({
       rune: RUNES[baseRuneIndex]
     })
 
-    return { geometry: geo, edgeGeo: new THREE.EdgesGeometry(geo), runeData }
+    // Explicit 8 wireframe edges with directional flow attributes
+    const edgeGeo = new THREE.BufferGeometry()
+    const edgeVertices = new Float32Array([
+      // 4 Ridge edges (from base corners rv[0..3] to apex)
+      rv[0].x, rv[0].y, rv[0].z, apex.x, apex.y, apex.z,
+      rv[1].x, rv[1].y, rv[1].z, apex.x, apex.y, apex.z,
+      rv[2].x, rv[2].y, rv[2].z, apex.x, apex.y, apex.z,
+      rv[3].x, rv[3].y, rv[3].z, apex.x, apex.y, apex.z,
+      // 4 Base perimeter edges (rv[0]->rv[1]->rv[2]->rv[3]->rv[0])
+      rv[0].x, rv[0].y, rv[0].z, rv[1].x, rv[1].y, rv[1].z,
+      rv[1].x, rv[1].y, rv[1].z, rv[2].x, rv[2].y, rv[2].z,
+      rv[2].x, rv[2].y, rv[2].z, rv[3].x, rv[3].y, rv[3].z,
+      rv[3].x, rv[3].y, rv[3].z, rv[0].x, rv[0].y, rv[0].z,
+    ])
+    const edgeLineCoords = new Float32Array([
+      // Ridge lines: 0.0 at base, 1.0 at apex
+      0.0, 1.0,
+      0.0, 1.0,
+      0.0, 1.0,
+      0.0, 1.0,
+      // Perimeter lines: 0.0 -> 1.0 -> 2.0 -> 3.0 -> 4.0
+      0.0, 1.0,
+      1.0, 2.0,
+      2.0, 3.0,
+      3.0, 4.0,
+    ])
+    const edgeTypes = new Float32Array([
+      // Ridge lines = 0.0
+      0.0, 0.0,
+      0.0, 0.0,
+      0.0, 0.0,
+      0.0, 0.0,
+      // Perimeter lines = 1.0
+      1.0, 1.0,
+      1.0, 1.0,
+      1.0, 1.0,
+      1.0, 1.0,
+    ])
+    edgeGeo.setAttribute('position', new THREE.BufferAttribute(edgeVertices, 3))
+    edgeGeo.setAttribute('aLineCoord', new THREE.BufferAttribute(edgeLineCoords, 1))
+    edgeGeo.setAttribute('aEdgeType', new THREE.BufferAttribute(edgeTypes, 1))
+
+    return { geometry: geo, edgeGeo, runeData }
   }, [data])
 
   useEffect(() => {
@@ -2249,10 +2532,10 @@ export default function PolyhedronCanvas({
         style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, pointerEvents: 'auto' }}
       >
         <CameraController isEffectiveMobile={isEffectiveMobile} />
-        <ambientLight intensity={0.32} />
-        <pointLight position={[10, 10, 10]} intensity={1.2} />
-        <directionalLight position={[-10, 8, -5]} intensity={0.7} color="#ffffff" />
-        <directionalLight position={[0, -6, 6]} intensity={0.35} color="#4A8FFF" />
+        <ambientLight intensity={0.20} />
+        <pointLight position={[10, 10, 10]} intensity={0.7} />
+        <directionalLight position={[-10, 8, -5]} intensity={0.45} color="#ffffff" />
+        <directionalLight position={[0, -6, 6]} intensity={0.25} color={isDeepDive ? "#4AFFB4" : "#ffb44a"} />
         
         <Suspense fallback={null}>
           <PolyhedronScene 
@@ -2269,10 +2552,10 @@ export default function PolyhedronCanvas({
         {/* Volumetric Bloom Postprocessing - Calibrated for sleek cinematic balance */}
         <EffectComposer multisampling={0}>
           <Bloom 
-            luminanceThreshold={0.08} 
-            luminanceSmoothing={0.80} 
+            luminanceThreshold={0.22} 
+            luminanceSmoothing={0.65} 
             mipmapBlur 
-            intensity={0.55}
+            intensity={0.45}
           />
         </EffectComposer>
       </Canvas>
