@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display } from "next/font/google";
 import { CommandPalette } from "@/components/cli/CommandPalette";
-import { PageEntryOverlay } from "@/components/layout/PageEntryOverlay";
 import { ModeTransitionOverlay } from "@/components/layout/ModeTransitionOverlay";
 import { InitialLoaderOverlay } from "@/components/layout/InitialLoaderOverlay";
 import { GenerativeBackground } from "@/components/canvas/GenerativeBackground";
@@ -10,6 +9,8 @@ import { InfiniteGrid } from "@/components/ui/infinite-grid";
 import { ThemeApplier } from "@/components/providers/ThemeApplier";
 import { ModeApplier } from "@/components/providers/ModeApplier";
 import { CursorProvider } from "@/components/providers/CursorProvider";
+import { PageTransitionsProvider } from "@/components/providers/PageTransitionsProvider";
+import { getPageTransitions } from "@/app/actions/page-transitions";
 import { getPortfolioContent, getSearchableContent } from "@/lib/content/portfolio";
 import { Navbar } from "@/components/nav/Navbar";
 import "./globals.css";
@@ -44,6 +45,7 @@ export default async function RootLayout({
 }>) {
   const content = await getPortfolioContent();
   const searchableContent = getSearchableContent(content);
+  const transitionRules = await getPageTransitions();
 
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
@@ -56,11 +58,12 @@ export default async function RootLayout({
         <CursorProvider />
         <GenerativeBackground />
         <InfiniteGrid />
-        <PageEntryOverlay />
         <ModeTransitionOverlay />
         <CommandPalette initialContent={searchableContent} />
         <Navbar />
-        {children}
+        <PageTransitionsProvider initialRules={transitionRules}>
+          {children}
+        </PageTransitionsProvider>
       </body>
     </html>
   );
