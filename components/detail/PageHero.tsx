@@ -14,7 +14,10 @@ export function PageHero({ typeLabel, title, descriptor }: PageHeroProps) {
   return (
     <div className="reveal-item mb-12">
       <span className="text-xs font-mono uppercase tracking-widest text-[var(--mode-accent,#C9A227)]">{typeLabel}</span>
-      <div className="relative mt-2">
+      <div 
+        style={{ viewTransitionName: "page-title" }}
+        className="relative mt-2"
+      >
         {mode === "quick" ? (
           <>
             {/* Base grey layer */}

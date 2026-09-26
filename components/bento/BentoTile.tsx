@@ -137,7 +137,8 @@ export function BentoTile({
         translateY: { duration: 0.4, ease: "easeOut" }
       }}
       style={{
-        ...(dynamicRows ? { gridRow: `span ${dynamicRows}` } : {})
+        ...(dynamicRows ? { gridRow: `span ${dynamicRows}` } : {}),
+        ...(id === "hero" || size === "4x5" ? { viewTransitionName: "hero-surface" } : {})
       }}
       className={cn(
         spanClass, 

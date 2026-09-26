@@ -84,21 +84,25 @@ export function DetailShell({
       cy = `${((originRect.top + originRect.height / 2 - r.top) / r.height) * 100}%`
     }
 
+    const hasNativeVT = typeof document !== "undefined" && "startViewTransition" in document
+
     if (mode === "quick") {
       // Golden Canvas reveal: open the page from the clicked tile via a
-      // circle clip-path, coordinated with the canvas brush-edge ring.
-      gsap.fromTo(
-        shell,
-        { clipPath: `circle(0% at ${cx} ${cy})` },
-        {
-          clipPath: `circle(150% at ${cx} ${cy})`,
-          duration: 0.9,
-          ease: "power3.out",
-          onComplete: () => {
-            gsap.set(shell, { clearProps: "clipPath" })
+      // circle clip-path ONLY when native view transitions is not supported
+      if (!hasNativeVT) {
+        gsap.fromTo(
+          shell,
+          { clipPath: `circle(0% at ${cx} ${cy})` },
+          {
+            clipPath: `circle(150% at ${cx} ${cy})`,
+            duration: 0.9,
+            ease: "power3.out",
+            onComplete: () => {
+              gsap.set(shell, { clearProps: "clipPath" })
+            }
           }
-        }
-      )
+        )
+      }
       // Soft blur-to-focus + gilded headers.
       if (revealItems.length > 0) {
         gsap.from(revealItems, {

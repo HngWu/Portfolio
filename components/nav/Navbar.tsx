@@ -49,7 +49,10 @@ export function Navbar() {
           aria-label={isHome ? "Home" : "Back to home"}
           title={isHome ? "Home" : "Back to home"}
         >
-          <div className="w-10 h-10 bg-white/[0.03] border border-white/10 rounded-xl flex items-center justify-center text-white transition-all duration-300 hover:bg-white/[0.08] hover:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl group-hover:scale-105 active:scale-95">
+          <div 
+            style={{ viewTransitionName: "brand-logo" }}
+            className="w-10 h-10 bg-white/[0.03] border border-white/10 rounded-xl flex items-center justify-center text-white transition-all duration-300 hover:bg-white/[0.08] hover:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl group-hover:scale-105 active:scale-95"
+          >
             <AnimatePresence mode="wait" initial={false}>
               {isHome ? (
                 <motion.div

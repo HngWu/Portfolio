@@ -290,7 +290,10 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
       <SpellAmbientMana />
 
       {/* Main 3D Book Stage */}
-      <div className="relative z-10 w-full flex-1 flex items-center justify-center my-auto min-h-0">
+      <div 
+        style={{ viewTransitionName: "hero-surface" }}
+        className="relative z-10 w-full flex-1 flex items-center justify-center my-auto min-h-0"
+      >
         <SpellPageSpread
           lifecycle={lifecycle}
           onLifecycleAdvance={setLifecycle}
