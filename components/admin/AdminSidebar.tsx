@@ -15,7 +15,8 @@ import {
   ShieldCheck, 
   X,
   Layers,
-  FolderOpen
+  FolderOpen,
+  ArrowLeftRight
 } from "lucide-react"
 import { logout } from "@/app/actions/auth"
 import { useAdminNavStore } from "@/store/useAdminNavStore"
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { label: "Tiles Orchestrator", href: "/admin/tiles", icon: LayoutGrid },
   { label: "Projects", href: "/admin/projects", icon: Briefcase },
   { label: "Detailed Items", href: "/admin/detailed-items", icon: ListTree },
+  { label: "Page Transitions", href: "/admin/transitions", icon: ArrowLeftRight },
   { label: "Document Vault", href: "/admin/vault", icon: FolderOpen },
   { label: "Admins", href: "/admin/users", icon: ShieldCheck },
   { label: "Site Config", href: "/admin/config", icon: Settings },
