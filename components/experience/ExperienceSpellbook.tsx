@@ -3,7 +3,7 @@
 import * as React from "react"
 import type { ParsedExperience } from "@/lib/content/portfolio"
 import { toSpellData, HANDCRAFTED_SPELLS, type SpellData } from "@/lib/content/experienceSpells"
-import { SpellPageSpread } from "./SpellPageSpread"
+import { SpellPageSpread, type BookLifecycle } from "./SpellPageSpread"
 import { SpellAmbientMana } from "./SpellAmbientMana"
 import { ExperienceBackBtn } from "./ExperienceBackBtn"
 import { usePageTransition } from "@/hooks/usePageTransition"
@@ -52,11 +52,8 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     return sourceList.map((e, i) => toSpellData(e, i, sourceList.length))
   }, [experienceList])
 
-  // Book Opening Entrance Lifecycle State (No container unmounting / zero layout snap)
-  const [isCoverOpen, setIsCoverOpen] = React.useState(false)
-  const [isOpeningCover, setIsOpeningCover] = React.useState(false)
-  const [isClosingCover, setIsClosingCover] = React.useState(false)
-  const [isClosedBack, setIsClosedBack] = React.useState(false)
+  // Unified Book Lifecycle State Machine
+  const [lifecycle, setLifecycle] = React.useState<BookLifecycle>("closed-front")
   const [audioEnabled, setAudioEnabled] = React.useState(false)
 
   // Audio ref tracking to prevent re-opening loops
@@ -87,62 +84,55 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     // Check prefers-reduced-motion
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     if (prefersReduced) {
-      setIsCoverOpen(true)
-      setIsOpeningCover(false)
+      setLifecycle("idle")
       return
     }
 
-    // Always start closed on page mount, pause 800ms to allow user to view front cover, then swing cover open
+    // Start closed on page mount, pause 800ms to allow user to view front cover, then swing cover open
     const openTimer = setTimeout(() => {
-      setIsOpeningCover(true)
+      setLifecycle("opening-cover")
       playBookOpenSound(audioEnabledRef.current)
     }, 800)
 
     return () => clearTimeout(openTimer)
   }, [])
 
-  const handleCoverOpenComplete = React.useCallback(() => {
-    setIsCoverOpen(true)
-    setIsOpeningCover(false)
-    setIsClosingCover(false)
-  }, [])
-
-  const handleCoverCloseComplete = React.useCallback(() => {
-    setIsCoverOpen(false)
-    setIsOpeningCover(false)
-    setIsClosingCover(false)
-    setIsClosedBack(true)
-    setActiveIndex(0)
-  }, [])
-
-  // Cover opening safety timeout
+  // Safety watchdogs for lifecycle state transitions
   React.useEffect(() => {
-    if (isOpeningCover) {
-      const openFallback = setTimeout(() => {
-        handleCoverOpenComplete()
-      }, 1400)
-      return () => clearTimeout(openFallback)
-    }
-  }, [isOpeningCover, handleCoverOpenComplete])
+    let watchdog: NodeJS.Timeout | null = null
 
-  // Cover closing safety timeout
-  React.useEffect(() => {
-    if (isClosingCover) {
-      const closeFallback = setTimeout(() => {
-        handleCoverCloseComplete()
+    if (lifecycle === "opening-cover") {
+      watchdog = setTimeout(() => {
+        setLifecycle("opening-flutter")
       }, 1400)
-      return () => clearTimeout(closeFallback)
+    } else if (lifecycle === "opening-flutter") {
+      watchdog = setTimeout(() => {
+        setLifecycle("idle")
+      }, 1200)
+    } else if (lifecycle === "closing-flutter") {
+      watchdog = setTimeout(() => {
+        setLifecycle("closing-cover")
+      }, 1100)
+    } else if (lifecycle === "closing-cover") {
+      watchdog = setTimeout(() => {
+        setLifecycle("closed-back")
+      }, 1200)
     }
-  }, [isClosingCover, handleCoverCloseComplete])
 
+    return () => {
+      if (watchdog) clearTimeout(watchdog)
+    }
+  }, [lifecycle])
+
+  // Manual open handler if user clicks front cover before auto-open
   const handleManualOpen = React.useCallback(() => {
-    if (!isCoverOpen && !isOpeningCover && !isClosingCover && !isExitingRef.current) {
-      setIsOpeningCover(true)
+    if (lifecycle === "closed-front" && !isExitingRef.current) {
+      setLifecycle("opening-cover")
       playBookOpenSound(audioEnabledRef.current)
     }
-  }, [isCoverOpen, isOpeningCover, isClosingCover])
+  }, [lifecycle])
 
-  // Centralized Exit Navigation Closing Animation
+  // Centralized Exit Navigation Sequence
   const handleExit = React.useCallback(
     (targetPath = "/") => {
       if (isExitingRef.current) return
@@ -158,19 +148,22 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
         return
       }
 
-      setIsClosingCover(true)
-      playBookOpenSound(audioEnabledRef.current)
-
-      // Total exit timing:
-      // 480ms (3D closing leaf swing) + 380ms (collapse to 580px centered) + ~390ms (view back cover) = 1250ms
-      const exitTimer = setTimeout(() => {
-        navigateWithTransition(targetPath)
-      }, 1250)
-
-      return () => clearTimeout(exitTimer)
+      // Start multi-page closing flutter before hardcover folds shut
+      setLifecycle("closing-flutter")
     },
     [navigateWithTransition]
   )
+
+  // Pause in sealed back cover resting state, then transition home
+  React.useEffect(() => {
+    if (lifecycle === "closed-back") {
+      const exitTimer = setTimeout(() => {
+        setLifecycle("exiting")
+        navigateWithTransition("/")
+      }, 350)
+      return () => clearTimeout(exitTimer)
+    }
+  }, [lifecycle, navigateWithTransition])
 
   // Intercept browser back button to trigger closing animation before leaving
   React.useEffect(() => {
@@ -199,6 +192,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     setTargetIndex(null)
     setIsTurning(false)
     setDirection(0)
+    setLifecycle("idle")
     // 150ms settle buffer before releasing input lock
     setTimeout(() => {
       isLockedRef.current = false
@@ -215,77 +209,57 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     }
   }, [isTurning, handleFlipComplete])
 
+  const canNavigate = lifecycle === "idle" && !isTurning && !isLockedRef.current && !isExitingRef.current
+
   // Page Navigation Handlers with atomic locking
   const goToNext = React.useCallback(() => {
-    if (
-      activeIndex >= spells.length - 1 ||
-      isTurning ||
-      isLockedRef.current ||
-      !isCoverOpen ||
-      isOpeningCover ||
-      isClosingCover ||
-      isExitingRef.current
-    )
-      return
+    if (activeIndex >= spells.length - 1 || !canNavigate) return
 
     isLockedRef.current = true
     setIsTurning(true)
+    setLifecycle("turning-page")
     setDirection(1)
     setTargetIndex(activeIndex + 1)
     playPageTurnSound(audioEnabledRef.current)
-  }, [activeIndex, spells.length, isTurning, isCoverOpen, isOpeningCover, isClosingCover])
+  }, [activeIndex, spells.length, canNavigate])
 
   const goToPrev = React.useCallback(() => {
-    if (
-      activeIndex <= 0 ||
-      isTurning ||
-      isLockedRef.current ||
-      !isCoverOpen ||
-      isOpeningCover ||
-      isClosingCover ||
-      isExitingRef.current
-    )
-      return
+    if (activeIndex <= 0 || !canNavigate) return
 
     isLockedRef.current = true
     setIsTurning(true)
+    setLifecycle("turning-page")
     setDirection(-1)
     setTargetIndex(activeIndex - 1)
     playPageTurnSound(audioEnabledRef.current)
-  }, [activeIndex, isTurning, isCoverOpen, isOpeningCover, isClosingCover])
+  }, [activeIndex, canNavigate])
 
   const goToIndex = React.useCallback(
     (index: number) => {
-      if (
-        index === activeIndex ||
-        isTurning ||
-        isLockedRef.current ||
-        !isCoverOpen ||
-        isOpeningCover ||
-        isClosingCover ||
-        isExitingRef.current
-      )
-        return
+      if (index === activeIndex || !canNavigate) return
 
       isLockedRef.current = true
       setIsTurning(true)
+      setLifecycle("turning-page")
       setDirection(index > activeIndex ? 1 : -1)
       setTargetIndex(index)
       playPageTurnSound(audioEnabledRef.current)
     },
-    [activeIndex, isTurning, isCoverOpen, isOpeningCover, isClosingCover]
+    [activeIndex, canNavigate]
   )
 
   // Keyboard Navigation
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isCoverOpen) {
+      if (lifecycle === "closed-front") {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault()
           handleManualOpen()
         }
         return
       }
+
+      if (lifecycle !== "idle") return
 
       if (e.key === "ArrowRight" || e.key === "PageDown") {
         e.preventDefault()
@@ -300,10 +274,12 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [goToNext, goToPrev, isCoverOpen, handleManualOpen, handleExit])
+  }, [goToNext, goToPrev, lifecycle, handleManualOpen, handleExit])
 
   const currentSpell = spells[activeIndex] || spells[0]
   const targetSpell = targetIndex !== null ? spells[targetIndex] || null : null
+
+  const showHUD = lifecycle === "idle" || lifecycle === "turning-page"
 
   return (
     <div className="relative w-full h-full flex flex-col justify-center items-center select-none">
@@ -313,15 +289,11 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
       {/* Ambient Luminous Dust Particles */}
       <SpellAmbientMana />
 
-      {/* Main 3D Book Stage — Unified continuous frame with zero resizing or layout jump */}
+      {/* Main 3D Book Stage */}
       <div className="relative z-10 w-full flex-1 flex items-center justify-center my-auto min-h-0">
         <SpellPageSpread
-          isCoverOpen={isCoverOpen}
-          isOpeningCover={isOpeningCover}
-          isClosingCover={isClosingCover}
-          isClosedBack={isClosedBack}
-          onCoverOpenComplete={handleCoverOpenComplete}
-          onCoverCloseComplete={handleCoverCloseComplete}
+          lifecycle={lifecycle}
+          onLifecycleAdvance={setLifecycle}
           onManualOpenCover={handleManualOpen}
           currentSpell={currentSpell}
           targetSpell={targetSpell}
@@ -335,11 +307,12 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
           onFlipComplete={handleFlipComplete}
           spells={spells}
           onSelectRole={goToIndex}
+          audioEnabled={audioEnabled}
         />
       </div>
 
       {/* Bottom Floating Navigation & Chapter HUD */}
-      {isCoverOpen && !isClosingCover && !isClosedBack && (
+      {showHUD && (
         <div className="relative z-20 mt-3 md:mt-4 flex flex-col items-center gap-2 shrink-0 px-2 animate-in fade-in duration-300">
           <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 p-1.5 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl shadow-[0_10px_35px_rgba(0,0,0,0.6)]">
             {/* Previous Role Button */}
