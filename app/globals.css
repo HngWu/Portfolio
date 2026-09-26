@@ -62,6 +62,62 @@
     100% { background-position: 150% 0; }
   }
 
+  @keyframes vt-fade-out {
+    from { opacity: 1; transform: scale(1) translateY(0); }
+    to { opacity: 0; transform: scale(0.99) translateY(-4px); }
+  }
+
+  @keyframes vt-bloom-in-quick {
+    from { opacity: 0; transform: scale(0.98) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  @keyframes vt-bloom-in-deep {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes vt-slide-in-quick {
+    from { opacity: 0; transform: translateX(16px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes vt-slide-in-deep {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes vt-rune-in-quick {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes vt-rune-in-deep {
+    from { opacity: 0; transform: translateY(18px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes vt-matrix-in-quick {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes vt-matrix-in-deep {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes vt-lift-in-quick {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes vt-lift-in-deep {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+
 
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -440,5 +496,63 @@ body.custom-cursor-active {
   background: rgba(74, 255, 180, 0.4);
 }
 
+/* === Native View Transitions Engine === */
+::view-transition-old(root) {
+  animation: vt-fade-out 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
+/* Preset 1: Singularity Bloom (Default / Start Loader derivation) */
+html[data-page-transition="singularity-bloom"][data-mode="quick"]::view-transition-new(root) {
+  animation: vt-bloom-in-quick var(--vt-duration, 280ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+html[data-page-transition="singularity-bloom"][data-mode="deep"]::view-transition-new(root),
+html[data-page-transition="singularity-bloom"]:not([data-mode])::view-transition-new(root),
+html:not([data-page-transition])::view-transition-new(root) {
+  animation: vt-bloom-in-deep var(--vt-duration, 220ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
+/* Preset 2: Arcane Rune (/experience) */
+html[data-page-transition="arcane-rune"][data-mode="quick"]::view-transition-new(root) {
+  animation: vt-rune-in-quick var(--vt-duration, 260ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+html[data-page-transition="arcane-rune"][data-mode="deep"]::view-transition-new(root),
+html[data-page-transition="arcane-rune"]:not([data-mode])::view-transition-new(root) {
+  animation: vt-rune-in-deep var(--vt-duration, 240ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Preset 3: Blueprint Slide (/projects) */
+html[data-page-transition="blueprint-slide"][data-mode="quick"]::view-transition-new(root) {
+  animation: vt-slide-in-quick var(--vt-duration, 260ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+html[data-page-transition="blueprint-slide"][data-mode="deep"]::view-transition-new(root),
+html[data-page-transition="blueprint-slide"]:not([data-mode])::view-transition-new(root) {
+  animation: vt-slide-in-deep var(--vt-duration, 220ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Preset 4: Matrix Pulse (/skills, /transition-lab) */
+html[data-page-transition="matrix-pulse"][data-mode="quick"]::view-transition-new(root) {
+  animation: vt-matrix-in-quick var(--vt-duration, 240ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+html[data-page-transition="matrix-pulse"][data-mode="deep"]::view-transition-new(root),
+html[data-page-transition="matrix-pulse"]:not([data-mode])::view-transition-new(root) {
+  animation: vt-matrix-in-deep var(--vt-duration, 200ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Preset 5: Clean Lift (/cv, /awards, /education) */
+html[data-page-transition="clean-lift"][data-mode="quick"]::view-transition-new(root) {
+  animation: vt-lift-in-quick var(--vt-duration, 220ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+html[data-page-transition="clean-lift"][data-mode="deep"]::view-transition-new(root),
+html[data-page-transition="clean-lift"]:not([data-mode])::view-transition-new(root) {
+  animation: vt-lift-in-deep var(--vt-duration, 200ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Reduced Motion Override - Immediate non-transform crossfade */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(*) {
+    animation-duration: 80ms !important;
+    animation-name: none !important;
+  }
+}
