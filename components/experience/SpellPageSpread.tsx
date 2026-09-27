@@ -18,11 +18,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 
 export type BookLifecycle =
   | "closed-front"
-  | "opening-cover"
-  | "opening-flutter"
+  | "opening-wave"
   | "idle"
   | "turning-page"
-  | "closing-flutter"
   | "closing-cover"
   | "closed-back"
   | "exiting"
@@ -78,16 +76,15 @@ export function SpellPageSpread({
   }, [currentIndex])
 
   const isClosedFront = lifecycle === "closed-front"
-  const isOpeningCover = lifecycle === "opening-cover"
-  const isOpeningFlutter = lifecycle === "opening-flutter"
-  const isClosingFlutter = lifecycle === "closing-flutter"
+  const isOpeningWave = lifecycle === "opening-wave"
   const isClosingCover = lifecycle === "closing-cover"
   const isClosedBack = lifecycle === "closed-back"
   const isExiting = lifecycle === "exiting"
   const isIdle = lifecycle === "idle" || lifecycle === "turning-page"
 
-  // Single volume footprint (580px) vs 2-page open spread (1160px)
-  const isSingleVolume = isClosedFront || isClosingCover || isClosedBack || isExiting
+  // Single volume footprint (580px centered) only for closed states
+  // During closing-cover, we maintain 1160px spread and translate by +25% so the page NEVER squishes!
+  const isSingleVolume = isClosedFront || isClosedBack || isExiting
 
   // Base folio spell display logic during interactive chapter flips
   const baseLeftSpell = isTurning && direction === -1 && targetSpell ? targetSpell : currentSpell
@@ -111,12 +108,16 @@ export function SpellPageSpread({
       }}
       animate={{
         maxWidth: isSingleVolume ? "580px" : "1160px",
-        x: "0%",
+        x: isClosingCover ? "25%" : "0%",
       }}
       transition={{
         maxWidth: {
-          duration: isOpeningCover ? 0.78 : isClosingCover ? 0.58 : 0.4,
-          ease: isClosingCover ? [0.4, 0, 0.2, 1] : [0.22, 1, 0.36, 1],
+          duration: isOpeningWave ? 0.88 : 0.4,
+          ease: [0.22, 1, 0.36, 1],
+        },
+        x: {
+          duration: isClosingCover ? 0.68 : 0.4,
+          ease: isClosingCover ? [0.25, 0.85, 0.35, 1] : [0.22, 1, 0.36, 1],
         },
       }}
     >
@@ -137,22 +138,32 @@ export function SpellPageSpread({
 
       {/* 3D Perspective Hardcover Outer Casing */}
       <div
-        className="relative w-full h-full p-1 border border-white/20 rounded-[28px] bg-gradient-to-b from-[#181f35] via-[#0b0f1d] to-[#04060d] shadow-[0_30px_90px_rgba(0,0,0,0.92),0_12px_35px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-2xl z-10"
+        className={`relative w-full h-full p-1 border rounded-[28px] bg-gradient-to-b from-[#181f35] via-[#0b0f1d] to-[#04060d] shadow-[0_30px_90px_rgba(0,0,0,0.92),0_12px_35px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-2xl z-10 transition-colors duration-300 ${
+          isClosingCover ? "border-l border-y border-white/20 border-r-transparent" : "border border-white/20"
+        }`}
         style={{
           perspective: "2600px",
           transformStyle: "preserve-3d",
         }}
       >
         {/* Inner Deckle Page Block Frame (Strictly bounded to book width, zero bleeding lines) */}
-        <div className="relative w-full h-full overflow-hidden border-x-[3px] border-b-[3px] border-x-[#1b233a]/80 border-b-[#121828]/80 rounded-3xl bg-[#06080e]/95 shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]">
+        <div className={`relative w-full h-full overflow-hidden border-b-[3px] border-b-[#121828]/80 border-l-[3px] border-l-[#1b233a]/80 rounded-3xl bg-[#06080e]/95 shadow-[inset_0_0_40px_rgba(0,0,0,0.9)] ${
+          isClosingCover ? "border-r-0" : "border-r-[3px] border-r-[#1b233a]/80"
+        }`}>
           {/* Subtle Ambient Book Edge Highlight */}
           <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--lume-primary,#4affb4)]/40 to-transparent pointer-events-none z-40" />
 
           {/* Technical Corner Ornaments */}
           <div className="absolute top-2.5 left-2.5 size-4 border-t-2 border-l-2 border-[var(--lume-primary,#4affb4)]/60 rounded-tl pointer-events-none z-40" />
-          <div className="absolute top-2.5 right-2.5 size-4 border-t-2 border-r-2 border-[var(--lume-primary,#4affb4)]/60 rounded-tr pointer-events-none z-40" />
           <div className="absolute bottom-2.5 left-2.5 size-4 border-b-2 border-l-2 border-[var(--lume-primary,#4affb4)]/60 rounded-bl pointer-events-none z-40" />
-          <div className="absolute bottom-2.5 right-2.5 size-4 border-b-2 border-r-2 border-[var(--lume-primary,#4affb4)]/60 rounded-br pointer-events-none z-40" />
+
+          {/* Right Corner Ornaments - hidden during closing and closed back so NO lines extend past the book */}
+          {!isClosingCover && !isClosedBack && !isExiting && (
+            <>
+              <div className="absolute top-2.5 right-2.5 size-4 border-t-2 border-r-2 border-[var(--lume-primary,#4affb4)]/60 rounded-tr pointer-events-none z-40" />
+              <div className="absolute bottom-2.5 right-2.5 size-4 border-b-2 border-r-2 border-[var(--lume-primary,#4affb4)]/60 rounded-br pointer-events-none z-40" />
+            </>
+          )}
 
           {/* Central 3D Spine Channel */}
           {!isSingleVolume && (
@@ -167,7 +178,7 @@ export function SpellPageSpread({
           )}
 
           {/* Magical Opening Flourish */}
-          <SpellOpeningFlourish mode={isOpeningCover ? "opening" : "idle"} />
+          <SpellOpeningFlourish mode={isOpeningWave ? "opening" : isClosingCover ? "closing" : "idle"} />
 
           {/* Silk Bookmark Ribbon */}
           {isIdle && (
@@ -220,6 +231,7 @@ export function SpellPageSpread({
             </button>
           )}
 
+          {/* Next Page Arrow (Margin Navigation Zone) */}
           {isIdle && !isLastPage && !isTurning && (
             <button
               type="button"
@@ -254,25 +266,22 @@ export function SpellPageSpread({
               >
                 {isClosedBack || isExiting ? (
                   <BookBackCoverFace />
-                ) : isOpeningCover || isOpeningFlutter ? (
-                  /* Display authentic blank runic manuscript page while opening and fluttering */
-                  <BlankRunicPage side="left" variant={1} />
                 ) : (
                   <SpellPageLeft
                     spell={baseLeftSpell}
                     pageNumber={baseLeftPage}
                     totalSpells={totalSpells}
-                    isRevealing={isOpeningCover}
+                    isRevealing={isOpeningWave}
                   />
                 )}
 
-                {/* Ambient shadow under closing cover */}
+                {/* Ambient shadow under closing cover as it approaches landing */}
                 {isClosingCover && (
                   <motion.div
                     className="absolute inset-0 bg-black pointer-events-none z-20"
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.92 }}
-                    transition={{ duration: 0.58, ease: [0.4, 0, 0.2, 1] }}
+                    animate={{ opacity: [0, 0.35, 0.9] }}
+                    transition={{ duration: 0.68, ease: [0.25, 0.85, 0.35, 1] }}
                   />
                 )}
 
@@ -304,16 +313,13 @@ export function SpellPageSpread({
             >
               {isClosedFront ? (
                 <BookCoverFace onOpen={onManualOpenCover} />
-              ) : isOpeningCover ? (
-                /* Display authentic blank runic manuscript page while opening */
-                <BlankRunicPage side="right" variant={2} />
               ) : (
                 <SpellPageRight
                   spell={baseRightSpell}
                   pageNumber={baseRightPage}
                   isLastPage={baseRightPage === totalSpells}
                   onNextPage={onNextPage}
-                  isRevealing={isOpeningCover}
+                  isRevealing={isOpeningWave}
                 />
               )}
 
@@ -329,34 +335,25 @@ export function SpellPageSpread({
             </div>
           </div>
 
-          {/* 3D BOOK COVER LEAF (Opening Entrance Animation) */}
-          {isOpeningCover && (
+          {/* 3D BOOK COVER LEAF (Opening Wave Animation) */}
+          {isOpeningWave && (
             <PageFlipLeaf
               isCover={true}
               coverAction="opening"
               currentSpell={currentSpell}
               currentPageNumber={currentIndex + 1}
               totalSpells={totalSpells}
-              onFlipComplete={() => onLifecycleAdvance("opening-flutter")}
               onManualOpenCover={onManualOpenCover}
             />
           )}
 
-          {/* CASCADING MULTI-PAGE BLANK RUNIC FLUTTER (Entrance) */}
-          {isOpeningFlutter && (
+          {/* SIMULTANEOUS CASCADING MULTI-PAGE BLANK RUNIC FLUTTER (Opening Wave) */}
+          {isOpeningWave && (
             <MultiPageFlutter
-              mode="opening"
+              currentSpell={currentSpell}
+              totalSpells={totalSpells}
               audioEnabled={audioEnabled}
               onComplete={() => onLifecycleAdvance("idle")}
-            />
-          )}
-
-          {/* CASCADING MULTI-PAGE BLANK RUNIC FLUTTER (Exit) */}
-          {isClosingFlutter && (
-            <MultiPageFlutter
-              mode="closing"
-              audioEnabled={audioEnabled}
-              onComplete={() => onLifecycleAdvance("closing-cover")}
             />
           )}
 

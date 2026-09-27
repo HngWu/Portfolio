@@ -87,9 +87,9 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
       return
     }
 
-    // Start closed on page mount, pause 650ms to allow user to view front cover, then swing cover open
+    // Start closed on page mount, pause 650ms to allow user to view front cover, then swing cover and pages open together
     const openTimer = setTimeout(() => {
-      setLifecycle("opening-cover")
+      setLifecycle("opening-wave")
       playBookOpenSound(audioEnabledRef.current)
     }, 650)
 
@@ -100,18 +100,10 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
   React.useEffect(() => {
     let watchdog: NodeJS.Timeout | null = null
 
-    if (lifecycle === "opening-cover") {
-      watchdog = setTimeout(() => {
-        setLifecycle("opening-flutter")
-      }, 1100)
-    } else if (lifecycle === "opening-flutter") {
+    if (lifecycle === "opening-wave") {
       watchdog = setTimeout(() => {
         setLifecycle("idle")
-      }, 950)
-    } else if (lifecycle === "closing-flutter") {
-      watchdog = setTimeout(() => {
-        setLifecycle("closing-cover")
-      }, 900)
+      }, 1250)
     } else if (lifecycle === "closing-cover") {
       watchdog = setTimeout(() => {
         setLifecycle("closed-back")
@@ -126,7 +118,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
   // Manual open handler if user clicks front cover before auto-open
   const handleManualOpen = React.useCallback(() => {
     if (lifecycle === "closed-front" && !isExitingRef.current) {
-      setLifecycle("opening-cover")
+      setLifecycle("opening-wave")
       playBookOpenSound(audioEnabledRef.current)
     }
   }, [lifecycle])
@@ -146,8 +138,8 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
         return
       }
 
-      // Start multi-page closing flutter before hardcover folds shut
-      setLifecycle("closing-flutter")
+      // Trigger weighted hardcover closing fold shut
+      setLifecycle("closing-cover")
     },
     [navigateWithTransition]
   )
