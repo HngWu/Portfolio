@@ -30,10 +30,26 @@ export function ProjectDetailClient({ projects, initialSlug }: ProjectDetailClie
   // Synchronize URL change smoothly without trigger server-side re-render/re-fetch
   React.useEffect(() => {
     const project = projects.find(p => p.id === activeId)
-    if (project) {
+    if (project && window.location.pathname !== `/projects/${project.slug}`) {
       window.history.pushState(null, "", `/projects/${project.slug}`)
     }
   }, [activeId, projects])
+
+  // Synchronize activeId on browser back / forward navigation
+  React.useEffect(() => {
+    const handlePopState = () => {
+      const currentPath = window.location.pathname
+      const slug = currentPath.split("/").filter(Boolean)[1]
+      if (slug) {
+        const found = projects.find(p => p.slug === slug || p.id === slug)
+        if (found) {
+          setActiveId(found.id)
+        }
+      }
+    }
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
+  }, [projects])
 
   return (
     <DetailShell

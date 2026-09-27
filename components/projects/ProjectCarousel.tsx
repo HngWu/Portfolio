@@ -3,7 +3,16 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { useViewModeStore } from "@/store/useViewModeStore"
-import { ChevronLeft, ChevronRight, Github, ExternalLink, FolderGit2, Sparkles, Terminal } from "lucide-react"
+import { usePageTransition } from "@/hooks/usePageTransition"
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Github, 
+  ExternalLink, 
+  FolderGit2, 
+  Sparkles, 
+  Terminal 
+} from "lucide-react"
 
 interface Project {
   id: string
@@ -23,14 +32,30 @@ interface ProjectCarouselProps {
   onChangeActiveId: (id: string) => void
 }
 
+/**
+ * Shortest circular distance modulo algorithm.
+ * For count = 3 and active = 0: index 1 -> +1, index 2 -> -1
+ * Wraps continuously in both forward and backward directions.
+ */
+function getCircularDiff(index: number, active: number, count: number): number {
+  if (count <= 1) return 0
+  let diff = (index - active) % count
+  if (diff > count / 2) diff -= count
+  if (diff < -count / 2) diff += count
+  return diff
+}
+
 export function ProjectCarousel({ projects, currentId, onChangeActiveId }: ProjectCarouselProps) {
   const mode = useViewModeStore((state) => state.mode)
   const isDeep = mode === "deep"
+  const { navigateWithTransition } = usePageTransition()
 
   const activeIndex = React.useMemo(() => {
     const idx = projects.findIndex((p) => p.id === currentId)
     return idx === -1 ? 0 : idx
   }, [projects, currentId])
+
+  const activeProject = projects[activeIndex]
 
   // Dragging and touch swipe state
   const [dragOffset, setDragOffset] = React.useState(0)
@@ -44,7 +69,6 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
 
   // Screen-width dynamic cards count
   const [visibleCardsCount, setVisibleCardsCount] = React.useState(2)
-
   const activeCardRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
@@ -63,6 +87,20 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
+  // Circular navigation handlers
+  const handlePrev = React.useCallback(() => {
+    if (projects.length === 0) return
+    const prevIndex = (activeIndex - 1 + projects.length) % projects.length
+    onChangeActiveId(projects[prevIndex].id)
+  }, [activeIndex, projects, onChangeActiveId])
+
+  const handleNext = React.useCallback(() => {
+    if (projects.length === 0) return
+    const nextIndex = (activeIndex + 1) % projects.length
+    onChangeActiveId(projects[nextIndex].id)
+  }, [activeIndex, projects, onChangeActiveId])
+
+  // Drag / Swipe handling with infinite modulo wrap
   const handleDragStart = (clientX: number) => {
     setIsDragging(true)
     dragStartX.current = clientX
@@ -78,11 +116,11 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
     if (!isDragging) return
     setIsDragging(false)
 
-    const swipeThreshold = 70
-    if (dragOffset > swipeThreshold && activeIndex > 0) {
-      onChangeActiveId(projects[activeIndex - 1].id)
-    } else if (dragOffset < -swipeThreshold && activeIndex < projects.length - 1) {
-      onChangeActiveId(projects[activeIndex + 1].id)
+    const swipeThreshold = 55
+    if (dragOffset > swipeThreshold) {
+      handlePrev()
+    } else if (dragOffset < -swipeThreshold) {
+      handleNext()
     }
 
     setDragOffset(0)
@@ -129,19 +167,89 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
     handleDragEnd()
   }
 
-  const handlePrev = () => {
-    if (activeIndex > 0) {
-      onChangeActiveId(projects[activeIndex - 1].id)
-    }
-  }
+  // Keyboard navigation & Shortcuts listener
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore keystrokes when typing into interactive elements
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return
+      }
 
-  const handleNext = () => {
-    if (activeIndex < projects.length - 1) {
-      onChangeActiveId(projects[activeIndex + 1].id)
-    }
-  }
+      switch (e.key) {
+        case "ArrowLeft":
+        case "a":
+        case "A":
+        case "h":
+        case "H":
+          e.preventDefault()
+          handlePrev()
+          break
 
-  // Larger responsive clamp parameters
+        case "ArrowRight":
+        case "d":
+        case "D":
+        case "l":
+        case "L":
+          e.preventDefault()
+          handleNext()
+          break
+
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7":
+        case "8":
+        case "9": {
+          const targetIdx = parseInt(e.key, 10) - 1
+          if (targetIdx >= 0 && targetIdx < projects.length && targetIdx !== activeIndex) {
+            e.preventDefault()
+            onChangeActiveId(projects[targetIdx].id)
+          }
+          break
+        }
+
+        case "g":
+        case "G":
+          if (activeProject?.githubUrl) {
+            e.preventDefault()
+            window.open(activeProject.githubUrl, "_blank", "noopener,noreferrer")
+          }
+          break
+
+        case "o":
+        case "O":
+        case "Enter":
+          if (activeProject?.liveUrl) {
+            e.preventDefault()
+            window.open(activeProject.liveUrl, "_blank", "noopener,noreferrer")
+          }
+          break
+
+        case "Escape":
+          e.preventDefault()
+          navigateWithTransition("/")
+          break
+
+        default:
+          break
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [activeIndex, projects, activeProject, onChangeActiveId, handlePrev, handleNext, navigateWithTransition])
+
+  // Responsive 3D clamp parameters
   const containerStyles = {
     "--gap": "clamp(180px, 30vw, 360px)",
     "--card-w": "clamp(310px, 50vw, 550px)",
@@ -212,7 +320,7 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
           className="relative w-full h-full preserve-3d flex items-center justify-center"
         >
           {projects.map((project, i) => {
-            const diff = i - activeIndex
+            const diff = getCircularDiff(i, activeIndex, projects.length)
             const isActive = diff === 0
 
             // Assemble tilt styles for the active card
@@ -240,7 +348,7 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
                 }}
                 style={{
                   ...activeCardStyles,
-                  opacity: Math.abs(diff) > visibleCardsCount ? 0 : Math.pow(0.48, Math.abs(diff)),
+                  opacity: Math.abs(diff) > visibleCardsCount ? 0 : Math.pow(0.52, Math.abs(diff)),
                   zIndex: 100 - Math.abs(diff),
                   pointerEvents: Math.abs(diff) > 1 ? "none" : "auto",
                 }}
@@ -252,7 +360,7 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
                     ? isDeep
                       ? "shadow-[0_0_50px_rgba(74,143,255,0.22)] border-lume-secondary/35 bg-[#0f0f11]/96"
                       : "shadow-[0_0_50px_rgba(201,162,39,0.22)] border-amber-500/35 bg-[#0f0f11]/96"
-                    : "hover:bg-[#141418]/92"
+                    : "hover:bg-[#141418]/92 hover:border-white/20 group/sidecard"
                 )}
               >
                 {/* Tech Bracket Overlays (Active Card Only) */}
@@ -328,14 +436,14 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
                         "text-[9px] font-mono uppercase tracking-[0.2em] font-bold block transition-colors",
                         isActive 
                           ? isDeep ? "text-lume-secondary" : "text-amber-500"
-                          : "text-white/20"
+                          : "text-white/30"
                       )}>
                         {project.featured ? "Featured Application" : "Engineering Sandbox"}
                       </span>
                     </div>
                     <h4 className={cn(
                       "text-xl md:text-3xl font-display tracking-tight transition-colors leading-none",
-                      isActive ? "text-white" : "text-white/60"
+                      isActive ? "text-white" : "text-white/60 group-hover/sidecard:text-white/80"
                     )}>
                       {project.name}
                     </h4>
@@ -385,7 +493,7 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
                     ))}
                   </div>
 
-                  {/* External Links */}
+                  {/* External Links with Shortcut Hints */}
                   <div className="flex items-center gap-5 mt-6 pt-4 border-t border-white/5">
                     {project.githubUrl && (
                       <a 
@@ -393,10 +501,11 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
                         target="_blank" 
                         rel="noreferrer" 
                         onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1.5 text-xs text-white/50 transition-colors hover:text-white"
+                        className="flex items-center gap-1.5 text-xs text-white/50 transition-colors hover:text-white group/link"
                       >
-                        <Github className="size-3.5" /> 
+                        <Github className="size-3.5 group-hover/link:text-white transition-colors" /> 
                         <span className="font-mono uppercase text-[9px] tracking-wider">GitHub</span>
+                        <kbd className="hidden sm:inline-block text-[8px] font-mono font-semibold px-1 py-0.5 rounded bg-white/10 text-white/60">G</kbd>
                       </a>
                     )}
                     {project.liveUrl && (
@@ -405,10 +514,11 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
                         target="_blank" 
                         rel="noreferrer" 
                         onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1.5 text-xs text-white/50 transition-colors hover:text-white"
+                        className="flex items-center gap-1.5 text-xs text-white/50 transition-colors hover:text-white group/link"
                       >
-                        <ExternalLink className="size-3.5" />
+                        <ExternalLink className="size-3.5 group-hover/link:text-white transition-colors" />
                         <span className="font-mono uppercase text-[9px] tracking-wider">Live Demo</span>
+                        <kbd className="hidden sm:inline-block text-[8px] font-mono font-semibold px-1 py-0.5 rounded bg-white/10 text-white/60">O</kbd>
                       </a>
                     )}
                   </div>
@@ -416,16 +526,27 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
 
                 {/* Inactive Preview Content */}
                 {!isActive && (
-                  <p className="text-[11px] text-white/30 leading-normal line-clamp-2 pr-4 mt-3">
-                    {project.description}
-                  </p>
-                )}
-
-                {/* Active marker on bottom */}
-                {!isActive && (
-                  <span className="text-[8px] font-mono uppercase tracking-[0.15em] text-white/20 mt-auto pt-4 border-t border-white/5 block">
-                    Click to view
-                  </span>
+                  <div className="relative z-10 flex flex-col flex-1 justify-between mt-3">
+                    <p className="text-[11px] text-white/40 leading-normal line-clamp-3">
+                      {project.description}
+                    </p>
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {project.techStack.slice(0, 3).map((t) => (
+                        <span key={t} className="px-1.5 py-0.5 rounded text-[8px] font-mono bg-white/[0.03] border border-white/5 text-white/40">
+                          {t}
+                        </span>
+                      ))}
+                      {project.techStack.length > 3 && (
+                        <span className="text-[8px] font-mono text-white/30 self-center">
+                          +{project.techStack.length - 3}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-[9px] font-mono uppercase tracking-[0.15em] text-white/30 group-hover/sidecard:text-white/60 transition-colors mt-auto pt-3 border-t border-white/5">
+                      <span>Click to view</span>
+                      <ChevronRight className="size-3 text-white/30 group-hover/sidecard:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
                 )}
               </div>
             )
@@ -433,52 +554,165 @@ export function ProjectCarousel({ projects, currentId, onChangeActiveId }: Proje
         </div>
       </div>
 
-      {/* Navigation Controls */}
+      {/* Navigation Controls & Pagination */}
       <div className="flex justify-center items-center gap-6 mt-8 z-20">
         <button
           onClick={handlePrev}
-          disabled={activeIndex === 0}
+          disabled={projects.length <= 1}
           className={cn(
             "p-2.5 rounded-xl border border-white/5 bg-white/[0.02] text-white/60 transition-all hover:bg-white/5 hover:text-white disabled:opacity-30 disabled:pointer-events-none active:scale-95",
             !isDeep && "hover:border-amber-500/20 hover:text-amber-500",
             isDeep && "hover:border-lume-secondary/20 hover:text-lume-secondary"
           )}
-          aria-label="Previous Project"
+          aria-label="Previous Project (← or A)"
+          title="Previous Project (← or A)"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
 
         {/* Carousel Pagination Dots */}
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {projects.map((p, i) => (
             <button
               key={p.id}
               onClick={() => onChangeActiveId(p.id)}
               className={cn(
-                "w-2.5 h-2.5 rounded-full transition-all duration-300",
+                "h-2 rounded-full transition-all duration-300",
                 i === activeIndex 
                   ? isDeep 
                     ? "bg-lume-secondary w-7 shadow-[0_0_8px_var(--lume-secondary)]" 
                     : "bg-amber-500 w-7 shadow-[0_0_8px_#C9A227]"
-                  : "bg-white/10 hover:bg-white/30"
+                  : "w-2 bg-white/10 hover:bg-white/30"
               )}
               aria-label={`Go to project ${i + 1}`}
+              title={`Go to project ${i + 1}`}
             />
           ))}
         </div>
 
         <button
           onClick={handleNext}
-          disabled={activeIndex === projects.length - 1}
+          disabled={projects.length <= 1}
           className={cn(
             "p-2.5 rounded-xl border border-white/5 bg-white/[0.02] text-white/60 transition-all hover:bg-white/5 hover:text-white disabled:opacity-30 disabled:pointer-events-none active:scale-95",
             !isDeep && "hover:border-amber-500/20 hover:text-amber-500",
             isDeep && "hover:border-lume-secondary/20 hover:text-lume-secondary"
           )}
-          aria-label="Next Project"
+          aria-label="Next Project (→ or D)"
+          title="Next Project (→ or D)"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
+      </div>
+
+      {/* Persistent Floating Shortcuts HUD Dock */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100vw-1.5rem)]">
+        <div 
+          className={cn(
+            "px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-full border backdrop-blur-xl bg-[#090a0f]/85",
+            "shadow-[0_12px_36px_rgba(0,0,0,0.65)] flex items-center gap-2.5 sm:gap-4.5 text-white/70 select-none transition-all duration-300",
+            isDeep 
+              ? "border-lume-secondary/30 shadow-[0_0_24px_rgba(74,143,255,0.15)]" 
+              : "border-amber-500/30 shadow-[0_0_24px_rgba(201,162,39,0.15)]"
+          )}
+        >
+          {/* Navigation keys */}
+          <div className="flex items-center gap-1.5">
+            <button 
+              onClick={handlePrev}
+              title="Previous (← or A)"
+              className="flex items-center gap-1 hover:text-white transition-colors"
+            >
+              <kbd className="px-1.5 py-0.5 text-[9px] font-mono font-semibold rounded bg-white/10 border border-white/15 text-white/90 shadow-sm active:scale-90 transition-transform">←</kbd>
+            </button>
+            <button 
+              onClick={handleNext}
+              title="Next (→ or D)"
+              className="flex items-center gap-1 hover:text-white transition-colors"
+            >
+              <kbd className="px-1.5 py-0.5 text-[9px] font-mono font-semibold rounded bg-white/10 border border-white/15 text-white/90 shadow-sm active:scale-90 transition-transform">→</kbd>
+            </button>
+            <span className="text-[9px] font-mono uppercase tracking-wider text-white/40 hidden sm:inline ml-0.5">Nav</span>
+          </div>
+
+          <span className="w-px h-3 bg-white/15" />
+
+          {/* Quick Jump 1-3 */}
+          <div className="flex items-center gap-1">
+            {projects.map((p, idx) => (
+              <button
+                key={p.id}
+                onClick={() => onChangeActiveId(p.id)}
+                title={`Jump to ${p.name} (${idx + 1})`}
+                className={cn(
+                  "px-1.5 py-0.5 text-[9px] font-mono font-semibold rounded border transition-all active:scale-90",
+                  idx === activeIndex
+                    ? isDeep
+                      ? "bg-lume-secondary/25 border-lume-secondary text-lume-secondary shadow-[0_0_8px_rgba(74,143,255,0.4)]"
+                      : "bg-amber-500/25 border-amber-500 text-amber-500 shadow-[0_0_8px_rgba(201,162,39,0.4)]"
+                    : "bg-white/5 border-white/10 text-white/50 hover:text-white hover:border-white/20"
+                )}
+              >
+                {idx + 1}
+              </button>
+            ))}
+            <span className="text-[9px] font-mono uppercase tracking-wider text-white/40 hidden md:inline ml-0.5">Select</span>
+          </div>
+
+          <span className="w-px h-3 bg-white/15" />
+
+          {/* GitHub Code */}
+          {activeProject?.githubUrl ? (
+            <a
+              href={activeProject.githubUrl}
+              target="_blank"
+              rel="noreferrer"
+              title="View Repository (G)"
+              className="flex items-center gap-1.5 hover:text-white transition-colors"
+            >
+              <kbd className="px-1.5 py-0.5 text-[9px] font-mono font-semibold rounded bg-white/10 border border-white/15 text-white/90 shadow-sm">G</kbd>
+              <span className="text-[9px] font-mono uppercase tracking-wider text-white/40 hidden sm:inline">Code</span>
+            </a>
+          ) : (
+            <span className="flex items-center gap-1.5 opacity-30 cursor-not-allowed" title="No repository link">
+              <kbd className="px-1.5 py-0.5 text-[9px] font-mono font-semibold rounded bg-white/5 border border-white/10 text-white/40">G</kbd>
+              <span className="text-[9px] font-mono uppercase tracking-wider text-white/30 hidden sm:inline">Code</span>
+            </span>
+          )}
+
+          <span className="w-px h-3 bg-white/15" />
+
+          {/* Live Demo */}
+          {activeProject?.liveUrl ? (
+            <a
+              href={activeProject.liveUrl}
+              target="_blank"
+              rel="noreferrer"
+              title="Open Live Demo (O or Enter)"
+              className="flex items-center gap-1.5 hover:text-white transition-colors"
+            >
+              <kbd className="px-1.5 py-0.5 text-[9px] font-mono font-semibold rounded bg-white/10 border border-white/15 text-white/90 shadow-sm">O</kbd>
+              <span className="text-[9px] font-mono uppercase tracking-wider text-white/40 hidden sm:inline">Demo</span>
+            </a>
+          ) : (
+            <span className="flex items-center gap-1.5 opacity-30 cursor-not-allowed" title="No live demo">
+              <kbd className="px-1.5 py-0.5 text-[9px] font-mono font-semibold rounded bg-white/5 border border-white/10 text-white/40">O</kbd>
+              <span className="text-[9px] font-mono uppercase tracking-wider text-white/30 hidden sm:inline">Demo</span>
+            </span>
+          )}
+
+          <span className="w-px h-3 bg-white/15" />
+
+          {/* Escape / Home */}
+          <button
+            onClick={() => navigateWithTransition("/")}
+            title="Return to Home (ESC)"
+            className="flex items-center gap-1.5 hover:text-white transition-colors group"
+          >
+            <kbd className="px-1.5 py-0.5 text-[9px] font-mono font-semibold rounded bg-white/10 border border-white/15 text-white/90 shadow-sm group-hover:border-white/30">ESC</kbd>
+            <span className="text-[9px] font-mono uppercase tracking-wider text-white/40 hidden sm:inline">Home</span>
+          </button>
+        </div>
       </div>
     </div>
   )

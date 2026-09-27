@@ -38,10 +38,16 @@ export function usePageTransition() {
 
       // 3. Resolve preset and duration based on target path & current mode
       const { preset, durationMs } = resolveTransition(path, mode)
+      const currentPath = typeof window !== "undefined" ? window.location.pathname : ""
+      const isBlueprint =
+        preset === "blueprint-draft" ||
+        preset === "blueprint-slide" ||
+        path.startsWith("/projects") ||
+        currentPath.startsWith("/projects")
 
-      // 4. If target is projects or uses blueprint preset, trigger BlueprintTransitionOverlay
-      if (preset === "blueprint-draft" || preset === "blueprint-slide" || path.startsWith("/projects")) {
-        setActivePreset(preset)
+      // 4. If target or origin is projects or uses blueprint preset, trigger BlueprintTransitionOverlay
+      if (isBlueprint) {
+        setActivePreset(preset === "blueprint-draft" || preset === "blueprint-slide" ? preset : "blueprint-draft")
         setPageLoaded(false)
         setCurtainState("covering")
 
