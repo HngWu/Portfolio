@@ -35,6 +35,8 @@ interface NavigationStore {
   setCurtainState: (state: CurtainState) => void
   isPageLoaded: boolean
   setPageLoaded: (loaded: boolean) => void
+  activePreset: string | null
+  setActivePreset: (preset: string | null) => void
 }
 
 export const useNavigationStore = create<NavigationStore>((set) => ({
@@ -48,4 +50,7 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
   setCurtainState: (state) => set({ curtainState: state }),
   isPageLoaded: false,
   setPageLoaded: (loaded) => set({ isPageLoaded: loaded }),
+  activePreset: null,
+  setActivePreset: (preset) => set({ activePreset: preset }),
 }))
+

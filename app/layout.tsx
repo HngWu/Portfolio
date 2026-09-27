@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display } from "next/font/google";
 import { CommandPalette } from "@/components/cli/CommandPalette";
+import { BlueprintTransitionOverlay } from "@/components/layout/BlueprintTransitionOverlay";
 import { ModeTransitionOverlay } from "@/components/layout/ModeTransitionOverlay";
 import { InitialLoaderOverlay } from "@/components/layout/InitialLoaderOverlay";
 import { GenerativeBackground } from "@/components/canvas/GenerativeBackground";
@@ -59,6 +60,7 @@ export default async function RootLayout({
         <GenerativeBackground />
         <InfiniteGrid />
         <ModeTransitionOverlay />
+        <BlueprintTransitionOverlay />
         <CommandPalette initialContent={searchableContent} />
         <Navbar />
         <PageTransitionsProvider initialRules={transitionRules}>

@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { useViewModeStore } from "@/store/useViewModeStore"
 import { usePageTransitionsStore } from "@/store/usePageTransitionsStore"
+import { useNavigationStore } from "@/store/useNavigationStore"
 
 // Holds in-flight transition reference to support clean rapid cancellation
 let activeTransition: { skipTransition: () => void } | null = null
@@ -12,6 +13,9 @@ export function usePageTransition() {
   const router = useRouter()
   const mode = useViewModeStore((s) => s.mode)
   const resolveTransition = usePageTransitionsStore((s) => s.resolveTransition)
+  const setCurtainState = useNavigationStore((s) => s.setCurtainState)
+  const setPageLoaded = useNavigationStore((s) => s.setPageLoaded)
+  const setActivePreset = useNavigationStore((s) => s.setActivePreset)
 
   const navigateWithTransition = React.useCallback(
     async (path: string, _originEl?: Element | null) => {
@@ -27,17 +31,40 @@ export function usePageTransition() {
         typeof window !== "undefined" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
+      if (prefersReduced) {
+        router.push(path)
+        return
+      }
+
+      // 3. Resolve preset and duration based on target path & current mode
+      const { preset, durationMs } = resolveTransition(path, mode)
+
+      // 4. If target is projects or uses blueprint preset, trigger BlueprintTransitionOverlay
+      if (preset === "blueprint-draft" || preset === "blueprint-slide" || path.startsWith("/projects")) {
+        setActivePreset(preset)
+        setPageLoaded(false)
+        setCurtainState("covering")
+
+        // Wait for cover phase to fully occlude the viewport before swapping route
+        const coverDelay = mode === "deep" ? 220 : 250
+        await new Promise((resolve) => setTimeout(resolve, coverDelay))
+
+        router.push(path)
+        return
+      }
+
+      // 5. Fallback to native View Transitions for other routes if available
       const hasNativeVT =
         typeof document !== "undefined" &&
         "startViewTransition" in document &&
         typeof (document as any).startViewTransition === "function"
 
-      if (prefersReduced || !hasNativeVT) {
+      if (!hasNativeVT) {
         router.push(path)
         return
       }
 
-      // 3. Cancel in-flight transition if user navigated rapidly
+      // Cancel in-flight transition if user navigated rapidly
       if (activeTransition) {
         try {
           activeTransition.skipTransition()
@@ -47,15 +74,11 @@ export function usePageTransition() {
         activeTransition = null
       }
 
-      // 4. Resolve preset and duration based on target path & current mode
-      const { preset, durationMs } = resolveTransition(path, mode)
-
-      // 5. Apply transition attributes to <html> for CSS scoping
+      // Apply transition attributes to <html> for CSS scoping
       document.documentElement.setAttribute("data-page-transition", preset)
       document.documentElement.setAttribute("data-mode", mode)
       document.documentElement.style.setProperty("--vt-duration", `${durationMs}ms`)
 
-      // 6. Invoke native startViewTransition
       try {
         const transition = (document as any).startViewTransition(async () => {
           router.push(path)
@@ -63,12 +86,10 @@ export function usePageTransition() {
 
         activeTransition = transition
 
-        // Await finished or catch interruption
         await transition.finished.catch(() => {
           // Clean skip/cancel
         })
       } catch {
-        // Fallback safety
         router.push(path)
       } finally {
         if (activeTransition) {
@@ -76,8 +97,9 @@ export function usePageTransition() {
         }
       }
     },
-    [router, mode, resolveTransition]
+    [router, mode, resolveTransition, setActivePreset, setCurtainState, setPageLoaded]
   )
 
   return { navigateWithTransition }
 }
+
