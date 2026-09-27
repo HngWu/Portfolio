@@ -56,18 +56,6 @@ const DEFAULT_PROJECT_ITEMS: ProjectItem[] = [
     liveUrl: "https://portfolio.dev",
     featured: false,
     notes: "Implements custom GSAP timelines for bento grid navigation and R3F interactive canvas layers."
-  },
-  {
-    id: "arcturus-engine",
-    name: "Arcturus Engine",
-    description: "WebGL-based real-time voxel graphics engine featuring volumetric lightning.",
-    techStack: ["Three.js", "GLSL Shaders", "TypeScript", "Vite"],
-    category: "Graphics Engine",
-    year: "2025",
-    githubUrl: "https://github.com/HngWu",
-    liveUrl: "https://arcturus.dev",
-    featured: true,
-    notes: "Volumetric rays are rendered using a custom screen-space post-processing shader. Multi-threaded octave chunking maps geometry in parallel."
   }
 ]
 

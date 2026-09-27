@@ -84,10 +84,10 @@
       "description": "Real-time 3D graphics, procedural shader development, volumetric rendering, and physics simulations.",
       "skills": ["Three.js", "React Three Fiber", "GLSL Shaders", "GSAP 3", "WebGL"],
       "linkedProject": {
-        "title": "Arcturus Engine",
-        "url": "/projects/arcturusengine",
-        "description": "WebGL-based real-time voxel graphics engine featuring volumetric lighting.",
-        "badge": "3D Graphics"
+        "title": "LumeGlass Portfolio",
+        "url": "/projects/lumeglassportfolio",
+        "description": "Cinematic, dark minimalist portfolio showing modern animations and 3D visual elements.",
+        "badge": "3D Portfolio"
       }
     },
     {
