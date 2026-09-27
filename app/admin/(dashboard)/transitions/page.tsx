@@ -40,6 +40,12 @@ const PRESETS: { id: TransitionPreset; name: string; description: string; tag: s
     tag: "ARCANE",
   },
   {
+    id: "blueprint-draft",
+    name: "Blueprint Schematic Drafter",
+    description: "Tailored for /projects. Precision CAD drafting lines, wireframe vector sweeps, and high-speed laser scanline.",
+    tag: "TECH",
+  },
+  {
     id: "blueprint-slide",
     name: "Blueprint Slide",
     description: "Tailored for /projects. Fluid lateral pan (Quick) or technical schematic vector slide (Deep).",

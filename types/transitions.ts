@@ -1,6 +1,7 @@
 export type TransitionPreset =
   | "singularity-bloom"
   | "arcane-rune"
+  | "blueprint-draft"
   | "blueprint-slide"
   | "matrix-pulse"
   | "clean-lift"
@@ -40,7 +41,7 @@ export const DEFAULT_PAGE_TRANSITIONS: PageTransitionRule[] = [
   {
     id: "projects",
     route: "/projects",
-    preset: "blueprint-slide",
+    preset: "blueprint-draft",
     quickDurationMs: 260,
     deepDurationMs: 220,
     quickEasing: "cubic-bezier(0.22, 1, 0.36, 1)",
