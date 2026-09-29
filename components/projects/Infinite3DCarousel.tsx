@@ -63,6 +63,7 @@ export function Infinite3DCarousel({
   const activeIndexRef = React.useRef(0)
   const containerRef = React.useRef<HTMLDivElement>(null)
   const animationFrameRef = React.useRef<number | null>(null)
+  const entranceStartTimeRef = React.useRef(typeof performance !== "undefined" ? performance.now() : 0)
 
   // Screen size for responsive radius and grid columns
   const [viewportWidth, setViewportWidth] = React.useState(1200)
@@ -363,14 +364,43 @@ export function Infinite3DCarousel({
       const cardW = viewportWidth < 640 ? 320 : viewportWidth < 1024 ? 380 : 420
       const cardH = viewportWidth < 640 ? 400 : 480
 
+      // Staggered fan-out entrance timing (first 1.2s)
+      const elapsedEntrance = currentTime - entranceStartTimeRef.current
+
       const transforms = filteredProjects.map((_, i) => {
+        let baseTransform: CardTransform3D
         if (layoutType === "helix") {
-          return getHelixTransform(i, count, rotationRef.current, ringRadius, 320)
+          baseTransform = getHelixTransform(i, count, rotationRef.current, ringRadius, 320)
+        } else if (layoutType === "grid") {
+          baseTransform = getGridTransform(i, count, gridCols, cardW, cardH, 28)
+        } else {
+          baseTransform = getRingTransform(i, count, rotationRef.current, ringRadius)
         }
-        if (layoutType === "grid") {
-          return getGridTransform(i, count, gridCols, cardW, cardH, 28)
+
+        // Apply staggered fan-out if still entering
+        if (elapsedEntrance < 1400 && !prefersReducedMotion) {
+          const delay = i * 65 // 65ms stagger per card
+          const progress = Math.max(0, Math.min(1, (elapsedEntrance - delay) / 600))
+          const ease = 1 - Math.pow(1 - progress, 3) // cubic out
+
+          const stackTransform: CardTransform3D = {
+            x: 0,
+            y: 40,
+            z: -250 - i * 20,
+            rotateY: (i - count / 2) * 5,
+            scale: 0.75,
+            opacity: 0,
+            blur: 8,
+            saturation: 0.5,
+            zIndex: 100 - i,
+            isFocused: i === 0,
+            relativeAngle: 0,
+          }
+
+          return interpolateTransform(stackTransform, baseTransform, ease)
         }
-        return getRingTransform(i, count, rotationRef.current, ringRadius)
+
+        return baseTransform
       })
 
       setCardTransforms(transforms)

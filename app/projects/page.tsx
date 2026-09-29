@@ -1,22 +1,53 @@
 import { DetailShell } from "@/components/detail/DetailShell"
-import { GlassCard } from "@/components/ui/GlassCard"
+import { getInitialProjectItems, enrichProjectsWithLiveGitHub } from "@/lib/projects/data"
+import { Infinite3DCarousel } from "@/components/projects/Infinite3DCarousel"
 import Link from "next/link"
-import { getPortfolioContent } from "@/lib/content/portfolio"
+
+export const metadata = {
+  title: "Projects Showcase | HngWu",
+  description:
+    "Explore an infinite 3D carousel of open-source projects, real-time architectures, and full-stack systems built by HngWu.",
+}
 
 export default async function ProjectsPage() {
-  const { projects } = await getPortfolioContent()
+  const initialProjects = getInitialProjectItems()
+  const projects = await enrichProjectsWithLiveGitHub(initialProjects)
 
   return (
-    <DetailShell typeLabel="WORK" title="Projects" descriptor="Things I've built — real-time, full-stack, and thoughtfully crafted.">
-      {projects.map(p => (
-        <Link key={p.slug} href={`/projects/${p.slug}`}>
-          <GlassCard className="p-6 cursor-pointer border-l-2 border-l-[var(--lume-secondary)] hover:-translate-y-1">
-            <h3 className="text-xl font-medium text-white/90">{p.name}</h3>
-            <p className="text-white/60 mt-2">{p.description}</p>
-          </GlassCard>
-        </Link>
-      ))}
+    <DetailShell
+      typeLabel="WORK"
+      title="Projects Showcase"
+      descriptor="An interactive 3D spatial ring of GitHub repositories, real-time architectures, and high-performance systems."
+      hideHero
+      maxWidth="max-w-[1400px]"
+    >
+      {/* 
+        Semantic HTML crawlability & no-JS fallback list:
+        Crawlers and non-JS clients read this clean semantic list while modern browsers
+        render the interactive 3D carousel.
+      */}
+      <noscript>
+        <section className="my-8 space-y-4">
+          <h2 className="text-xl font-bold text-white">All Projects</h2>
+          <ul className="space-y-4">
+            {projects.map((p) => (
+              <li key={p.id} className="p-4 rounded-xl border border-white/10 bg-white/5">
+                <h3 className="text-lg font-semibold text-white">{p.name}</h3>
+                <p className="text-sm text-white/70">{p.description}</p>
+                <div className="mt-2 flex gap-4 text-xs font-mono text-white/50">
+                  <span>Language: {p.language}</span>
+                  <span>Status: {p.status}</span>
+                  {p.githubUrl && <a href={p.githubUrl} className="underline">Repository</a>}
+                  {p.liveUrl && <a href={p.liveUrl} className="underline">Live Demo</a>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </noscript>
+
+      {/* Interactive 3D GitHub Carousel */}
+      <Infinite3DCarousel initialProjects={projects} />
     </DetailShell>
   )
 }
-
