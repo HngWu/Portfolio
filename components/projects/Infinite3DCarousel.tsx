@@ -186,14 +186,22 @@ export function Infinite3DCarousel({
 
   // Open & Close Case Study Panel
   const handleOpenCaseStudy = React.useCallback(
-    (project: ProjectItemData) => {
+    (project: ProjectItemData, index?: number) => {
+      if (typeof index === "number") {
+        rotateToIndex(index)
+      } else {
+        const idx = filteredProjects.findIndex((p) => p.id === project.id)
+        if (idx !== -1) {
+          rotateToIndex(idx)
+        }
+      }
       setActiveSlug(project.slug)
       setIsCaseStudyOpen(true)
       if (typeof window !== "undefined") {
         window.history.pushState(null, "", `/projects/${project.slug}`)
       }
     },
-    []
+    [filteredProjects, rotateToIndex]
   )
 
   const handleCloseCaseStudy = React.useCallback(() => {
@@ -309,37 +317,20 @@ export function Infinite3DCarousel({
     let lastTime = performance.now()
 
     const tick = (currentTime: number) => {
-      const dt = Math.min((currentTime - lastTime) / 1000, 0.1) // capped delta time in seconds
-      lastTime = currentTime
-
-      // 1. Check if tab is hidden or reduced motion is active
-      const isTabHidden = typeof document !== "undefined" && document.hidden
-      const shouldAutoRotate =
-        !prefersReducedMotion &&
-        !isTabHidden &&
-        !isHovered &&
-        !isInteracting &&
-        !isCaseStudyOpen
-
-      // 2. Auto-rotation: subtle continuous drift
-      if (shouldAutoRotate && !isDraggingRef.current) {
-        rotationRef.current += 0.12 * dt
-      }
-
-      // 3. Inertia velocity decay when user released drag
+      // 1. Inertia velocity decay when user released drag
       if (!isDraggingRef.current) {
         if (Math.abs(velocityRef.current) > 0.001) {
           rotationRef.current += velocityRef.current
           velocityRef.current *= 0.93 // exponential friction
-        } else if (!shouldAutoRotate) {
-          // 4. Critically damped spring snap towards nearest card index
+        } else {
+          // 2. Critically damped spring snap towards nearest card index
           const rawCurrent = rotationRef.current
           const nearestIndex = Math.round(rawCurrent / step)
           const targetAngle = nearestIndex * step
           const error = targetAngle - rawCurrent
 
           if (Math.abs(error) > 0.0005) {
-            velocityRef.current = error * 0.12
+            velocityRef.current = error * 0.14
             rotationRef.current += velocityRef.current
           } else {
             velocityRef.current = 0
@@ -387,11 +378,11 @@ export function Infinite3DCarousel({
             x: 0,
             y: 40,
             z: -250 - i * 20,
-            rotateY: (i - count / 2) * 5,
+            rotateY: 0,
             scale: 0.75,
             opacity: 0,
-            blur: 8,
-            saturation: 0.5,
+            blur: 0,
+            saturation: 0.8,
             zIndex: 100 - i,
             isFocused: i === 0,
             relativeAngle: 0,
@@ -493,8 +484,8 @@ export function Infinite3DCarousel({
                 transform={getGridTransform(i, filteredProjects.length, 3, 380, 480, 24)}
                 isFocused={i === focusedIndex}
                 isAdjacent={Math.abs(i - focusedIndex) === 1}
-                onClick={() => setFocusedIndex(i)}
-                onOpenCaseStudy={() => handleOpenCaseStudy(p)}
+                onClick={() => handleOpenCaseStudy(p, i)}
+                onOpenCaseStudy={() => handleOpenCaseStudy(p, i)}
                 index={i}
                 totalCount={filteredProjects.length}
               />
@@ -549,8 +540,8 @@ export function Infinite3DCarousel({
                   transform={transform}
                   isFocused={transform.isFocused}
                   isAdjacent={isAdjacent}
-                  onClick={() => rotateToIndex(i)}
-                  onOpenCaseStudy={() => handleOpenCaseStudy(project)}
+                  onClick={() => handleOpenCaseStudy(project, i)}
+                  onOpenCaseStudy={() => handleOpenCaseStudy(project, i)}
                   index={i}
                   totalCount={filteredProjects.length}
                 />

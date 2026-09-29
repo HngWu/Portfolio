@@ -54,38 +54,27 @@ export function ProjectCard({
   }, [isFocused, isAdjacent])
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isFocused || !cardRef.current) return
+    if (!cardRef.current) return
     const rect = cardRef.current.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
-    const centerX = rect.width / 2
-    const centerY = rect.height / 2
 
-    // Parallax tilt (up to ±9 degrees)
-    const tiltX = ((y - centerY) / centerY) * -9
-    const tiltY = ((x - centerX) / centerX) * 9
-
-    setTilt({ x: tiltX, y: tiltY })
+    // Subtle sheen light follows cursor without any up/down pitch tilt
     setSheen({ x, y })
   }
 
   const handleMouseEnter = () => {
-    if (isFocused) setIsHovered(true)
+    setIsHovered(true)
   }
 
   const handleMouseLeave = () => {
     setIsHovered(false)
-    setTilt({ x: 0, y: 0 })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault()
-      if (isFocused) {
-        onOpenCaseStudy()
-      } else {
-        onClick()
-      }
+      onOpenCaseStudy()
     }
   }
 
@@ -119,9 +108,9 @@ export function ProjectCard({
 
   // Assemble dynamic card transforms
   const cardTransformStyle: React.CSSProperties = {
-    transform: `translate3d(${transform.x.toFixed(1)}px, ${transform.y.toFixed(1)}px, ${transform.z.toFixed(1)}px) rotateY(${transform.rotateY.toFixed(1)}deg) rotateX(${isFocused && isHovered ? tilt.x.toFixed(1) : 0}deg) rotateY(${isFocused && isHovered ? (transform.rotateY + tilt.y).toFixed(1) : transform.rotateY.toFixed(1)}deg) scale(${transform.scale.toFixed(3)})`,
+    transform: `translate3d(${transform.x.toFixed(1)}px, ${transform.y.toFixed(1)}px, ${transform.z.toFixed(1)}px) scale(${transform.scale.toFixed(3)})`,
     opacity: transform.opacity,
-    filter: `blur(${transform.blur.toFixed(1)}px) saturate(${transform.saturation.toFixed(2)})`,
+    filter: `saturate(${transform.saturation.toFixed(2)})`,
     zIndex: transform.zIndex,
     borderColor: isFocused ? `${langColor}55` : "rgba(255, 255, 255, 0.08)",
     boxShadow: isFocused
@@ -137,19 +126,13 @@ export function ProjectCard({
       ref={cardRef}
       role="button"
       tabIndex={0}
-      aria-label={`${project.name}, ${project.status} project. ${isFocused ? "Press Enter to open case study." : "Press Enter to bring into focus."}`}
+      aria-label={`${project.name}, ${project.status} project. Press Enter or click to open case study.`}
       aria-roledescription="carousel card"
       aria-current={isFocused ? "true" : undefined}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={() => {
-        if (isFocused) {
-          onOpenCaseStudy()
-        } else {
-          onClick()
-        }
-      }}
+      onClick={onOpenCaseStudy}
       onKeyDown={handleKeyDown}
       style={cardTransformStyle}
       className={cn(

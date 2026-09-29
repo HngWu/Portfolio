@@ -6,7 +6,13 @@ import { Shield, Lock, CheckCircle2, Terminal, QrCode } from "lucide-react"
 
 export function BookBackCoverFace() {
   return (
-    <div className="relative w-full h-full flex flex-col justify-between p-6 sm:p-8 md:p-12 select-none overflow-hidden bg-[#070913] rounded-2xl sm:rounded-3xl shadow-[inset_0_0_80px_rgba(0,0,0,0.85)] border border-white/10">
+    <div
+      className="relative w-full h-full flex flex-col justify-between p-6 sm:p-8 md:p-12 select-none overflow-hidden bg-[#070913] rounded-2xl sm:rounded-3xl shadow-[inset_0_0_80px_rgba(0,0,0,0.85)] border border-white/10"
+      style={{
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
+      }}
+    >
       {/* Decorative Gilded Inner Foil Frame */}
       <div className="absolute inset-3 border border-white/[0.08] rounded-2xl pointer-events-none" />
       <div className="absolute inset-4 border border-dashed border-white/[0.04] rounded-xl pointer-events-none" />

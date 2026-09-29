@@ -7,7 +7,7 @@ import { SpellPageSpread, type BookLifecycle } from "./SpellPageSpread"
 import { SpellAmbientMana } from "./SpellAmbientMana"
 import { ExperienceBackBtn } from "./ExperienceBackBtn"
 import { usePageTransition } from "@/hooks/usePageTransition"
-import { playPageTurnSound, playBookOpenSound } from "@/lib/experience/bookAudio"
+import { playPageTurnSound } from "@/lib/experience/bookAudio"
 import {
   ChevronLeft,
   ChevronRight,
@@ -53,10 +53,10 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
   }, [experienceList])
 
   // Unified Book Lifecycle State Machine
-  const [lifecycle, setLifecycle] = React.useState<BookLifecycle>("closed-front")
+  const [lifecycle, setLifecycle] = React.useState<BookLifecycle>("prologue")
   const [audioEnabled, setAudioEnabled] = React.useState(false)
 
-  // Audio ref tracking to prevent re-opening loops
+  // Audio ref tracking to prevent stale closure loops
   const audioEnabledRef = React.useRef(audioEnabled)
   React.useEffect(() => {
     audioEnabledRef.current = audioEnabled
@@ -76,54 +76,24 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
 
   const isExitingRef = React.useRef(false)
 
-  // Auto-trigger book opening sequence on initial mount
-  React.useEffect(() => {
-    if (typeof window === "undefined") return
+  // Open trigger handler: flips from prologue (Half Title Page) to Experience 1
+  const triggerOpeningFlip = React.useCallback(() => {
+    if (lifecycle !== "prologue" || isExitingRef.current) return
 
-    // Check prefers-reduced-motion
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
     if (prefersReduced) {
       setLifecycle("idle")
       return
     }
 
-    // Start closed on page mount, pause 650ms to allow user to view front cover, then swing cover and pages open together
-    const openTimer = setTimeout(() => {
-      setLifecycle("opening-wave")
-      playBookOpenSound(audioEnabledRef.current)
-    }, 650)
-
-    return () => clearTimeout(openTimer)
-  }, [])
-
-  // Safety watchdogs for lifecycle state transitions
-  React.useEffect(() => {
-    let watchdog: NodeJS.Timeout | null = null
-
-    if (lifecycle === "opening-wave") {
-      watchdog = setTimeout(() => {
-        setLifecycle("idle")
-      }, 1250)
-    } else if (lifecycle === "closing-cover") {
-      watchdog = setTimeout(() => {
-        setLifecycle("closed-back")
-      }, 950)
-    }
-
-    return () => {
-      if (watchdog) clearTimeout(watchdog)
-    }
+    playPageTurnSound(audioEnabledRef.current)
+    setLifecycle("opening-flip")
   }, [lifecycle])
 
-  // Manual open handler if user clicks front cover before auto-open
-  const handleManualOpen = React.useCallback(() => {
-    if (lifecycle === "closed-front" && !isExitingRef.current) {
-      setLifecycle("opening-wave")
-      playBookOpenSound(audioEnabledRef.current)
-    }
-  }, [lifecycle])
-
-  // Centralized Exit Navigation Sequence
+  // Centralized Exit Navigation Sequence: Flips from experience to Epilogue & Afterword, then home
   const handleExit = React.useCallback(
     (targetPath = "/") => {
       if (isExitingRef.current) return
@@ -138,28 +108,98 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
         return
       }
 
-      // Trigger weighted hardcover closing fold shut
-      setLifecycle("closing-cover")
+      playPageTurnSound(audioEnabledRef.current)
+      setLifecycle("closing-flip")
     },
     [navigateWithTransition]
   )
 
-  // Pause in sealed back cover resting state, then transition home
+  const handleReturnHomeImmediate = React.useCallback(() => {
+    setLifecycle("exiting")
+    navigateWithTransition("/")
+  }, [navigateWithTransition])
+
+  // Auto-flip from prologue (Half Title Page) to Experience 1 after ~2.5 seconds
   React.useEffect(() => {
-    if (lifecycle === "closed-back") {
+    if (typeof window === "undefined") return
+
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (prefersReduced) {
+      setLifecycle("idle")
+      return
+    }
+
+    if (lifecycle === "prologue") {
+      const openTimer = setTimeout(() => {
+        triggerOpeningFlip()
+      }, 2500)
+
+      return () => clearTimeout(openTimer)
+    }
+  }, [lifecycle, triggerOpeningFlip])
+
+  // Wheel & Scroll Trigger: scroll down during prologue flips to Exp 1; scroll up on first page closes
+  React.useEffect(() => {
+    if (typeof window === "undefined") return
+
+    let wheelDebounce = false
+
+    const handleWheel = (e: WheelEvent) => {
+      if (wheelDebounce) return
+
+      if (lifecycle === "prologue" && e.deltaY > 15) {
+        wheelDebounce = true
+        triggerOpeningFlip()
+        setTimeout(() => {
+          wheelDebounce = false
+        }, 500)
+      } else if (lifecycle === "idle" && activeIndex === 0 && e.deltaY < -40) {
+        wheelDebounce = true
+        handleExit("/")
+        setTimeout(() => {
+          wheelDebounce = false
+        }, 500)
+      }
+    }
+
+    window.addEventListener("wheel", handleWheel, { passive: true })
+    return () => window.removeEventListener("wheel", handleWheel)
+  }, [lifecycle, activeIndex, triggerOpeningFlip, handleExit])
+
+  // Epilogue timer: display Epilogue and Afterword for 3.0s then gracefully transition home
+  React.useEffect(() => {
+    if (lifecycle === "epilogue") {
       const exitTimer = setTimeout(() => {
         setLifecycle("exiting")
         navigateWithTransition("/")
-      }, 280)
+      }, 3000)
       return () => clearTimeout(exitTimer)
     }
   }, [lifecycle, navigateWithTransition])
+
+  // Safety watchdogs for page flip state transitions
+  React.useEffect(() => {
+    let watchdog: NodeJS.Timeout | null = null
+
+    if (lifecycle === "opening-flip") {
+      watchdog = setTimeout(() => {
+        setLifecycle("idle")
+      }, 1500)
+    } else if (lifecycle === "closing-flip") {
+      watchdog = setTimeout(() => {
+        setLifecycle("epilogue")
+      }, 1500)
+    }
+
+    return () => {
+      if (watchdog) clearTimeout(watchdog)
+    }
+  }, [lifecycle])
 
   // Intercept browser back button to trigger closing animation before leaving
   React.useEffect(() => {
     if (typeof window === "undefined") return
 
-    // Push dummy entry so clicking Back triggers popstate first
     window.history.pushState({ spellbook: true }, "", window.location.href)
 
     const handlePopState = () => {
@@ -185,17 +225,17 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     setLifecycle("idle")
   }, [])
 
-  // Page turn safety timeout: ensures UI never gets stuck even if browser throttles animations
+  // Page turn safety timeout: ensures UI never gets stuck during 1.2s luxury flip
   React.useEffect(() => {
     if (isTurning) {
       const turnFallback = setTimeout(() => {
         handleFlipComplete()
-      }, 950)
+      }, 1500)
       return () => clearTimeout(turnFallback)
     }
   }, [isTurning, handleFlipComplete])
 
-  // Page Navigation Handlers driven cleanly by activeIndex, isTurning, and lifecycle
+  // Page Navigation Handlers
   const goToNext = React.useCallback(() => {
     if (isTurning || lifecycle !== "idle" || isExitingRef.current) return
     if (activeIndex >= spells.length - 1) return
@@ -235,10 +275,18 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
   // Keyboard Navigation
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (lifecycle === "closed-front") {
-        if (e.key === "Enter" || e.key === " ") {
+      if (lifecycle === "prologue") {
+        if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") {
           e.preventDefault()
-          handleManualOpen()
+          triggerOpeningFlip()
+        }
+        return
+      }
+
+      if (lifecycle === "epilogue") {
+        if (e.key === "Escape" || e.key === "Enter") {
+          e.preventDefault()
+          handleReturnHomeImmediate()
         }
         return
       }
@@ -258,7 +306,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [goToNext, goToPrev, lifecycle, handleManualOpen, handleExit])
+  }, [goToNext, goToPrev, lifecycle, triggerOpeningFlip, handleExit, handleReturnHomeImmediate])
 
   const currentSpell = spells[activeIndex] || spells[0]
   const targetSpell = targetIndex !== null ? spells[targetIndex] || null : null
@@ -266,19 +314,20 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
   const showHUD = lifecycle === "idle" || lifecycle === "turning-page"
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center items-center select-none">
+    <div className="relative w-full h-full flex flex-col select-none">
       {/* Return to Home Back Button with Smooth Exit Closing Animation */}
       <ExperienceBackBtn onBack={() => handleExit("/")} />
 
       {/* Ambient Luminous Dust Particles */}
       <SpellAmbientMana />
 
-      {/* Main 3D Book Stage */}
-      <div className="relative z-10 w-full flex-1 flex items-center justify-center my-auto min-h-0">
+      {/* Main 3D Book Stage — always occupies full height so HUD never shifts it */}
+      <div className="relative z-10 w-full h-full flex items-center justify-center min-h-0">
         <SpellPageSpread
           lifecycle={lifecycle}
           onLifecycleAdvance={setLifecycle}
-          onManualOpenCover={handleManualOpen}
+          onOpeningFlip={triggerOpeningFlip}
+          onReturnHome={handleReturnHomeImmediate}
           currentSpell={currentSpell}
           targetSpell={targetSpell}
           currentIndex={activeIndex}
@@ -295,10 +344,15 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
         />
       </div>
 
-      {/* Bottom Floating Navigation & Chapter HUD */}
+      {/* Bottom Floating Navigation & Chapter HUD — absolutely positioned so it never shifts the book */}
       {showHUD && (
-        <div className="relative z-20 mt-3 md:mt-4 flex flex-col items-center gap-2 shrink-0 px-2 animate-in fade-in duration-300">
-          <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 p-1.5 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl shadow-[0_10px_35px_rgba(0,0,0,0.6)]">
+        <div
+          className="absolute bottom-4 md:bottom-6 left-0 right-0 z-30 flex flex-col items-center gap-2 px-2 pointer-events-none"
+          style={{
+            animation: "hud-slide-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both",
+          }}
+        >
+          <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-3 md:gap-4 p-1.5 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl shadow-[0_10px_35px_rgba(0,0,0,0.6)]">
             {/* Previous Role Button */}
             <button
               type="button"
@@ -360,7 +414,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
               <button
                 type="button"
                 onClick={() => setAudioEnabled((prev) => !prev)}
-                title={audioEnabled ? "Mute Paper Sound Effects" : "Enable Paper Sound Effects"}
+                title={audioEnabled ? "Mute Paper & Metal Sound Effects" : "Enable Paper & Metal Sound Effects"}
                 aria-label="Toggle page turn audio"
                 className={`p-2 rounded-xl border transition-all cursor-pointer ${
                   audioEnabled
@@ -375,8 +429,8 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
               <button
                 type="button"
                 onClick={() => handleExit("/")}
-                title="Close Dossier & Return Home"
-                aria-label="Close Dossier & Return Home"
+                title="Close Grimoire & Return Home"
+                aria-label="Close Grimoire & Return Home"
                 className="p-2 rounded-xl bg-white/[0.03] border border-white/10 text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-all cursor-pointer"
               >
                 <RotateCcw className="size-3.5" />
@@ -385,7 +439,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
           </div>
 
           {/* Quick Chapter Context & Keyboard Hint Badge */}
-          <div className="flex items-center gap-3 text-[11px] font-mono text-white/40">
+          <div className="pointer-events-none flex items-center gap-3 text-[11px] font-mono text-white/40">
             <span className="flex items-center gap-1.5 text-white/60 truncate max-w-[280px] sm:max-w-none">
               <Layers className="size-3 text-[var(--lume-primary,#4affb4)] shrink-0" />
               <span className="font-semibold text-white/80">{currentSpell.realm}</span>
@@ -394,7 +448,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
             </span>
             <span className="hidden md:inline text-white/25">·</span>
             <span className="hidden md:inline text-[10px] text-white/30">
-              [Use ← / → arrow keys or click edges to flip]
+              [← / → keys or edge click to flip chapters · Scroll up or Esc to close]
             </span>
           </div>
         </div>

@@ -79,19 +79,19 @@ export function getRingTransform(
   const relAngle = normalizeAngle(baseAngle - currentRotation)
   const absRel = Math.abs(relAngle)
 
-  // Pure trigonometric placement
+  // Cards face forward directly without Y-rotation so all content is clearly readable
   const x = Math.sin(relAngle) * radius
   // z = 0 at center (relAngle = 0), negative as it recedes into depth
   const z = (Math.cos(relAngle) - 1) * radius
-  const rotateY = (-relAngle * 180) / Math.PI
+  const rotateY = 0
 
-  // Depth attenuation
+  // Depth attenuation (content remains sharp and readable)
   const cosFactor = Math.cos(relAngle)
   const isFocused = absRel < step / 2
-  const scale = 1 - 0.22 * (1 - Math.max(0, cosFactor))
-  const opacity = Math.max(0.12, Math.min(1, cosFactor * 0.65 + 0.35))
-  const blur = Math.max(0, Math.min(8, (absRel / Math.PI) * 6))
-  const saturation = Math.max(0.4, Math.min(1, 1 - 0.55 * Math.sin(absRel)))
+  const scale = 1 - 0.15 * (1 - Math.max(0, cosFactor))
+  const opacity = Math.max(0.4, Math.min(1, cosFactor * 0.45 + 0.55))
+  const blur = 0
+  const saturation = Math.max(0.7, Math.min(1, 1 - 0.3 * Math.sin(absRel)))
   const zIndex = 1000 + Math.round(z)
 
   return {

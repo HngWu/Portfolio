@@ -93,14 +93,30 @@
     to { opacity: 1; transform: translateX(0); }
   }
 
-  @keyframes vt-rune-in-quick {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
+  @keyframes vt-page-flip-out {
+    from {
+      opacity: 1;
+      transform: perspective(2200px) rotateY(0deg);
+      filter: brightness(1);
+    }
+    to {
+      opacity: 0.15;
+      transform: perspective(2200px) rotateY(-80deg);
+      filter: brightness(0.35);
+    }
   }
 
-  @keyframes vt-rune-in-deep {
-    from { opacity: 0; transform: translateY(18px) scale(0.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+  @keyframes vt-page-flip-in {
+    from {
+      opacity: 0.15;
+      transform: perspective(2200px) rotateY(80deg);
+      filter: brightness(0.4) drop-shadow(-10px 0 25px rgba(74, 255, 180, 0.4));
+    }
+    to {
+      opacity: 1;
+      transform: perspective(2200px) rotateY(0deg);
+      filter: brightness(1) drop-shadow(0 0 0 rgba(74, 255, 180, 0));
+    }
   }
 
   @keyframes vt-matrix-in-quick {
@@ -517,13 +533,14 @@ html:not([data-page-transition])::view-transition-new(root) {
   animation: vt-bloom-in-deep var(--vt-duration, 220ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Preset 2: Arcane Rune (/experience) */
-html[data-page-transition="arcane-rune"][data-mode="quick"]::view-transition-new(root) {
-  animation: vt-rune-in-quick var(--vt-duration, 260ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+/* Preset 2: Arcane Rune 3D Page Flip (/experience) */
+html[data-page-transition="arcane-rune"]::view-transition-old(root) {
+  animation: vt-page-flip-out var(--vt-duration, 700ms) cubic-bezier(0.32, 0.04, 0.22, 1) forwards;
+  transform-origin: left center;
 }
-html[data-page-transition="arcane-rune"][data-mode="deep"]::view-transition-new(root),
-html[data-page-transition="arcane-rune"]:not([data-mode])::view-transition-new(root) {
-  animation: vt-rune-in-deep var(--vt-duration, 240ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+html[data-page-transition="arcane-rune"]::view-transition-new(root) {
+  animation: vt-page-flip-in var(--vt-duration, 700ms) cubic-bezier(0.32, 0.04, 0.22, 1) forwards;
+  transform-origin: left center;
 }
 
 /* Preset 3: Blueprint Slide (/projects) */
@@ -560,5 +577,24 @@ html[data-page-transition="clean-lift"]:not([data-mode])::view-transition-new(ro
   ::view-transition-group(*) {
     animation-duration: 80ms !important;
     animation-name: none !important;
+  }
+}
+
+/* HUD Control Bar — slide up from below with fade on first appear */
+@keyframes hud-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes hud-slide-up {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 }

@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
 
 export interface BlankRunicPageProps {
   side?: "left" | "right"
@@ -92,20 +91,18 @@ export function BlankRunicPage({ side = "right", variant = 1 }: BlankRunicPagePr
         <div className="relative my-auto flex items-center justify-center pointer-events-none py-6">
           <div className="relative size-48 sm:size-56 flex items-center justify-center">
             {/* Outer Radiant Astrolabe Ring */}
-            <motion.div
-              className="absolute inset-0 rounded-full border-2 border-dashed border-[#ffd700]/55 shadow-[0_0_20px_rgba(255,215,0,0.15)]"
-              animate={{ rotate: 360 + rot1 }}
-              transition={{ duration: 55, repeat: Infinity, ease: "linear" }}
+            <div
+              className="absolute inset-0 rounded-full border-2 border-dashed border-[#ffd700]/55 shadow-[0_0_20px_rgba(255,215,0,0.15)] animate-[spin_55s_linear_infinite]"
+              style={{ transform: `rotate(${rot1}deg)` }}
             />
 
             {/* Golden Graduation Ticks Ring */}
             <div className="absolute inset-3 rounded-full border border-white/15" />
 
             {/* Middle Glowing Emerald Compass Ring */}
-            <motion.div
-              className="absolute inset-7 rounded-full border-2 border-dotted border-[var(--lume-primary,#4affb4)]/60 shadow-[0_0_15px_rgba(74,255,180,0.2)]"
-              animate={{ rotate: -360 + rot2 }}
-              transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+            <div
+              className="absolute inset-7 rounded-full border-2 border-dotted border-[var(--lume-primary,#4affb4)]/60 shadow-[0_0_15px_rgba(74,255,180,0.2)] animate-[spin_40s_linear_infinite_reverse]"
+              style={{ transform: `rotate(${rot2}deg)` }}
             />
 
             {/* Sacred Geometry Square / Diamond Tetragram */}
