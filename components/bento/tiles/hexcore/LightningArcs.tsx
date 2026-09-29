@@ -9,30 +9,23 @@ interface LightningArcsProps {
   mode: 'quick-pitch' | 'deep-dive';
   ringARef: React.RefObject<THREE.Object3D | null>;
   ringBRef: React.RefObject<THREE.Object3D | null>;
-  ringCRef?: React.RefObject<THREE.Object3D | null>;
   pyramidsGroupRef?: React.RefObject<THREE.Group | null>;
 }
 
-export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef, ringBRef, ringCRef, pyramidsGroupRef }) => {
+export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef, ringBRef, pyramidsGroupRef }) => {
   const lineRef = useRef<THREE.LineSegments>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const [active, setActive] = useState(false);
   const triggerTimer = useRef(1.0);
   const arcDuration = useRef(0);
   const maxSegments = 32;
-  const numArcs = 12; // Doubled from 6
+  const numArcs = 12; // 12 dynamic paths
 
   const targetPyramidIdxA = useRef(0);
   const targetPyramidIdxB = useRef(0);
-  const targetPyramidIdxC = useRef(0);
   const updateIndex = useRef(0); // For staggered scheduling
 
-  // 1. Pre-allocated flat buffers bound to geometry. These are long-lived
-  // mutable buffers, written in-place every frame by the lightning path
-  // generator inside useFrame. Because they are mutated (not just read) after
-  // render, they must live in refs — useMemo values are treated as immutable
-  // by react-hooks and R3F reads `.current` lazily when building the geometry,
-  // so a ref is both allocation-stable and safe to mutate post-render.
+  // 1. Pre-allocated flat buffers bound to geometry
   const positionsRef = useRef(new Float32Array(maxSegments * 2 * 3 * numArcs))
   const alphasRef = useRef(new Float32Array(maxSegments * 2 * numArcs))
 
@@ -40,9 +33,6 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
   const calcPoints = useMemo(() => Array.from({ length: 33 }, () => new THREE.Vector3()), [])
   const tempPoints = useMemo(() => Array.from({ length: 33 }, () => new THREE.Vector3()), [])
   const vectorPool = useMemo(() => Array.from({ length: 512 }, () => new THREE.Vector3()), [])
-  // Per-frame scratch index for the vector pool. Held in a ref because it is
-  // reassigned every frame inside useFrame (a render-phase let would violate
-  // react-hooks immutability and is unsafe under the React Compiler).
   const poolIdxRef = useRef(0)
   const getScratchVector = () => {
     const v = vectorPool[poolIdxRef.current]
@@ -65,7 +55,6 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
     let currentSegmentCount = 1;
 
     for (let i = 0; i < Math.log2(numSegs); i++) {
-      // Create temporary copy of current points
       const pointsCount = currentSegmentCount + 1;
       for (let idx = 0; idx < pointsCount; idx++) {
         tempPoints[idx].copy(calcPoints[idx]);
@@ -149,7 +138,6 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
           const count = pyramidsGroupRef.current.children.length;
           targetPyramidIdxA.current = Math.floor(Math.random() * count);
           targetPyramidIdxB.current = Math.floor(Math.random() * count);
-          targetPyramidIdxC.current = Math.floor(Math.random() * count);
         }
       }
     }
@@ -168,59 +156,48 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
 
       if (ringARef.current && ringBRef.current && lineRef.current) {
         const startA = getScratchVector();
+        const startA2 = getScratchVector();
         const startB = getScratchVector();
-        const startC = getScratchVector();
+        const startB2 = getScratchVector();
         const shellA = getScratchVector();
         const shellB = getScratchVector();
-        const shellC = getScratchVector();
 
         const elapsed = state.clock.getElapsedTime();
         const angleA = elapsed * 2.0;
         const angleB = -elapsed * 1.5;
-        const angleC = elapsed * 1.0;
 
-        startA.set(Math.cos(angleA) * 1.4, 0, Math.sin(angleA) * 1.4);
-        startB.set(Math.cos(angleB) * 1.8, 0, Math.sin(angleB) * 1.8);
+        startA.set(Math.cos(angleA) * 1.65, 0, Math.sin(angleA) * 1.65);
+        startA2.set(Math.cos(angleA + Math.PI) * 1.65, 0, Math.sin(angleA + Math.PI) * 1.65);
+        startB.set(Math.cos(angleB) * 2.15, 0, Math.sin(angleB) * 2.15);
+        startB2.set(Math.cos(angleB + Math.PI) * 2.15, 0, Math.sin(angleB + Math.PI) * 2.15);
 
         ringARef.current.localToWorld(startA);
+        ringARef.current.localToWorld(startA2);
         ringBRef.current.localToWorld(startB);
-
-        let gotRingC = false;
-        if (ringCRef?.current) {
-          startC.set(0, Math.cos(angleC) * 2.2, Math.sin(angleC) * 2.2);
-          ringCRef.current.localToWorld(startC);
-          gotRingC = true;
-        }
+        ringBRef.current.localToWorld(startB2);
 
         let gotShell = false;
         if (pyramidsGroupRef?.current && pyramidsGroupRef.current.children.length > 0) {
           const childA = pyramidsGroupRef.current.children[targetPyramidIdxA.current];
           const childB = pyramidsGroupRef.current.children[targetPyramidIdxB.current];
-          const childC = pyramidsGroupRef.current.children[targetPyramidIdxC.current];
-          if (childA && childB && childC) {
+          if (childA && childB) {
             childA.getWorldPosition(shellA);
             childB.getWorldPosition(shellB);
-            childC.getWorldPosition(shellC);
             gotShell = true;
           }
         }
 
         lineRef.current.worldToLocal(startA);
+        lineRef.current.worldToLocal(startA2);
         lineRef.current.worldToLocal(startB);
-        if (gotRingC) {
-          lineRef.current.worldToLocal(startC);
-        } else {
-          startC.copy(startB);
-        }
+        lineRef.current.worldToLocal(startB2);
 
         if (gotShell) {
           lineRef.current.worldToLocal(shellA);
           lineRef.current.worldToLocal(shellB);
-          lineRef.current.worldToLocal(shellC);
         } else {
           shellA.copy(startA).multiplyScalar(0.5);
           shellB.copy(startB).multiplyScalar(0.5);
-          shellC.copy(startC).multiplyScalar(0.5);
         }
 
         // Staggered update schedule: compute 3 paths out of 12 per frame
@@ -228,23 +205,26 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
         const strideAlp = maxSegments * 2;
         const displaceAmt = mode === 'quick-pitch' ? 0.4 : 0.65;
 
-        // Path generators lookup
+        // Path generators lookup across 2 rings and pyramid shell
         const runGenerator = (pIdx: number) => {
           const pOffset = pIdx * stridePos;
           const aOffset = pIdx * strideAlp;
 
+          // Ring 1 <-> Ring 2 arcs
           if (pIdx === 0) generateLightningPathInPlace(startA, startB, displaceAmt, maxSegments, pOffset, aOffset);
-          else if (pIdx === 1) generateLightningPathInPlace(startB, startC, displaceAmt, maxSegments, pOffset, aOffset);
-          else if (pIdx === 2) generateLightningPathInPlace(startC, startA, displaceAmt, maxSegments, pOffset, aOffset);
-          else if (pIdx === 3) generateLightningPathInPlace(startA, shellA, displaceAmt, maxSegments, pOffset, aOffset);
-          else if (pIdx === 4) generateLightningPathInPlace(startB, shellB, displaceAmt, maxSegments, pOffset, aOffset);
-          else if (pIdx === 5) generateLightningPathInPlace(startC, shellC, displaceAmt, maxSegments, pOffset, aOffset);
-          else if (pIdx === 6) generateLightningPathInPlace(startA, startC, displaceAmt, maxSegments, pOffset, aOffset);
-          else if (pIdx === 7) generateLightningPathInPlace(startB, startA, displaceAmt, maxSegments, pOffset, aOffset);
-          else if (pIdx === 8) generateLightningPathInPlace(startC, startB, displaceAmt, maxSegments, pOffset, aOffset);
-          else if (pIdx === 9) generateLightningPathInPlace(startA, shellB, displaceAmt, maxSegments, pOffset, aOffset);
-          else if (pIdx === 10) generateLightningPathInPlace(startB, shellC, displaceAmt, maxSegments, pOffset, aOffset);
-          else if (pIdx === 11) generateLightningPathInPlace(startC, shellA, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 1) generateLightningPathInPlace(startA2, startB2, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 2) generateLightningPathInPlace(startA, startB2, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 3) generateLightningPathInPlace(startB, startA2, displaceAmt, maxSegments, pOffset, aOffset);
+          // Ring 1 <-> Pyramid Shell arcs
+          else if (pIdx === 4) generateLightningPathInPlace(startA, shellA, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 5) generateLightningPathInPlace(startA2, shellB, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 6) generateLightningPathInPlace(startA, shellB, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 7) generateLightningPathInPlace(startA2, shellA, displaceAmt, maxSegments, pOffset, aOffset);
+          // Ring 2 <-> Pyramid Shell arcs
+          else if (pIdx === 8) generateLightningPathInPlace(startB, shellA, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 9) generateLightningPathInPlace(startB2, shellB, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 10) generateLightningPathInPlace(startB, shellB, displaceAmt, maxSegments, pOffset, aOffset);
+          else if (pIdx === 11) generateLightningPathInPlace(startB2, shellA, displaceAmt, maxSegments, pOffset, aOffset);
         };
 
         const idx = updateIndex.current;
@@ -279,7 +259,7 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
         uGlowIntensity: { value: 0 },
         uColorQPA: { value: new THREE.Color('#FFB44A') },
         uColorQPB: { value: new THREE.Color('#FFFFFF') },
-        uColorDDA: { value: new THREE.Color('#B44AFF') },
+        uColorDDA: { value: new THREE.Color('#4A8FFF') },
         uColorDDB: { value: new THREE.Color('#4AFFB4') },
       },
       vertexShader: `

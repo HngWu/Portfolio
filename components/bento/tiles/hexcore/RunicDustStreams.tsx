@@ -11,7 +11,7 @@ const RunicDustShader = {
     uSpeed: { value: 0.3 },
     uColorQPA: { value: new THREE.Color('#FF8C00') },
     uColorQPB: { value: new THREE.Color('#FFB44A') },
-    uColorDDA: { value: new THREE.Color('#6A0DAD') },
+    uColorDDA: { value: new THREE.Color('#4A8FFF') },
     uColorDDB: { value: new THREE.Color('#4AFFB4') },
   },
   vertexShader: `
@@ -131,7 +131,7 @@ export const RunicDustStreams = ({ mode, count = 1500 }: { mode: 'quick-pitch' |
     uSpeed: { value: 0.3 },
     uColorQPA: { value: new THREE.Color('#FF8C00') },
     uColorQPB: { value: new THREE.Color('#FFB44A') },
-    uColorDDA: { value: new THREE.Color('#6A0DAD') },
+    uColorDDA: { value: new THREE.Color('#4A8FFF') },
     uColorDDB: { value: new THREE.Color('#4AFFB4') },
   }), []);
 
