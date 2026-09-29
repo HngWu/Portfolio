@@ -1,0 +1,139 @@
+{
+  "username": "HngWu",
+  "featuredOrder": [
+    "triviaduel",
+    "secure-asset",
+    "lumeglass-portfolio"
+  ],
+  "projects": [
+    {
+      "id": "triviaduel",
+      "slug": "trivia-duel",
+      "name": "TriviaDuel",
+      "repo": "HngWu/Trivia",
+      "status": "Shipped",
+      "featured": true,
+      "language": "TypeScript",
+      "description": "Real-time multiplayer trivia platform featuring sub-100ms synchronization and resilient multi-model AI question generation.",
+      "techStack": ["Next.js 16", "Gemini AI", "Redis", "SQLite", "Tailwind CSS"],
+      "liveUrl": "https://triviaduel.dev",
+      "githubUrl": "https://github.com/HngWu/Trivia",
+      "previewImage": "/images/projects/trivia-duel.webp",
+      "topics": ["multiplayer", "websockets", "ai", "realtime", "nextjs"],
+      "caseStudy": {
+        "problem": "Traditional trivia platforms suffer from repetitive question pools, latency desync in live player lobbies, and fragile single-point AI rate-limiting during peak quiz generation.",
+        "approach": "Engineered an edge-synchronized state machine utilizing Redis pub/sub for sub-100ms room synchronization paired with dual-stage optimistic client ticks. Architected a multi-model fallback pipeline (Gemini 2.5 → DeepSeek) with local cached embeddings.",
+        "keyTechnicalDecision": "Decoupled real-time WebSocket state from persistent relational schemas by streaming delta patches over compact binary encodings rather than full JSON blobs, slashing mobile network overhead by 68%.",
+        "result": "Maintained continuous 60fps canvas animations with sub-100ms room consensus across 10 concurrent player nodes and zero question generation downtime during API latency spikes.",
+        "whatIdDoDifferently": "Implement WebRTC DataChannels for peer-to-peer audio banter to further minimize central server ingress during large multiplayer tournaments."
+      }
+    },
+    {
+      "id": "secure-asset",
+      "slug": "secure-asset",
+      "name": "SecureAsset",
+      "repo": "HngWu/watermark-tool",
+      "status": "Shipped",
+      "featured": true,
+      "language": "TypeScript",
+      "description": "Forensic digital watermarking and intellectual property protection platform with LiquidGlass UI and cryptographic verification.",
+      "techStack": ["React 19", "Node.js", "MariaDB", "Vite", "WebCrypto"],
+      "liveUrl": "https://secureasset.dev",
+      "githubUrl": "https://github.com/HngWu/watermark-tool",
+      "previewImage": "/images/projects/secure-asset.webp",
+      "topics": ["cybersecurity", "steganography", "forensics", "cryptography"],
+      "caseStudy": {
+        "problem": "Digital artists and enterprises face rampant intellectual property theft where metadata watermarks are trivially stripped by screenshot tools, re-compression, or social media pipelines.",
+        "approach": "Built a multi-layered forensic embedding pipeline supporting spatial LSB (Least Significant Bit), frequency-domain Discrete Cosine Transform (DCT), and cryptographic EXIF payload seals.",
+        "keyTechnicalDecision": "Engineered the DCT frequency mask transformations in WebAssembly/Web Workers to keep forensic watermarking instantaneous in-browser without uploading sensitive assets to third-party cloud infrastructure.",
+        "result": "Watermark survival rates achieved 94% retention against aggressive JPEG re-compression (down to 45% quality) and withstands standard screenshot cropping attempts.",
+        "whatIdDoDifferently": "Incorporate deep neural watermarking (implicit neural representations) to extend tamper resilience against generative diffusion inpainting."
+      }
+    },
+    {
+      "id": "lumeglass-portfolio",
+      "slug": "portfolio",
+      "name": "LumeGlass Portfolio",
+      "repo": "HngWu/Portfolio",
+      "status": "In progress",
+      "language": "TypeScript",
+      "featured": true,
+      "description": "Cinematic dark minimalist portfolio featuring 3D WebGL artifacts, arcane spellbook transitions, and modular bento layout.",
+      "techStack": ["Next.js 16", "Tailwind CSS v4", "React Three Fiber", "GSAP", "Zustand"],
+      "liveUrl": "https://portfolio.dev",
+      "githubUrl": "https://github.com/HngWu/Portfolio",
+      "previewImage": "/images/projects/portfolio.webp",
+      "topics": ["creative-development", "webgl", "threejs", "gsap", "turbopack"],
+      "caseStudy": {
+        "problem": "Standard developer portfolios are static, template-driven, and lack authentic technical personality, tactile micro-interactions, and cinematic depth.",
+        "approach": "Crafted the 'Lume-Glass' visual ecosystem combining a 54-pyramid Rubik HexCore in R3F, realistic 3D paper leaf physics with synthesized Web Audio, and an infinite 3D project carousel with inertia physics.",
+        "keyTechnicalDecision": "Defined cross-browser CSS masking and compiled Tailwind v4 theme variables to achieve GPU-accelerated neon border beams with zero main thread layout thrashing.",
+        "result": "Achieved consistent 60fps render loops on mid-range devices while maintaining full keyboard accessibility, zero-JS HTML crawlability, and Supabase JSONB modularity.",
+        "whatIdDoDifferently": "Implement custom GLSL post-processing chromatic aberration shaders on carousel drag inertia spikes."
+      }
+    },
+    {
+      "id": "3d-portfolio-website",
+      "slug": "3d-portfolio-website",
+      "name": "3D Portfolio Website",
+      "repo": "HngWu/3d_portfolio_website",
+      "status": "Archived",
+      "language": "JavaScript",
+      "featured": false,
+      "description": "Early exploratory 3D spatial web environment built with raw Three.js and custom camera orbit controls.",
+      "techStack": ["JavaScript", "Three.js", "HTML5", "CSS3"],
+      "liveUrl": "https://github.com/HngWu/3d_portfolio_website",
+      "githubUrl": "https://github.com/HngWu/3d_portfolio_website",
+      "topics": ["threejs", "3d", "webgl", "experiment"],
+      "caseStudy": {
+        "problem": "Exploration of 3D spatial boundaries and spatial audio integration for web browsers before modern WebGL abstractions became ubiquitous.",
+        "approach": "Constructed raw Three.js geometry meshes with procedural materials, ambient point light rigs, and custom raycasting click selectors.",
+        "keyTechnicalDecision": "Maintained an unbundled, lightweight single-bundle architecture to evaluate raw browser rendering performance without framework overhead.",
+        "result": "Provided foundational learnings on WebGL matrix transformations, frustum culling, and camera lerp math that informed the current portfolio architecture.",
+        "whatIdDoDifferently": "Adopt a declarative component graph (R3F) for more maintainable state synchronization."
+      }
+    },
+    {
+      "id": "epub-novel-sanitizer",
+      "slug": "epub-novel-sanitizer",
+      "name": "ePub Novel Sanitizer",
+      "repo": "HngWu/epub-novel-sanitizer",
+      "status": "Shipped",
+      "language": "Python",
+      "featured": false,
+      "description": "Automated ePub typography and metadata cleaning pipeline removing translator artifacts and normalizing XHTML semantics.",
+      "techStack": ["Python", "BeautifulSoup", "ePub3", "Regex"],
+      "liveUrl": "https://github.com/HngWu/epub-novel-sanitizer",
+      "githubUrl": "https://github.com/HngWu/epub-novel-sanitizer",
+      "topics": ["python", "epub", "automation", "text-processing"],
+      "caseStudy": {
+        "problem": "Downloaded e-books and web novels often feature broken CSS font declarations, messy nested advertising divs, and misaligned chapter hierarchy that ruin e-reader rendering.",
+        "approach": "Created an automated decompression, AST parsing, and regex sanitization pipeline that purges non-standard tags while preserving valid styling and chapter NCX navigation tables.",
+        "keyTechnicalDecision": "Utilized BeautifulSoup with lxml parser for high-throughput DOM tree normalization paired with automated zip archive rebuilding.",
+        "result": "Batch-processes multi-megabyte ePub archives in under 200ms with 100% W3C ePub validator compliance.",
+        "whatIdDoDifferently": "Wrap the core Python engine in a lightweight WebAssembly/Pyodide interface for client-side browser usage."
+      }
+    },
+    {
+      "id": "mario-kart-console-app",
+      "slug": "mario-kart-console-app",
+      "name": "Mario Kart Console",
+      "repo": "HngWu/Mario-Cart-Console-Application",
+      "status": "Archived",
+      "language": "C#",
+      "featured": false,
+      "description": "Object-oriented terminal simulation of kart racing mechanics, item rolls, and track obstacle algorithms in C#.",
+      "techStack": ["C#", ".NET", "OOP", "CLI"],
+      "liveUrl": "https://github.com/HngWu/Mario-Cart-Console-Application",
+      "githubUrl": "https://github.com/HngWu/Mario-Cart-Console-Application",
+      "topics": ["csharp", "dotnet", "game-loop", "console"],
+      "caseStudy": {
+        "problem": "Simulate deterministic turn-based arcade racing dynamics within a text-based terminal environment.",
+        "approach": "Applied OOP patterns (Factory, Strategy, State) to model kart weight classes, terrain speed modifiers, and probabilistic RNG item distribution.",
+        "keyTechnicalDecision": "Engineered an event-driven tick system that decoupled terminal rendering buffers from game logic evaluation.",
+        "result": "Delivered an engaging terminal game loop illustrating robust software design patterns and clean architectural separation in C#.",
+        "whatIdDoDifferently": "Implement ANSI escape sequence terminal color graphics and animated ASCII art sprites."
+      }
+    }
+  ]
+}
