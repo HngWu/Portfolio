@@ -18,7 +18,6 @@
       "techStack": ["Next.js 16", "Gemini AI", "Redis", "SQLite", "Tailwind CSS"],
       "liveUrl": "https://triviaduel.dev",
       "githubUrl": "https://github.com/HngWu/Trivia",
-      "previewImage": "/images/projects/trivia-duel.webp",
       "topics": ["multiplayer", "websockets", "ai", "realtime", "nextjs"],
       "caseStudy": {
         "problem": "Traditional trivia platforms suffer from repetitive question pools, latency desync in live player lobbies, and fragile single-point AI rate-limiting during peak quiz generation.",
@@ -40,7 +39,6 @@
       "techStack": ["React 19", "Node.js", "MariaDB", "Vite", "WebCrypto"],
       "liveUrl": "https://secureasset.dev",
       "githubUrl": "https://github.com/HngWu/watermark-tool",
-      "previewImage": "/images/projects/secure-asset.webp",
       "topics": ["cybersecurity", "steganography", "forensics", "cryptography"],
       "caseStudy": {
         "problem": "Digital artists and enterprises face rampant intellectual property theft where metadata watermarks are trivially stripped by screenshot tools, re-compression, or social media pipelines.",
@@ -62,7 +60,6 @@
       "techStack": ["Next.js 16", "Tailwind CSS v4", "React Three Fiber", "GSAP", "Zustand"],
       "liveUrl": "https://portfolio.dev",
       "githubUrl": "https://github.com/HngWu/Portfolio",
-      "previewImage": "/images/projects/portfolio.webp",
       "topics": ["creative-development", "webgl", "threejs", "gsap", "turbopack"],
       "caseStudy": {
         "problem": "Standard developer portfolios are static, template-driven, and lack authentic technical personality, tactile micro-interactions, and cinematic depth.",

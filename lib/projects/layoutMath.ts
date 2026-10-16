@@ -137,7 +137,8 @@ export function getGridTransform(
   cols = 3,
   cardWidth = 380,
   cardHeight = 320,
-  gap = 28
+  gap = 28,
+  activeFocusedIndex = 0
 ): CardTransform3D {
   const col = index % cols
   const row = Math.floor(index / cols)
@@ -156,7 +157,7 @@ export function getGridTransform(
     blur: 0,
     saturation: 1,
     zIndex: 100,
-    isFocused: index === 0,
+    isFocused: index === activeFocusedIndex,
     relativeAngle: 0,
   }
 }

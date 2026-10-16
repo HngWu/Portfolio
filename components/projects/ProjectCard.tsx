@@ -38,10 +38,10 @@ export function ProjectCard({
   const cardRef = React.useRef<HTMLDivElement>(null)
   const videoRef = React.useRef<HTMLVideoElement>(null)
 
-  // Pointer parallax tilt state (active only when focused)
-  const [tilt, setTilt] = React.useState({ x: 0, y: 0 })
+  // Pointer sheen state (active on cursor move)
   const [sheen, setSheen] = React.useState({ x: 0, y: 0 })
   const [isHovered, setIsHovered] = React.useState(false)
+  const [imageError, setImageError] = React.useState(false)
 
   // Autoplay control: only focused or adjacent cards play video
   React.useEffect(() => {
@@ -74,7 +74,11 @@ export function ProjectCard({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault()
-      onOpenCaseStudy()
+      if (isFocused) {
+        onOpenCaseStudy()
+      } else {
+        onClick()
+      }
     }
   }
 
@@ -116,9 +120,8 @@ export function ProjectCard({
     boxShadow: isFocused
       ? `0 24px 60px rgba(0, 0, 0, 0.75), 0 0 35px ${langColor}33`
       : "0 16px 40px rgba(0, 0, 0, 0.6)",
-    transition: isHovered
-      ? "filter 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease"
-      : "transform 0.1s linear, opacity 0.2s ease, filter 0.2s ease, border-color 0.3s ease, box-shadow 0.3s ease",
+    transition:
+      "opacity 0.25s ease, filter 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease",
   }
 
   return (
@@ -126,13 +129,19 @@ export function ProjectCard({
       ref={cardRef}
       role="button"
       tabIndex={0}
-      aria-label={`${project.name}, ${project.status} project. Press Enter or click to open case study.`}
+      aria-label={`${project.name}, ${project.status} project. ${isFocused ? "Press Enter or click to open case study." : "Press Enter or click to view project."}`}
       aria-roledescription="carousel card"
       aria-current={isFocused ? "true" : undefined}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={onOpenCaseStudy}
+      onClick={() => {
+        if (isFocused) {
+          onOpenCaseStudy()
+        } else {
+          onClick()
+        }
+      }}
       onKeyDown={handleKeyDown}
       style={cardTransformStyle}
       className={cn(
@@ -175,16 +184,13 @@ export function ProjectCard({
             playsInline
             className="w-full h-full object-cover opacity-80"
           />
-        ) : project.previewImage ? (
+        ) : project.previewImage && !imageError ? (
           <img
             src={project.previewImage}
-            alt={project.name}
+            alt=""
             loading="lazy"
             className="w-full h-full object-cover opacity-80 transition-transform duration-500 hover:scale-105"
-            onError={(e) => {
-              // Hide broken image placeholder
-              ;(e.target as HTMLElement).style.display = "none"
-            }}
+            onError={() => setImageError(true)}
           />
         ) : (
           /* Sleek procedural abstract gradient fallback */

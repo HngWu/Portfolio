@@ -59,6 +59,8 @@ export function Infinite3DCarousel({
   const velocityRef = React.useRef(0)
   const isDraggingRef = React.useRef(false)
   const lastPointerXRef = React.useRef(0)
+  const dragStartXRef = React.useRef(0)
+  const hasDraggedRef = React.useRef(false)
   const dragStartTimeRef = React.useRef(0)
   const activeIndexRef = React.useRef(0)
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -119,6 +121,16 @@ export function Infinite3DCarousel({
     return result
   }, [projects, searchQuery, selectedLanguage, selectedStatus, sortBy])
 
+  // Reset focus and rotation when filter count changes and current focus is out of range
+  React.useEffect(() => {
+    if (filteredProjects.length === 0) return
+    if (focusedIndex >= filteredProjects.length) {
+      setFocusedIndex(0)
+      targetRotationRef.current = 0
+      rotationRef.current = 0
+    }
+  }, [filteredProjects.length, focusedIndex])
+
   // Check prefers-reduced-motion and screen resize
   React.useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -158,31 +170,53 @@ export function Infinite3DCarousel({
   // State of computed 3D card transforms
   const [cardTransforms, setCardTransforms] = React.useState<CardTransform3D[]>([])
 
-  // Helper to jump to a specific card index with spring
+  // Helper to jump to a specific card index with shortest circular path
   const rotateToIndex = React.useCallback(
-    (index: number) => {
+    (targetIndex: number) => {
       if (filteredProjects.length === 0) return
       const count = filteredProjects.length
       const step = (Math.PI * 2) / count
-      const delta = getShortestAngleDelta(index, count, rotationRef.current)
-      targetRotationRef.current = rotationRef.current + delta
-      velocityRef.current = delta * 0.15
+
+      // Target discrete index from current target orientation
+      const currentTargetIndex = Math.round(targetRotationRef.current / step)
+      const currentNorm = ((currentTargetIndex % count) + count) % count
+
+      // Shortest circular delta in [-count/2, count/2]
+      let diff = targetIndex - currentNorm
+      while (diff > count / 2) diff -= count
+      while (diff < -count / 2) diff += count
+
+      targetRotationRef.current = (currentTargetIndex + diff) * step
+
+      if (layoutType === "grid" || isListView) {
+        setFocusedIndex(targetIndex)
+      }
     },
-    [filteredProjects.length]
+    [filteredProjects.length, layoutType, isListView]
   )
 
   // Previous / Next handlers
   const handlePrev = React.useCallback(() => {
     if (filteredProjects.length === 0) return
-    const prev = (focusedIndex - 1 + filteredProjects.length) % filteredProjects.length
-    rotateToIndex(prev)
-  }, [focusedIndex, filteredProjects.length, rotateToIndex])
+    const count = filteredProjects.length
+    const step = (Math.PI * 2) / count
+    const currentTargetIndex = Math.round(targetRotationRef.current / step)
+    targetRotationRef.current = (currentTargetIndex - 1) * step
+    if (layoutType === "grid" || isListView) {
+      setFocusedIndex(((currentTargetIndex - 1) % count + count) % count)
+    }
+  }, [filteredProjects.length, layoutType, isListView])
 
   const handleNext = React.useCallback(() => {
     if (filteredProjects.length === 0) return
-    const next = (focusedIndex + 1) % filteredProjects.length
-    rotateToIndex(next)
-  }, [focusedIndex, filteredProjects.length, rotateToIndex])
+    const count = filteredProjects.length
+    const step = (Math.PI * 2) / count
+    const currentTargetIndex = Math.round(targetRotationRef.current / step)
+    targetRotationRef.current = (currentTargetIndex + 1) * step
+    if (layoutType === "grid" || isListView) {
+      setFocusedIndex(((currentTargetIndex + 1) % count + count) % count)
+    }
+  }, [filteredProjects.length, layoutType, isListView])
 
   // Open & Close Case Study Panel
   const handleOpenCaseStudy = React.useCallback(
@@ -210,6 +244,19 @@ export function Infinite3DCarousel({
       window.history.pushState(null, "", "/projects")
     }
   }, [])
+
+  // Card click handler: smoothly rotates side cards to front, or opens case study if already focused
+  const handleCardClick = React.useCallback(
+    (project: ProjectItemData, index: number) => {
+      if (hasDraggedRef.current) return
+      if (layoutType === "grid" || isListView || index === focusedIndex) {
+        handleOpenCaseStudy(project, index)
+      } else {
+        rotateToIndex(index)
+      }
+    },
+    [layoutType, isListView, focusedIndex, handleOpenCaseStudy, rotateToIndex]
+  )
 
   // Synchronize on browser back / forward
   React.useEffect(() => {
@@ -272,12 +319,17 @@ export function Infinite3DCarousel({
   // Drag & Swipe Pointer Event Handlers
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isListView || e.button !== 0) return
+    const target = e.target as HTMLElement | null
+    if (target && target.closest("button, a")) {
+      return
+    }
     isDraggingRef.current = true
+    hasDraggedRef.current = false
     setIsInteracting(true)
+    dragStartXRef.current = e.clientX
     lastPointerXRef.current = e.clientX
     dragStartTimeRef.current = performance.now()
     velocityRef.current = 0
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -285,13 +337,22 @@ export function Infinite3DCarousel({
     const deltaX = e.clientX - lastPointerXRef.current
     lastPointerXRef.current = e.clientX
 
-    // Convert pixel delta to angular rotation
+    if (Math.abs(e.clientX - dragStartXRef.current) > 6) {
+      if (!hasDraggedRef.current) {
+        hasDraggedRef.current = true
+        try {
+          ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+        } catch {}
+      }
+    }
+
+    // Natural drag: dragging left moves carousel forward (positive rotation)
     const sensitivity = 0.0035
-    rotationRef.current += deltaX * sensitivity
+    rotationRef.current -= deltaX * sensitivity
     targetRotationRef.current = rotationRef.current
 
     // Track instantaneous velocity
-    velocityRef.current = deltaX * sensitivity
+    velocityRef.current = -deltaX * sensitivity
   }
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -304,8 +365,19 @@ export function Infinite3DCarousel({
       // Ignore capture release error
     }
 
-    // Clamp inertia velocity
-    velocityRef.current = Math.max(-0.15, Math.min(0.15, velocityRef.current))
+    const count = filteredProjects.length
+    if (count > 0 && hasDraggedRef.current) {
+      const step = (Math.PI * 2) / count
+      // Smoothly snap to nearest card taking velocity momentum into account
+      const projected = rotationRef.current + velocityRef.current * 8
+      const targetIndex = Math.round(projected / step)
+      targetRotationRef.current = targetIndex * step
+    }
+
+    // Reset hasDraggedRef after click microtask has executed
+    setTimeout(() => {
+      hasDraggedRef.current = false
+    }, 50)
   }
 
   // Master Physics & Render Loop (rAF)
@@ -317,32 +389,19 @@ export function Infinite3DCarousel({
     let lastTime = performance.now()
 
     const tick = (currentTime: number) => {
-      // 1. Inertia velocity decay when user released drag
+      // 1. Smoothly spring towards targetRotationRef.current when not dragging
       if (!isDraggingRef.current) {
-        if (Math.abs(velocityRef.current) > 0.001) {
-          rotationRef.current += velocityRef.current
-          velocityRef.current *= 0.93 // exponential friction
+        const error = targetRotationRef.current - rotationRef.current
+        if (Math.abs(error) > 0.0002) {
+          rotationRef.current += error * 0.12
         } else {
-          // 2. Critically damped spring snap towards nearest card index
-          const rawCurrent = rotationRef.current
-          const nearestIndex = Math.round(rawCurrent / step)
-          const targetAngle = nearestIndex * step
-          const error = targetAngle - rawCurrent
-
-          if (Math.abs(error) > 0.0005) {
-            velocityRef.current = error * 0.14
-            rotationRef.current += velocityRef.current
-          } else {
-            velocityRef.current = 0
-            rotationRef.current = targetAngle
-          }
+          rotationRef.current = targetRotationRef.current
         }
       }
 
-      // 5. Compute active focused index
-      const positiveRot =
-        ((rotationRef.current % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
-      const currentActive = Math.round(positiveRot / step) % count
+      // 2. Compute active focused index
+      const currentIndex = Math.round(rotationRef.current / step)
+      const currentActive = ((currentIndex % count) + count) % count
 
       if (currentActive !== activeIndexRef.current) {
         activeIndexRef.current = currentActive
@@ -350,7 +409,7 @@ export function Infinite3DCarousel({
         playCarouselTick(!isAudioMuted)
       }
 
-      // 6. Compute transforms for each card according to layout
+      // 3. Compute transforms for each card according to layout
       const gridCols = viewportWidth < 768 ? 1 : viewportWidth < 1200 ? 2 : 3
       const cardW = viewportWidth < 640 ? 320 : viewportWidth < 1024 ? 380 : 420
       const cardH = viewportWidth < 640 ? 400 : 480
@@ -363,7 +422,7 @@ export function Infinite3DCarousel({
         if (layoutType === "helix") {
           baseTransform = getHelixTransform(i, count, rotationRef.current, ringRadius, 320)
         } else if (layoutType === "grid") {
-          baseTransform = getGridTransform(i, count, gridCols, cardW, cardH, 28)
+          baseTransform = getGridTransform(i, count, gridCols, cardW, cardH, 28, focusedIndex)
         } else {
           baseTransform = getRingTransform(i, count, rotationRef.current, ringRadius)
         }
@@ -540,7 +599,7 @@ export function Infinite3DCarousel({
                   transform={transform}
                   isFocused={transform.isFocused}
                   isAdjacent={isAdjacent}
-                  onClick={() => handleOpenCaseStudy(project, i)}
+                  onClick={() => handleCardClick(project, i)}
                   onOpenCaseStudy={() => handleOpenCaseStudy(project, i)}
                   index={i}
                   totalCount={filteredProjects.length}
