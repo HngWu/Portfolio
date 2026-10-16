@@ -141,6 +141,17 @@ export function EducationTile({
     [activeIndex]
   )
 
+  const isMobile = React.useSyncExternalStore(
+    React.useCallback((callback: () => void) => {
+      const mediaQuery = window.matchMedia("(max-width: 767px)")
+      mediaQuery.addEventListener("change", callback)
+      return () => mediaQuery.removeEventListener("change", callback)
+    }, []),
+    () => window.matchMedia("(max-width: 767px)").matches,
+    () => false
+  )
+  const isMobileEffective = forceMobile || isMobile
+
   // Swipe / Drag Gestures
   const handleDragStart = () => {
     isInteractingRef.current = true
@@ -151,13 +162,21 @@ export function EducationTile({
       isInteractingRef.current = false
     }, 100)
 
-    const offsetThreshold = 45
-    const velocityThreshold = 300
+    const offsetThreshold = 40
+    const velocityThreshold = 250
 
-    if (info.offset.y < -offsetThreshold || info.velocity.y < -velocityThreshold) {
-      goToNext()
-    } else if (info.offset.y > offsetThreshold || info.velocity.y > velocityThreshold) {
-      goToPrev()
+    if (isMobileEffective) {
+      if (info.offset.x < -offsetThreshold || info.velocity.x < -velocityThreshold) {
+        goToNext()
+      } else if (info.offset.x > offsetThreshold || info.velocity.x > velocityThreshold) {
+        goToPrev()
+      }
+    } else {
+      if (info.offset.y < -offsetThreshold || info.velocity.y < -velocityThreshold) {
+        goToNext()
+      } else if (info.offset.y > offsetThreshold || info.velocity.y > velocityThreshold) {
+        goToPrev()
+      }
     }
   }
 
@@ -432,22 +451,26 @@ export function EducationTile({
               custom={direction}
               variants={{
                 enter: (dir: number) => ({
-                  y: dir >= 0 ? 20 : -20,
+                  x: isMobileEffective ? (dir >= 0 ? 30 : -30) : 0,
+                  y: !isMobileEffective ? (dir >= 0 ? 20 : -20) : 0,
                   opacity: 0,
                   scale: 0.96,
                 }),
                 center: {
+                  x: 0,
                   y: 0,
                   opacity: 1,
                   scale: 1,
                   transition: {
+                    x: { type: "spring", stiffness: 350, damping: 28 },
                     y: { type: "spring", stiffness: 350, damping: 28 },
                     opacity: { duration: 0.25 },
                     scale: { duration: 0.25 },
                   },
                 },
                 exit: (dir: number) => ({
-                  y: dir >= 0 ? -20 : 20,
+                  x: isMobileEffective ? (dir >= 0 ? -30 : 30) : 0,
+                  y: !isMobileEffective ? (dir >= 0 ? -20 : 20) : 0,
                   opacity: 0,
                   scale: 0.96,
                   transition: {
@@ -458,9 +481,9 @@ export function EducationTile({
               initial="enter"
               animate="center"
               exit="exit"
-              drag="y"
+              drag={isMobileEffective ? "x" : "y"}
               dragDirectionLock={true}
-              dragConstraints={{ top: 0, bottom: 0 }}
+              dragConstraints={isMobileEffective ? { left: 0, right: 0 } : { top: 0, bottom: 0 }}
               dragElastic={0.2}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}

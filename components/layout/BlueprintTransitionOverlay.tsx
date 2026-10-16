@@ -197,7 +197,9 @@ export function BlueprintTransitionOverlay() {
         ctx.fillStyle = isDeep ? `rgba(106, 255, 255, ${progress})` : `rgba(255, 232, 117, ${progress})`
         ctx.fillText("SEC-04 // CAD_SCHEMATIC_LOAD", 24, 28)
         ctx.fillText(`MODE: ${isDeep ? "DEEP_DIVE" : "QUICK_PITCH"} // 60FPS`, 24, 42)
-        ctx.fillText(`COORDINATES [X:${Math.round(w)} Y:${Math.round(h)}]`, w - 240, 28)
+        if (w >= 520) {
+          ctx.fillText(`COORDINATES [X:${Math.round(w)} Y:${Math.round(h)}]`, w - 240, 28)
+        }
 
         // Center Crosshair Reticle
         const cx = w / 2

@@ -391,7 +391,7 @@ export function TerminalTile({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="absolute inset-0 w-full opacity-0 cursor-default"
+                className="absolute inset-0 w-full opacity-0 cursor-default text-base text-[16px]"
                 spellCheck={false}
                 autoComplete="off"
               />

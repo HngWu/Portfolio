@@ -47,15 +47,8 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
     window.dispatchEvent(new CustomEvent("open-command-palette"))
   }
 
-  const handleDownloadAndOpen = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleDownloadCv = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.stopPropagation()
-    // Trigger file download in current window while native anchor opens /cv in a new tab
-    const link = document.createElement("a")
-    link.href = "/resume.pdf"
-    link.download = "resume.pdf"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
   }
 
   const router = useRouter()
@@ -182,13 +175,12 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
             {/* Bottom Left: Download CV Button */}
             <div className="flex items-center gap-2">
               <a 
-                href="/cv"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={handleDownloadAndOpen}
+                href="/resume.pdf"
+                download="resume.pdf"
+                onClick={handleDownloadCv}
                 onMouseEnter={prefetchCvAssets}
                 onFocus={prefetchCvAssets}
-                aria-label="Download CV and open dossier in a new tab"
+                aria-label="Download CV as PDF"
                 className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-[#4AFFB4]/10 border border-white/5 hover:border-[#4AFFB4]/30 rounded-xl text-white/50 hover:text-[#4AFFB4] transition-all duration-300 select-none cursor-pointer group/cv"
               >
                 <Download className="w-4 h-4 transition-transform group-hover/cv:-translate-y-0.5" />
@@ -259,13 +251,12 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
           {/* Bottom Left: Download CV Button */}
           <div className="flex items-center gap-2">
             <a 
-              href="/cv"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleDownloadAndOpen}
+              href="/resume.pdf"
+              download="resume.pdf"
+              onClick={handleDownloadCv}
               onMouseEnter={prefetchCvAssets}
               onFocus={prefetchCvAssets}
-              aria-label="Download CV and open dossier in a new tab"
+              aria-label="Download CV as PDF"
               className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-[#4AFFB4]/10 border border-white/5 hover:border-[#4AFFB4]/30 rounded-xl text-white/50 hover:text-[#4AFFB4] transition-all duration-300 select-none cursor-pointer group/cv"
             >
               <Download className="w-4 h-4 transition-transform group-hover/cv:-translate-y-0.5" />

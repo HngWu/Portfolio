@@ -161,7 +161,12 @@ export function BentoTile({
         className="relative w-full h-full preserve-3d"
       >
         {/* Front Face (Quick Pitch) */}
-        <div className="absolute inset-0 h-full w-full backface-hidden z-10">
+        <div
+          className={cn(
+            "absolute inset-0 h-full w-full backface-hidden transition-all duration-300",
+            isDeepDive ? "pointer-events-none z-0 opacity-0" : "pointer-events-auto z-10 opacity-100"
+          )}
+        >
           <GlassCard
             ref={ref}
             onMouseEnter={onMouseEnter}
@@ -169,7 +174,7 @@ export function BentoTile({
             onMouseLeave={onMouseLeave}
             glowColor={glowColor}
             onClick={handleClick}
-            interactive={!isDragging}
+            interactive={!isDragging && !isDeepDive}
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
               "flex flex-col w-full h-full",
@@ -188,11 +193,16 @@ export function BentoTile({
         </div>
 
         {/* Back Face (Deep Dive) */}
-        <div className="absolute inset-0 h-full w-full backface-hidden rotate-y-180 z-0">
+        <div
+          className={cn(
+            "absolute inset-0 h-full w-full backface-hidden rotate-y-180 transition-all duration-300",
+            isDeepDive ? "pointer-events-auto z-10 opacity-100" : "pointer-events-none z-0 opacity-0"
+          )}
+        >
           <GlassCard
             glowColor={glowColor}
             onClick={handleClick}
-            interactive={!isDragging}
+            interactive={!isDragging && isDeepDive}
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
               "flex flex-col h-full bg-lume-secondary/5 border-lume-secondary/20",

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Palette, Monitor } from "lucide-react"
+import { Search, Palette, Monitor, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { usePageTransition } from "@/hooks/usePageTransition"
 import { useThemeStore } from "@/store/useThemeStore"
@@ -113,7 +113,12 @@ export function CommandPalette({ initialContent }: { initialContent?: SearchResu
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-md flex items-start justify-center pt-[15vh] transition-all duration-300">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setIsOpen(false)
+      }}
+      className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-md flex items-start justify-center pt-[10vh] sm:pt-[15vh] transition-all duration-300"
+    >
       <div className="w-full max-w-2xl bg-[#0f0f0f]/85 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.85),0_0_30px_rgba(74,255,180,0.02)] overflow-hidden flex flex-col mx-4 animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center px-4 border-b border-white/5 bg-white/[0.01]">
           <Search className="w-4 h-4 text-white/30 shrink-0" />
@@ -125,7 +130,15 @@ export function CommandPalette({ initialContent }: { initialContent?: SearchResu
             onChange={handleSearchChange}
           />
           <span className="w-1.5 h-4 bg-lume-primary animate-pulse rounded shrink-0 mr-3 shadow-[0_0_8px_var(--lume-primary)]" />
-          <kbd className="bg-white/[0.05] border border-white/10 text-white/40 px-2 py-0.5 rounded text-[10px] font-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_1.5px_0_rgba(0,0,0,0.4)] shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close command palette"
+            className="sm:hidden p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-lg shrink-0 transition-colors mr-1 cursor-pointer"
+          >
+            <X className="size-4" />
+          </button>
+          <kbd className="hidden sm:inline-block bg-white/[0.05] border border-white/10 text-white/40 px-2 py-0.5 rounded text-[10px] font-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_1.5px_0_rgba(0,0,0,0.4)] shrink-0">
             ESC
           </kbd>
         </div>

@@ -22,26 +22,28 @@ export function ViewModeToggle() {
       <button
         onClick={() => select("quick")}
         disabled={isTransitioning}
-        className={`relative z-10 flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-500 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`relative z-10 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-500 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed ${
           mode === "quick"
             ? "bg-lume-warm/20 text-lume-warm shadow-[0_0_20px_rgba(255,180,74,0.2)]"
             : "text-white/40 hover:text-white/70"
         }`}
       >
-        <Zap className={`size-3 transition-transform duration-500 ${mode === "quick" ? "scale-110" : ""}`} />
-        Quick-Pitch
+        <Zap className={`size-3 shrink-0 transition-transform duration-500 ${mode === "quick" ? "scale-110" : ""}`} />
+        <span className="sm:hidden">Quick</span>
+        <span className="hidden sm:inline">Quick-Pitch</span>
       </button>
       <button
         onClick={() => select("deep")}
         disabled={isTransitioning}
-        className={`relative z-10 flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-500 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`relative z-10 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-500 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed ${
           mode === "deep"
             ? "bg-lume-secondary/20 text-lume-secondary shadow-[0_0_20px_rgba(74,143,255,0.2)]"
             : "text-white/40 hover:text-white/70"
         }`}
       >
-        <Microscope className={`size-3 transition-transform duration-500 ${mode === "deep" ? "scale-110" : ""}`} />
-        Deep Dive
+        <Microscope className={`size-3 shrink-0 transition-transform duration-500 ${mode === "deep" ? "scale-110" : ""}`} />
+        <span className="sm:hidden">Deep</span>
+        <span className="hidden sm:inline">Deep Dive</span>
       </button>
     </div>
   )

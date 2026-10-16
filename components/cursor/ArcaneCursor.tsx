@@ -43,13 +43,19 @@ export function ArcaneCursor() {
 
   useEffect(() => {
     const checkTouch = () => {
-      // Only disable custom cursor on small mobile/tablet screens (< 768px)
-      // This prevents hybrid touchscreen laptops from losing their cursor
-      setIsTouchDevice(window.innerWidth < 768)
+      // Disable custom cursor if screen is narrow (< 768px) or primary pointer is coarse touch (e.g. iPad/tablets) without a fine mouse
+      const isCoarse = window.matchMedia("(pointer: coarse)").matches && !window.matchMedia("(pointer: fine)").matches
+      const isNarrow = window.innerWidth < 768
+      setIsTouchDevice(isCoarse || isNarrow)
     }
     checkTouch()
     window.addEventListener('resize', checkTouch)
-    return () => window.removeEventListener('resize', checkTouch)
+    const coarseMql = window.matchMedia("(pointer: coarse)")
+    coarseMql.addEventListener?.('change', checkTouch)
+    return () => {
+      window.removeEventListener('resize', checkTouch)
+      coarseMql.removeEventListener?.('change', checkTouch)
+    }
   }, [])
 
   // Refs for tracking mouse position and velocity

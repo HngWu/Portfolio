@@ -331,8 +331,8 @@ export function EducationMap({
         )}
       </div>
 
-      {/* Floating Map Controls in the Bottom Right-Hand Corner of the Screen */}
-      <div className="fixed bottom-5 sm:bottom-6 right-5 sm:right-6 z-[450] pointer-events-auto">
+      {/* Floating Map Controls - on mobile positioned below search bar to avoid colliding with bottom sheet */}
+      <div className="fixed top-24 right-3 sm:top-auto sm:bottom-6 sm:right-6 z-[450] pointer-events-auto">
         <GoogleMapsControls
           mapTheme={mapTheme}
           onToggleTheme={() => setMapTheme((prev) => (prev === "dark" ? "light" : "dark"))}

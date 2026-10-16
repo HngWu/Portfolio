@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display } from "next/font/google";
 import { CommandPalette } from "@/components/cli/CommandPalette";
@@ -30,6 +30,14 @@ const playfair = Playfair_Display({
   variable: "--font-display",
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#050505",
+  colorScheme: "dark",
+};
 
 export const metadata: Metadata = {
   title: {
