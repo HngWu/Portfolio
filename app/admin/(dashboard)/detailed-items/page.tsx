@@ -4,9 +4,11 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { getDetailedItems, deleteDetailedItem, DetailedItemRow } from "@/app/actions/detailed-items"
 import { GlassCard } from "@/components/ui/GlassCard"
+import { DatabaseBadge } from "@/components/admin/DatabaseBadge"
 import { Plus, Trash2, Edit3, Search, Layers, X, Calendar, Sparkles } from "lucide-react"
 import { useToastStore } from "@/store/useToastStore"
 import { useConfirmStore } from "@/store/useConfirmStore"
+import { useDatabaseStore } from "@/store/useDatabaseStore"
 import { cn } from "@/lib/utils"
 
 const CATEGORY_TABS = [
@@ -21,6 +23,7 @@ export default function DetailedItemsAdminPage() {
   const router = useRouter()
   const { addToast } = useToastStore()
   const { confirm } = useConfirmStore()
+  const dataVersion = useDatabaseStore((s) => s.dataVersion)
 
   const [items, setItems] = React.useState<DetailedItemRow[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -51,7 +54,7 @@ export default function DetailedItemsAdminPage() {
     return () => {
       isMounted = false
     }
-  }, [loadData])
+  }, [loadData, dataVersion])
 
   const handleDelete = async (id: string, title: string) => {
     const shouldDelete = await confirm({
@@ -89,9 +92,10 @@ export default function DetailedItemsAdminPage() {
             <span className="text-xs font-mono text-white/40 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/5">
               {items.length} Total
             </span>
+            <DatabaseBadge />
           </div>
           <p className="text-xs sm:text-sm text-white/50 mt-1">
-            Manage resume experience, education history, and projects stored in SQLite.
+            Manage resume experience, education history, and projects stored in the active database.
           </p>
         </div>
         <button

@@ -3,10 +3,12 @@
 import * as React from "react"
 import { getProjects, deleteProject } from "@/app/actions/projects"
 import { GlassCard } from "@/components/ui/GlassCard"
+import { DatabaseBadge } from "@/components/admin/DatabaseBadge"
 import { Plus, Trash2, Settings2, Search, X, Globe, Github, Star, Layers, ExternalLink } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToastStore } from "@/store/useToastStore"
 import { useConfirmStore } from "@/store/useConfirmStore"
+import { useDatabaseStore } from "@/store/useDatabaseStore"
 
 interface Project {
   id: string
@@ -23,6 +25,7 @@ export default function ProjectsAdminPage() {
   const router = useRouter()
   const { addToast } = useToastStore()
   const { confirm } = useConfirmStore()
+  const dataVersion = useDatabaseStore((s) => s.dataVersion)
 
   const [projects, setProjects] = React.useState<Project[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -47,7 +50,7 @@ export default function ProjectsAdminPage() {
     return () => { 
       isMounted = false
     }
-  }, [load])
+  }, [load, dataVersion])
 
   const handleDelete = async (project: Project) => {
     const shouldDelete = await confirm({
@@ -87,6 +90,7 @@ export default function ProjectsAdminPage() {
             <span className="text-xs font-mono text-white/40 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/5">
               {projects.length} Total
             </span>
+            <DatabaseBadge />
           </div>
           <p className="text-xs sm:text-sm text-white/50 mt-1">
             Overview and configuration for all showcase projects in the portfolio grid.

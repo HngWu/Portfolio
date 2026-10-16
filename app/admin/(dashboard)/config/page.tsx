@@ -3,14 +3,17 @@
 import * as React from "react"
 import { getConfig, updateConfig, type ConfigItem as ConfigItemType } from "@/app/actions/config"
 import { GlassCard } from "@/components/ui/GlassCard"
+import { DatabaseBadge } from "@/components/admin/DatabaseBadge"
 import { Save, Wand2, Copy, Check, Settings2, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import { useToastStore } from "@/store/useToastStore"
+import { useDatabaseStore } from "@/store/useDatabaseStore"
 import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
 import { vscodeDark } from '@uiw/codemirror-theme-vscode'
 
 export default function ConfigPage() {
   const { addToast } = useToastStore()
+  const dataVersion = useDatabaseStore((s) => s.dataVersion)
   const [config, setConfig] = React.useState<ConfigItemType[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
 
@@ -30,7 +33,7 @@ export default function ConfigPage() {
     }
     load()
     return () => { isMounted = false }
-  }, [addToast])
+  }, [addToast, dataVersion])
 
   const handleSave = async (key: string, value: string) => {
     try {
@@ -53,6 +56,7 @@ export default function ConfigPage() {
           <span className="text-xs font-mono text-white/40 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/5">
             {config.length} Keys
           </span>
+          <DatabaseBadge />
         </div>
         <p className="text-xs sm:text-sm text-white/50 mt-1">
           Fine-tune global theme palettes, identity meta, and application-wide settings.

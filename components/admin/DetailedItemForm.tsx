@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import { DatabaseBadge } from "@/components/admin/DatabaseBadge"
 import { DetailedItemRow, DetailedItemInsert, DetailedItemUpdate } from "@/app/actions/detailed-items"
 import { BasicInfoFields } from "./form/BasicInfoFields"
 import { TypePayloadEditor } from "./form/TypePayloadEditor"
@@ -187,7 +188,10 @@ export function DetailedItemForm({ initialData, onSubmit, title }: DetailedItemF
             <ArrowLeft className="size-4" />
           </button>
           <div>
-            <h1 className="text-xl sm:text-2xl font-display text-white">{title}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-display text-white">{title}</h1>
+              <DatabaseBadge />
+            </div>
             <p className="text-xs text-white/50 mt-0.5">Manage detailed resume, education, or project database entry.</p>
           </div>
         </div>

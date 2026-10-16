@@ -46,6 +46,7 @@ export async function savePageTransitions(rules: PageTransitionRule[]) {
   }
 
   revalidatePath("/")
+  revalidatePath("/admin", "layout")
   revalidatePath("/admin/transitions")
   return { success: true }
 }

@@ -49,6 +49,7 @@ export async function saveVaultConfigAction(config: VaultConfig): Promise<{ succ
     }
 
     revalidatePath("/cv")
+    revalidatePath("/admin", "layout")
     revalidatePath("/admin/vault")
     return { success: true }
   } catch (err) {

@@ -25,6 +25,7 @@ export async function getDetailedItem(id: string): Promise<DetailedItemRow | nul
 export async function createDetailedItem(item: DetailedItemInsert): Promise<DetailedItemRow> {
   const created = await createDetailedItemInDb(item)
   revalidatePath("/")
+  revalidatePath("/admin", "layout")
   revalidatePath("/admin/detailed-items")
   return created
 }
@@ -32,6 +33,7 @@ export async function createDetailedItem(item: DetailedItemInsert): Promise<Deta
 export async function updateDetailedItem(id: string, updates: DetailedItemUpdate): Promise<DetailedItemRow> {
   const updated = await updateDetailedItemInDb(id, updates)
   revalidatePath("/")
+  revalidatePath("/admin", "layout")
   revalidatePath("/admin/detailed-items")
   return updated
 }
@@ -39,5 +41,6 @@ export async function updateDetailedItem(id: string, updates: DetailedItemUpdate
 export async function deleteDetailedItem(id: string): Promise<void> {
   await deleteDetailedItemFromDb(id)
   revalidatePath("/")
+  revalidatePath("/admin", "layout")
   revalidatePath("/admin/detailed-items")
 }

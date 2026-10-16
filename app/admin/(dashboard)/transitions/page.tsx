@@ -7,8 +7,10 @@ import {
   resetPageTransitionsToDefaults 
 } from "@/app/actions/page-transitions"
 import { GlassCard } from "@/components/ui/GlassCard"
+import { DatabaseBadge } from "@/components/admin/DatabaseBadge"
 import { useToastStore } from "@/store/useToastStore"
 import { useConfirmStore } from "@/store/useConfirmStore"
+import { useDatabaseStore } from "@/store/useDatabaseStore"
 import { 
   ArrowLeftRight, 
   Plus, 
@@ -68,6 +70,7 @@ const PRESETS: { id: TransitionPreset; name: string; description: string; tag: s
 export default function TransitionsAdminPage() {
   const { addToast } = useToastStore()
   const { confirm } = useConfirmStore()
+  const dataVersion = useDatabaseStore((s) => s.dataVersion)
 
   const [rules, setRules] = React.useState<PageTransitionRule[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -97,7 +100,7 @@ export default function TransitionsAdminPage() {
     }
     load()
     return () => { isMounted = false }
-  }, [addToast])
+  }, [addToast, dataVersion])
 
   const handleRuleChange = (
     id: string, 
@@ -209,7 +212,10 @@ export default function TransitionsAdminPage() {
               <ArrowLeftRight className="size-5" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-display text-white">Native Page Transitions</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-display text-white">Native Page Transitions</h1>
+                <DatabaseBadge />
+              </div>
               <p className="text-xs text-white/50">
                 Orchestrate native View Transitions API animations across site routes with dual Quick / Deep mode variations.
               </p>

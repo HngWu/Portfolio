@@ -32,7 +32,7 @@ export async function getDatabaseStatusAction(): Promise<DatabaseStatus> {
 
 export async function switchDatabaseProviderAction(
   provider: DatabaseProvider
-): Promise<{ success: boolean; error?: string; latencyMs?: number }> {
+): Promise<{ success: boolean; activeProvider?: DatabaseProvider; error?: string; latencyMs?: number }> {
   const isAdmin = await verifyAdmin()
   if (!isAdmin) {
     return { success: false, error: "Unauthorized: Admin session expired or invalid." }
@@ -49,10 +49,11 @@ export async function switchDatabaseProviderAction(
 
     await setActiveProvider("supabase")
     revalidatePath("/", "layout")
-    revalidatePath("/admin")
+    revalidatePath("/admin", "layout")
 
     return {
       success: true,
+      activeProvider: "supabase",
       latencyMs: testResult.latencyMs
     }
   }
@@ -60,24 +61,27 @@ export async function switchDatabaseProviderAction(
   // Switch to local SQLite
   await setActiveProvider("sqlite")
   revalidatePath("/", "layout")
-  revalidatePath("/admin")
+  revalidatePath("/admin", "layout")
 
   return {
-    success: true
+    success: true,
+    activeProvider: "sqlite"
   }
 }
 
-export async function resetDatabaseProviderAction(): Promise<{ success: boolean; error?: string }> {
+export async function resetDatabaseProviderAction(): Promise<{ success: boolean; activeProvider?: DatabaseProvider; error?: string }> {
   const isAdmin = await verifyAdmin()
   if (!isAdmin) {
     return { success: false, error: "Unauthorized: Admin session expired or invalid." }
   }
 
   await clearActiveProviderOverride()
+  const defaultProvider = await getActiveProvider()
   revalidatePath("/", "layout")
-  revalidatePath("/admin")
+  revalidatePath("/admin", "layout")
 
   return {
-    success: true
+    success: true,
+    activeProvider: defaultProvider
   }
 }

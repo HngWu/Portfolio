@@ -2,6 +2,7 @@ import * as React from "react"
 import Link from "next/link"
 import { getTiles, getDetailedItems, getTilesByType, getDatabaseStatus, getLastSyncStatus } from "@/lib/db"
 import { DashboardSyncButton } from "@/components/admin/DashboardSyncButton"
+import { DatabaseBadge } from "@/components/admin/DatabaseBadge"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { 
   LayoutGrid, 
@@ -20,6 +21,9 @@ import {
   Edit3,
   Cloud
 } from "lucide-react"
+
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 export default async function AdminDashboard() {
   const [tiles, detailedItems, configTiles, dbStatus, syncStatus] = await Promise.all([
@@ -80,6 +84,7 @@ export default async function AdminDashboard() {
             <span className="px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-widest text-lume-primary bg-lume-primary/10 border border-lume-primary/20 rounded-full">
               System Command Center
             </span>
+            <DatabaseBadge />
           </div>
           <h1 className="text-2xl sm:text-3xl font-display text-white tracking-tight">
             Portfolio Management Hub

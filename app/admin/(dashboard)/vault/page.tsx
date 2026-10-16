@@ -22,8 +22,10 @@ import {
   FolderOpen,
 } from "lucide-react"
 import { GlassCard } from "@/components/ui/GlassCard"
+import { DatabaseBadge } from "@/components/admin/DatabaseBadge"
 import { useToastStore } from "@/store/useToastStore"
 import { useConfirmStore } from "@/store/useConfirmStore"
+import { useDatabaseStore } from "@/store/useDatabaseStore"
 import {
   VAULT_FOLDERS,
   VAULT_DOCUMENTS,
@@ -41,6 +43,7 @@ import {
 export default function AdminVaultPage() {
   const { addToast } = useToastStore()
   const { confirm } = useConfirmStore()
+  const dataVersion = useDatabaseStore((s) => s.dataVersion)
 
   const [config, setConfig] = React.useState<VaultConfig | null>(null)
   const [initialConfigJson, setInitialConfigJson] = React.useState<string>("")
@@ -76,7 +79,7 @@ export default function AdminVaultPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [dataVersion])
 
   const hasUnsavedChanges = React.useMemo(() => {
     if (!config) return false
@@ -239,6 +242,7 @@ export default function AdminVaultPage() {
             <span className="text-xs font-mono text-white/40 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/5">
               {visibleFiles}/{totalFiles} Documents Active
             </span>
+            <DatabaseBadge />
           </div>
           <p className="text-xs sm:text-sm text-white/50 mt-1">
             Reorder categories, toggle file visibility, and customize the live visitor document vault.

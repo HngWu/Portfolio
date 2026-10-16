@@ -4,10 +4,12 @@ import * as React from "react"
 import { useParams } from "next/navigation"
 import { getDetailedItem, updateDetailedItem, DetailedItemRow, DetailedItemUpdate } from "@/app/actions/detailed-items"
 import { DetailedItemForm } from "@/components/admin/DetailedItemForm"
+import { useDatabaseStore } from "@/store/useDatabaseStore"
 
 export default function EditDetailedItemPage() {
   const params = useParams()
   const id = params.id as string
+  const dataVersion = useDatabaseStore((s) => s.dataVersion)
   const [item, setItem] = React.useState<DetailedItemRow | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
 
@@ -24,7 +26,7 @@ export default function EditDetailedItemPage() {
     return () => {
       isMounted = false
     }
-  }, [id])
+  }, [id, dataVersion])
 
   const handleSubmit = async (updates: DetailedItemUpdate) => {
     await updateDetailedItem(id, updates)

@@ -8,6 +8,9 @@ import { AdminNavigationProgress } from "@/components/admin/AdminNavigationProgr
 import { ToastContainer } from "@/components/admin/Toast"
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 export default async function DashboardLayout({
   children,
 }: {

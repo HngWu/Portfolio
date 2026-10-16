@@ -24,8 +24,10 @@ import Link from "next/link"
 import { cn, getSizeClasses } from "@/lib/utils"
 import { TileTypeForm } from "@/components/admin/form/TileTypeForm"
 import { TileRenderer } from "@/components/bento/TileRenderer"
+import { DatabaseBadge } from "@/components/admin/DatabaseBadge"
 import { useToastStore } from "@/store/useToastStore"
 import { useConfirmStore } from "@/store/useConfirmStore"
+import { useDatabaseStore } from "@/store/useDatabaseStore"
 
 type TileRowType = Database['public']['Tables']['tiles']['Row']
 type TileInsert = Database['public']['Tables']['tiles']['Insert']
@@ -62,6 +64,7 @@ export default function TileEditPage() {
   
   const { addToast } = useToastStore()
   const { confirm } = useConfirmStore()
+  const dataVersion = useDatabaseStore((s) => s.dataVersion)
 
   const [isLoading, setIsLoading] = React.useState(!isNew)
   const [isSaving, setIsSaving] = React.useState(false)
@@ -116,7 +119,7 @@ export default function TileEditPage() {
         setIsLoading(false)
       })
     }
-  }, [id, isNew, addToast])
+  }, [id, isNew, addToast, dataVersion])
 
   const handleUpdateParsedContent = (newContent: Record<string, any>) => {
     setFormData(prev => ({
@@ -259,6 +262,7 @@ export default function TileEditPage() {
               <span className="text-[11px] font-mono text-lume-primary bg-lume-primary/10 px-2.5 py-0.5 rounded-full border border-lume-primary/20 uppercase">
                 {formData.type}
               </span>
+              <DatabaseBadge />
             </div>
             <p className="text-xs text-white/40 font-mono mt-0.5 truncate max-w-sm sm:max-w-md">
               {isNew ? 'Configure attributes and place on grid' : `ID: ${id}`}

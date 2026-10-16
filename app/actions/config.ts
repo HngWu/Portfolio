@@ -38,5 +38,6 @@ export async function updateConfig(key: string, value: unknown) {
   }
 
   revalidatePath("/")
+  revalidatePath("/admin", "layout")
   revalidatePath("/admin/config")
 }

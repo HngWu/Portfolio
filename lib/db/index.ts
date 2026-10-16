@@ -3,6 +3,7 @@ import path from 'path'
 import fs from 'fs'
 import os from 'os'
 import { randomUUID } from 'crypto'
+import { cookies } from 'next/headers'
 import type { Database as DatabaseTypes } from '@/types/supabase'
 export * from './types'
 import type { DatabaseProvider, DatabaseStatus } from './types'
@@ -907,7 +908,21 @@ export function deleteSystemSettingDb(key: string): void {
 // Unified Database Provider Resolution
 // -------------------------------------------------------------
 
+export interface QueryOptions {
+  allowFallback?: boolean
+}
+
 export async function getActiveProvider(): Promise<DatabaseProvider> {
+  try {
+    const cookieStore = await cookies()
+    const cookieOverride = cookieStore.get('admin_db_provider')?.value
+    if (cookieOverride === 'supabase' || cookieOverride === 'sqlite') {
+      return cookieOverride as DatabaseProvider
+    }
+  } catch {
+    // Outside request context or cookies not accessible
+  }
+
   const override = getSystemSettingDb('database_provider')
   if (override === 'supabase' || override === 'sqlite') {
     return override
@@ -922,10 +937,27 @@ export async function getActiveProvider(): Promise<DatabaseProvider> {
 }
 
 export async function setActiveProvider(provider: DatabaseProvider): Promise<void> {
+  try {
+    const cookieStore = await cookies()
+    cookieStore.set('admin_db_provider', provider, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    })
+  } catch {
+    // Outside request context
+  }
   setSystemSettingDb('database_provider', provider)
 }
 
 export async function clearActiveProviderOverride(): Promise<void> {
+  try {
+    const cookieStore = await cookies()
+    cookieStore.delete('admin_db_provider')
+  } catch {
+    // Outside request context
+  }
   deleteSystemSettingDb('database_provider')
 }
 
@@ -933,8 +965,16 @@ export async function getDatabaseStatus(): Promise<DatabaseStatus> {
   const activeProvider = await getActiveProvider()
   const envDefaultRaw = (process.env.DEFAULT_DATABASE || '').toLowerCase().trim()
   const defaultProvider: DatabaseProvider = envDefaultRaw === 'supabase' ? 'supabase' : 'sqlite'
-  const override = getSystemSettingDb('database_provider')
-  const isOverridden = Boolean(override)
+  
+  let cookieOverride: string | undefined
+  try {
+    const cookieStore = await cookies()
+    cookieOverride = cookieStore.get('admin_db_provider')?.value
+  } catch {
+    // ignore outside request
+  }
+  const sqliteOverride = getSystemSettingDb('database_provider')
+  const isOverridden = Boolean(cookieOverride || sqliteOverride)
   const configured = isSupabaseConfigured()
 
   let latencyMs: number | undefined
@@ -962,112 +1002,136 @@ export async function getDatabaseStatus(): Promise<DatabaseStatus> {
 // Unified Async CRUD Delegators with Auto-Fallback
 // -------------------------------------------------------------
 
-export async function getTiles(): Promise<TileRow[]> {
+export async function getTiles(options?: QueryOptions): Promise<TileRow[]> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       return await getTilesSupabase()
     } catch (e) {
-      console.warn('[DB Gateway] Supabase getTiles failed. Falling back to local SQLite:', e)
-      return getTilesDb()
+      if (options?.allowFallback) {
+        console.warn('[DB Gateway] Supabase getTiles failed. Falling back to local SQLite:', e)
+        return getTilesDb()
+      }
+      throw new Error(`[Supabase Error] getTiles failed: ${(e as Error).message}`)
     }
   }
   return getTilesDb()
 }
 
-export async function getTileById(id: string): Promise<TileRow | null> {
+export async function getTileById(id: string, options?: QueryOptions): Promise<TileRow | null> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       return await getTileByIdSupabase(id)
     } catch (e) {
-      console.warn(`[DB Gateway] Supabase getTileById(${id}) failed. Falling back to local SQLite:`, e)
-      return getTileByIdDb(id)
+      if (options?.allowFallback) {
+        console.warn(`[DB Gateway] Supabase getTileById(${id}) failed. Falling back to local SQLite:`, e)
+        return getTileByIdDb(id)
+      }
+      throw new Error(`[Supabase Error] getTileById(${id}) failed: ${(e as Error).message}`)
     }
   }
   return getTileByIdDb(id)
 }
 
-export async function getTilesByType(type: string): Promise<TileRow[]> {
+export async function getTilesByType(type: string, options?: QueryOptions): Promise<TileRow[]> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       return await getTilesByTypeSupabase(type)
     } catch (e) {
-      console.warn(`[DB Gateway] Supabase getTilesByType(${type}) failed. Falling back to local SQLite:`, e)
-      return getTilesByTypeDb(type)
+      if (options?.allowFallback) {
+        console.warn(`[DB Gateway] Supabase getTilesByType(${type}) failed. Falling back to local SQLite:`, e)
+        return getTilesByTypeDb(type)
+      }
+      throw new Error(`[Supabase Error] getTilesByType(${type}) failed: ${(e as Error).message}`)
     }
   }
   return getTilesByTypeDb(type)
 }
 
-export async function createTile(tile: TileInsert): Promise<TileRow> {
+export async function createTile(tile: TileInsert, options?: QueryOptions): Promise<TileRow> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       return await createTileSupabase(tile)
     } catch (e) {
-      console.warn('[DB Gateway] Supabase createTile failed. Falling back to local SQLite:', e)
-      return createTileDb(tile)
+      if (options?.allowFallback) {
+        console.warn('[DB Gateway] Supabase createTile failed. Falling back to local SQLite:', e)
+        return createTileDb(tile)
+      }
+      throw new Error(`[Supabase Error] createTile failed: ${(e as Error).message}`)
     }
   }
   return createTileDb(tile)
 }
 
-export async function updateTile(id: string, updates: TileUpdate): Promise<TileRow> {
+export async function updateTile(id: string, updates: TileUpdate, options?: QueryOptions): Promise<TileRow> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       return await updateTileSupabase(id, updates)
     } catch (e) {
-      console.warn(`[DB Gateway] Supabase updateTile(${id}) failed. Falling back to local SQLite:`, e)
-      return updateTileDb(id, updates)
+      if (options?.allowFallback) {
+        console.warn(`[DB Gateway] Supabase updateTile(${id}) failed. Falling back to local SQLite:`, e)
+        return updateTileDb(id, updates)
+      }
+      throw new Error(`[Supabase Error] updateTile(${id}) failed: ${(e as Error).message}`)
     }
   }
   return updateTileDb(id, updates)
 }
 
-export async function updateTiles(tiles: TileRow[]): Promise<void> {
+export async function updateTiles(tiles: TileRow[], options?: QueryOptions): Promise<void> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       await updateTilesSupabase(tiles)
       return
     } catch (e) {
-      console.warn('[DB Gateway] Supabase updateTiles failed. Falling back to local SQLite:', e)
-      updateTilesDb(tiles)
-      return
+      if (options?.allowFallback) {
+        console.warn('[DB Gateway] Supabase updateTiles failed. Falling back to local SQLite:', e)
+        updateTilesDb(tiles)
+        return
+      }
+      throw new Error(`[Supabase Error] updateTiles failed: ${(e as Error).message}`)
     }
   }
   updateTilesDb(tiles)
 }
 
-export async function deleteTile(id: string): Promise<void> {
+export async function deleteTile(id: string, options?: QueryOptions): Promise<void> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       await deleteTileSupabase(id)
       return
     } catch (e) {
-      console.warn(`[DB Gateway] Supabase deleteTile(${id}) failed. Falling back to local SQLite:`, e)
-      deleteTileDb(id)
-      return
+      if (options?.allowFallback) {
+        console.warn(`[DB Gateway] Supabase deleteTile(${id}) failed. Falling back to local SQLite:`, e)
+        deleteTileDb(id)
+        return
+      }
+      throw new Error(`[Supabase Error] deleteTile(${id}) failed: ${(e as Error).message}`)
     }
   }
   deleteTileDb(id)
 }
 
-export async function getDetailedItems(type?: string): Promise<DetailedItemRow[]> {
+export async function getDetailedItems(type?: string, options?: QueryOptions): Promise<DetailedItemRow[]> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       return await getDetailedItemsSupabase(type)
     } catch (e) {
-      console.warn('[DB Gateway] Supabase getDetailedItems failed. Falling back to local SQLite:', e)
-      if (type && type !== 'all') {
-        return getDetailedItemsByTypeDb(type)
+      if (options?.allowFallback) {
+        console.warn('[DB Gateway] Supabase getDetailedItems failed. Falling back to local SQLite:', e)
+        if (type && type !== 'all') {
+          return getDetailedItemsByTypeDb(type)
+        }
+        return getDetailedItemsDb()
       }
-      return getDetailedItemsDb()
+      throw new Error(`[Supabase Error] getDetailedItems failed: ${(e as Error).message}`)
     }
   }
   if (type && type !== 'all') {
@@ -1076,59 +1140,71 @@ export async function getDetailedItems(type?: string): Promise<DetailedItemRow[]
   return getDetailedItemsDb()
 }
 
-export async function getDetailedItemById(id: string): Promise<DetailedItemRow | null> {
+export async function getDetailedItemById(id: string, options?: QueryOptions): Promise<DetailedItemRow | null> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       return await getDetailedItemByIdSupabase(id)
     } catch (e) {
-      console.warn(`[DB Gateway] Supabase getDetailedItemById(${id}) failed. Falling back to local SQLite:`, e)
-      return getDetailedItemByIdDb(id)
+      if (options?.allowFallback) {
+        console.warn(`[DB Gateway] Supabase getDetailedItemById(${id}) failed. Falling back to local SQLite:`, e)
+        return getDetailedItemByIdDb(id)
+      }
+      throw new Error(`[Supabase Error] getDetailedItemById(${id}) failed: ${(e as Error).message}`)
     }
   }
   return getDetailedItemByIdDb(id)
 }
 
-export async function getDetailedItemsByType(type: string): Promise<DetailedItemRow[]> {
-  return getDetailedItems(type)
+export async function getDetailedItemsByType(type: string, options?: QueryOptions): Promise<DetailedItemRow[]> {
+  return getDetailedItems(type, options)
 }
 
-export async function createDetailedItem(item: DetailedItemInsert): Promise<DetailedItemRow> {
+export async function createDetailedItem(item: DetailedItemInsert, options?: QueryOptions): Promise<DetailedItemRow> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       return await createDetailedItemSupabase(item)
     } catch (e) {
-      console.warn('[DB Gateway] Supabase createDetailedItem failed. Falling back to local SQLite:', e)
-      return createDetailedItemDb(item)
+      if (options?.allowFallback) {
+        console.warn('[DB Gateway] Supabase createDetailedItem failed. Falling back to local SQLite:', e)
+        return createDetailedItemDb(item)
+      }
+      throw new Error(`[Supabase Error] createDetailedItem failed: ${(e as Error).message}`)
     }
   }
   return createDetailedItemDb(item)
 }
 
-export async function updateDetailedItem(id: string, updates: DetailedItemUpdate): Promise<DetailedItemRow> {
+export async function updateDetailedItem(id: string, updates: DetailedItemUpdate, options?: QueryOptions): Promise<DetailedItemRow> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       return await updateDetailedItemSupabase(id, updates)
     } catch (e) {
-      console.warn(`[DB Gateway] Supabase updateDetailedItem(${id}) failed. Falling back to local SQLite:`, e)
-      return updateDetailedItemDb(id, updates)
+      if (options?.allowFallback) {
+        console.warn(`[DB Gateway] Supabase updateDetailedItem(${id}) failed. Falling back to local SQLite:`, e)
+        return updateDetailedItemDb(id, updates)
+      }
+      throw new Error(`[Supabase Error] updateDetailedItem(${id}) failed: ${(e as Error).message}`)
     }
   }
   return updateDetailedItemDb(id, updates)
 }
 
-export async function deleteDetailedItem(id: string): Promise<void> {
+export async function deleteDetailedItem(id: string, options?: QueryOptions): Promise<void> {
   const provider = await getActiveProvider()
   if (provider === 'supabase') {
     try {
       await deleteDetailedItemSupabase(id)
       return
     } catch (e) {
-      console.warn(`[DB Gateway] Supabase deleteDetailedItem(${id}) failed. Falling back to local SQLite:`, e)
-      deleteDetailedItemDb(id)
-      return
+      if (options?.allowFallback) {
+        console.warn(`[DB Gateway] Supabase deleteDetailedItem(${id}) failed. Falling back to local SQLite:`, e)
+        deleteDetailedItemDb(id)
+        return
+      }
+      throw new Error(`[Supabase Error] deleteDetailedItem(${id}) failed: ${(e as Error).message}`)
     }
   }
   deleteDetailedItemDb(id)

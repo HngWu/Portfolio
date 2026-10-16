@@ -17,6 +17,7 @@ export async function getTiles() {
 export async function updateTile(id: string, updates: Partial<Database['public']['Tables']['tiles']['Update']>) {
   await updateTileInDb(id, updates)
   revalidatePath("/")
+  revalidatePath("/admin", "layout")
   revalidatePath("/admin/tiles")
 }
 
@@ -24,6 +25,7 @@ export async function updateTiles(tiles: Database['public']['Tables']['tiles']['
   try {
     await updateTilesInDb(tiles)
     revalidatePath("/")
+    revalidatePath("/admin", "layout")
     revalidatePath("/admin/tiles")
   } catch (e) {
     console.error("Server Action updateTiles failed:", e)
@@ -34,11 +36,13 @@ export async function updateTiles(tiles: Database['public']['Tables']['tiles']['
 export async function deleteTile(id: string) {
   await deleteTileFromDb(id)
   revalidatePath("/")
+  revalidatePath("/admin", "layout")
   revalidatePath("/admin/tiles")
 }
 
 export async function createTile(tile: Database['public']['Tables']['tiles']['Insert']) {
   await createTileInDb(tile)
   revalidatePath("/")
+  revalidatePath("/admin", "layout")
   revalidatePath("/admin/tiles")
 }

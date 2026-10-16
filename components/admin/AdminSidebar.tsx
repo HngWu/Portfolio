@@ -111,6 +111,7 @@ export function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               onClick={() => setMobileOpen(false)}
               className={cn(
                 "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group relative",

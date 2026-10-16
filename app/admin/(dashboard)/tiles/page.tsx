@@ -30,8 +30,10 @@ import { TileRenderer } from "@/components/bento/TileRenderer"
 import { ForceMobileContext } from "@/components/bento/ForceMobileContext"
 import { Render3DContext, Render3DMode } from "@/components/bento/Render3DContext"
 import { GlassCard } from "@/components/ui/GlassCard"
+import { DatabaseBadge } from "@/components/admin/DatabaseBadge"
 import { useToastStore } from "@/store/useToastStore"
 import { useConfirmStore } from "@/store/useConfirmStore"
+import { useDatabaseStore } from "@/store/useDatabaseStore"
 
 import {
   DndContext,
@@ -75,6 +77,7 @@ export default function TilesPage() {
   const router = useRouter()
   const { addToast } = useToastStore()
   const { confirm } = useConfirmStore()
+  const dataVersion = useDatabaseStore((s) => s.dataVersion)
 
   const [tiles, setTiles] = React.useState<TileRowType[]>([])
   const [initialTiles, setInitialTiles] = React.useState<TileRowType[]>([])
@@ -116,7 +119,7 @@ export default function TilesPage() {
     return () => { 
       isMounted = false
     }
-  }, [load])
+  }, [load, dataVersion])
 
   React.useEffect(() => {
     if (layoutMode === 'mobile') {
@@ -299,6 +302,7 @@ export default function TilesPage() {
             <span className="text-xs font-mono text-white/40 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/5">
               {tiles.length} Tiles
             </span>
+            <DatabaseBadge />
           </div>
           <p className="text-xs sm:text-sm text-white/50 mt-1">
             Drag tiles on the canvas or use the reorder list to customize Desktop and Mobile grids.

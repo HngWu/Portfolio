@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { 
   getDatabaseStatusAction, 
   switchDatabaseProviderAction,
@@ -8,13 +9,21 @@ import {
 } from "@/app/actions/database"
 import type { DatabaseProvider, DatabaseStatus } from "@/lib/db/types"
 import { useToastStore } from "@/store/useToastStore"
+import { useDatabaseStore } from "@/store/useDatabaseStore"
 import { Database, Cloud, Loader2, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react"
 
 export function DatabaseToggle() {
+  const router = useRouter()
   const { addToast } = useToastStore()
-  const [status, setStatus] = React.useState<DatabaseStatus | null>(null)
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [isSwitching, setIsSwitching] = React.useState(false)
+  const { 
+    status, 
+    setStatus, 
+    isLoading, 
+    setIsLoading, 
+    isSwitching, 
+    setIsSwitching, 
+    incrementDataVersion 
+  } = useDatabaseStore()
 
   const loadStatus = React.useCallback(async () => {
     try {
@@ -25,7 +34,7 @@ export function DatabaseToggle() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [setStatus, setIsLoading])
 
   React.useEffect(() => {
     loadStatus()
@@ -44,6 +53,8 @@ export function DatabaseToggle() {
             : "Switched active database to local SQLite",
           "success"
         )
+        incrementDataVersion()
+        router.refresh()
         await loadStatus()
       } else {
         addToast(result.error || `Failed to switch to ${target}`, "error", 5000)
@@ -64,6 +75,8 @@ export function DatabaseToggle() {
       const result = await resetDatabaseProviderAction()
       if (result.success) {
         addToast(`Reverted database to env default (${status?.defaultProvider})`, "info")
+        incrementDataVersion()
+        router.refresh()
         await loadStatus()
       }
     } catch (e) {
