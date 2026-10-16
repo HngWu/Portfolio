@@ -1,7 +1,7 @@
 import { parseTileContent, parseTileDeepDive } from "@/lib/tiles/schemas"
 import type { Database } from "@/types/supabase"
 import type { SearchResult } from "@/lib/search"
-import { getTiles, getDetailedItems } from "@/lib/db"
+import { getTiles, getDetailedItems, getTilesDb, getDetailedItemsDb } from "@/lib/db"
 
 type Tile = Database["public"]["Tables"]["tiles"]["Row"]
 
@@ -306,10 +306,21 @@ export function parseTilesToPortfolioContent(tiles: Tile[]): PortfolioContent {
 }
 
 export async function getPortfolioContent(): Promise<PortfolioContent> {
-  const [tilesData, detailedData] = await Promise.all([
-    getTiles(),
-    getDetailedItems()
-  ])
+  let tilesData: any[] = []
+  let detailedData: any[] = []
+
+  try {
+    const [t, d] = await Promise.all([
+      getTiles(),
+      getDetailedItems()
+    ])
+    tilesData = t || []
+    detailedData = d || []
+  } catch (err) {
+    console.warn("[PortfolioContent] Error loading portfolio content, falling back to local SQLite:", err)
+    tilesData = getTilesDb()
+    detailedData = getDetailedItemsDb()
+  }
 
   const content = parseTilesToPortfolioContent(tilesData || [])
 

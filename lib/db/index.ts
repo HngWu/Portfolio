@@ -1008,7 +1008,7 @@ export async function getTiles(options?: QueryOptions): Promise<TileRow[]> {
     try {
       return await getTilesSupabase()
     } catch (e) {
-      if (options?.allowFallback) {
+      if (options?.allowFallback !== false) {
         console.warn('[DB Gateway] Supabase getTiles failed. Falling back to local SQLite:', e)
         return getTilesDb()
       }
@@ -1024,7 +1024,7 @@ export async function getTileById(id: string, options?: QueryOptions): Promise<T
     try {
       return await getTileByIdSupabase(id)
     } catch (e) {
-      if (options?.allowFallback) {
+      if (options?.allowFallback !== false) {
         console.warn(`[DB Gateway] Supabase getTileById(${id}) failed. Falling back to local SQLite:`, e)
         return getTileByIdDb(id)
       }
@@ -1040,7 +1040,7 @@ export async function getTilesByType(type: string, options?: QueryOptions): Prom
     try {
       return await getTilesByTypeSupabase(type)
     } catch (e) {
-      if (options?.allowFallback) {
+      if (options?.allowFallback !== false) {
         console.warn(`[DB Gateway] Supabase getTilesByType(${type}) failed. Falling back to local SQLite:`, e)
         return getTilesByTypeDb(type)
       }
@@ -1124,7 +1124,7 @@ export async function getDetailedItems(type?: string, options?: QueryOptions): P
     try {
       return await getDetailedItemsSupabase(type)
     } catch (e) {
-      if (options?.allowFallback) {
+      if (options?.allowFallback !== false) {
         console.warn('[DB Gateway] Supabase getDetailedItems failed. Falling back to local SQLite:', e)
         if (type && type !== 'all') {
           return getDetailedItemsByTypeDb(type)
@@ -1146,7 +1146,7 @@ export async function getDetailedItemById(id: string, options?: QueryOptions): P
     try {
       return await getDetailedItemByIdSupabase(id)
     } catch (e) {
-      if (options?.allowFallback) {
+      if (options?.allowFallback !== false) {
         console.warn(`[DB Gateway] Supabase getDetailedItemById(${id}) failed. Falling back to local SQLite:`, e)
         return getDetailedItemByIdDb(id)
       }
