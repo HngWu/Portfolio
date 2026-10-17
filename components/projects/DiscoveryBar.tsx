@@ -1,9 +1,12 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
+import { usePageTransition } from "@/hooks/usePageTransition"
 import { cn } from "@/lib/utils"
 import type { LayoutType, SortOption } from "@/lib/projects/types"
 import {
+  ArrowLeft,
   Search,
   SlidersHorizontal,
   CircleDot,
@@ -54,6 +57,7 @@ export function DiscoveryBar({
   totalCount,
   filteredCount,
 }: DiscoveryBarProps) {
+  const { navigateWithTransition } = usePageTransition()
   const searchInputRef = React.useRef<HTMLInputElement>(null)
 
   // Global '/' shortcut to focus search input
@@ -80,6 +84,21 @@ export function DiscoveryBar({
     <div className="w-full max-w-5xl mx-auto space-y-4 px-2 select-none z-30 relative">
       {/* Top Search & Layout Bar */}
       <div className="flex flex-col sm:flex-row items-center gap-3">
+        {/* Back to Home Button */}
+        <Link
+          href="/"
+          onClick={(e) => {
+            e.preventDefault()
+            navigateWithTransition("/")
+          }}
+          className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-white/10 bg-[#0e0f14]/80 backdrop-blur-md text-white/70 hover:text-white hover:border-white/20 transition-all active:scale-95 text-xs font-mono shrink-0 shadow-lg group"
+          aria-label="Back to home"
+          title="Back to home (Esc)"
+        >
+          <ArrowLeft className="size-4 group-hover:-translate-x-0.5 transition-transform" />
+          <span className="inline font-medium">Home</span>
+        </Link>
+
         {/* Search input with '/' hotkey hint */}
         <div className="relative w-full sm:flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-white/40 pointer-events-none" />

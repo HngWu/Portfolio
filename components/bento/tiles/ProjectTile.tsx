@@ -183,7 +183,7 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
     <BentoTile
       id={id}
       size={size}
-      href={`/projects/${projectSlug}`}
+      href="/projects"
       glowColor="blue"
       isDragging={isDragging}
       sortableProps={sortableProps}

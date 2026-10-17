@@ -21,6 +21,7 @@ import {
   setCarouselAudioMuted,
   playCarouselTick,
 } from "@/lib/projects/audio"
+import { usePageTransition } from "@/hooks/usePageTransition"
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react"
 
 interface Infinite3DCarouselProps {
@@ -32,6 +33,7 @@ export function Infinite3DCarousel({
   initialProjects,
   initialSlug,
 }: Infinite3DCarouselProps) {
+  const { navigateWithTransition } = usePageTransition()
   const [projects, setProjects] = React.useState<ProjectItemData[]>(initialProjects)
   const [selectedLanguage, setSelectedLanguage] = React.useState("all")
   const [selectedStatus, setSelectedStatus] = React.useState("all")
@@ -292,9 +294,11 @@ export function Infinite3DCarousel({
         e.preventDefault()
         handleNext()
       } else if (e.key === "Escape") {
+        e.preventDefault()
         if (isCaseStudyOpen) {
-          e.preventDefault()
           handleCloseCaseStudy()
+        } else {
+          navigateWithTransition("/")
         }
       } else if (e.key >= "1" && e.key <= "9") {
         const num = parseInt(e.key, 10) - 1
@@ -314,6 +318,7 @@ export function Infinite3DCarousel({
     handleCloseCaseStudy,
     filteredProjects.length,
     rotateToIndex,
+    navigateWithTransition,
   ])
 
   // Drag & Swipe Pointer Event Handlers
