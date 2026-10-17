@@ -23,6 +23,10 @@
   --color-lume-secondary: var(--lume-secondary);
   --color-lume-tertiary: var(--lume-tertiary);
   --color-lume-warm: var(--lume-warm);
+  --color-mode-accent: var(--mode-accent);
+  --color-mode-accent-bright: var(--mode-accent-bright);
+  --color-mode-text-accent: var(--mode-text-accent);
+  --font-display: var(--font-display, 'Editorial New', 'Playfair Display', Georgia, serif);
 
   --color-sidebar-ring: var(--sidebar-ring);
 
@@ -238,6 +242,13 @@
     --input: rgba(255, 255, 255, 0.08);
     --ring: #4AFFB4;
     --radius: 1rem;
+
+    --color-success: #34D399;
+    --color-warning: #FBBF24;
+    --color-error: #FF4A6B;
+    --color-info: #4A8FFF;
+    --glass-fill: rgba(255, 255, 255, 0.03);
+    --glass-fill-hover: rgba(255, 255, 255, 0.06);
   }
 
   /* Deep-Dive (blue / "Tech") mode — only the mode palette swaps;
@@ -250,6 +261,76 @@
     --mode-glow-rgb: 74, 143, 255;
     --mode-bg-tint: rgba(74, 143, 255, 0.05);
     --mode-text-accent: #8FB8FF;
+  }
+
+  /* === LIGHT THEME (FROSTED SILICA / ALABASTER) === */
+  :root.light {
+    --bg-void: #F8FAFC;
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #F1F5F9;
+    --bg-overlay: #E2E8F0;
+
+    --glass-1: rgba(15, 23, 42, 0.02);
+    --glass-2: rgba(255, 255, 255, 0.75);
+    --glass-3: rgba(255, 255, 255, 0.90);
+    --glass-border: rgba(15, 23, 42, 0.08);
+    --glass-border-active: rgba(15, 23, 42, 0.20);
+    --glass-fill: rgba(255, 255, 255, 0.75);
+    --glass-fill-hover: rgba(255, 255, 255, 0.90);
+
+    --lume-primary: #059669;
+    --lume-secondary: #0284C7;
+    --lume-tertiary: #DB2777;
+    --lume-warm: #B45309;
+
+    --mode-accent: #B45309;
+    --mode-accent-bright: #D97706;
+    --mode-accent-deep: #78350F;
+    --mode-accent-soft: #FDE68A;
+    --mode-glow-rgb: 180, 83, 9;
+    --mode-bg-tint: rgba(180, 83, 9, 0.03);
+    --mode-text-accent: #92400E;
+
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --text-accent: #059669;
+
+    --background: #F8FAFC;
+    --foreground: #0F172A;
+
+    --card: #FFFFFF;
+    --card-foreground: #0F172A;
+    --popover: #FFFFFF;
+    --popover-foreground: #0F172A;
+    --primary: #059669;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F1F5F9;
+    --secondary-foreground: #0F172A;
+    --muted: #F1F5F9;
+    --muted-foreground: #64748B;
+    --accent: #F1F5F9;
+    --accent-foreground: #0F172A;
+    --destructive: #DC2626;
+    --destructive-foreground: #FFFFFF;
+    --border: rgba(15, 23, 42, 0.08);
+    --input: rgba(15, 23, 42, 0.08);
+    --ring: #059669;
+
+    --color-success: #059669;
+    --color-warning: #D97706;
+    --color-error: #DC2626;
+    --color-info: #0284C7;
+  }
+
+  :root.light[data-mode="deep"] {
+    --mode-accent: #0284C7;
+    --mode-accent-bright: #0369A1;
+    --mode-accent-deep: #082F49;
+    --mode-accent-soft: #BAE6FD;
+    --mode-glow-rgb: 2, 132, 199;
+    --mode-bg-tint: rgba(2, 132, 199, 0.03);
+    --mode-text-accent: #075985;
   }
 }
 
