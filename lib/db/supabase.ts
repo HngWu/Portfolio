@@ -1,6 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
 import type { ConnectionTestResult } from './types'
+import { supabaseCircuitBreaker } from './circuit-breaker'
+export { supabaseCircuitBreaker } from './circuit-breaker'
 
 export type TileRow = Database['public']['Tables']['tiles']['Row']
 export type TileInsert = Database['public']['Tables']['tiles']['Insert']
@@ -13,6 +15,70 @@ export type DetailedItemUpdate = Database['public']['Tables']['detailed_items'][
 let supabaseClient: SupabaseClient<Database> | null = null
 let cachedUrl: string | undefined
 let cachedKey: string | undefined
+
+export const SUPABASE_REQUEST_TIMEOUT_MS = 3500
+
+function createTimeoutError(message: string): Error {
+  if (typeof DOMException !== 'undefined') {
+    return new DOMException(message, 'TimeoutError')
+  }
+  const err = new Error(message)
+  err.name = 'TimeoutError'
+  return err
+}
+
+/**
+ * Fast-fail timeout fetch wrapper (3500ms).
+ * Combines caller's signal (if any) with an AbortController signal using AbortSignal.any
+ * or an event-listener fallback, and clears the timer in finally to avoid memory leaks.
+ */
+export async function timeoutFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => {
+    controller.abort(createTimeoutError(`Request timed out after ${SUPABASE_REQUEST_TIMEOUT_MS}ms`))
+  }, SUPABASE_REQUEST_TIMEOUT_MS)
+
+  const incomingSignal =
+    init?.signal ?? (typeof Request !== 'undefined' && input instanceof Request ? input.signal : undefined)
+  let signal: AbortSignal
+  let cleanupSignalListener: (() => void) | null = null
+
+  if (incomingSignal) {
+    if (typeof AbortSignal.any === 'function') {
+      signal = AbortSignal.any([controller.signal, incomingSignal])
+    } else {
+      if (incomingSignal.aborted) {
+        controller.abort((incomingSignal as any).reason)
+      } else {
+        const onAbort = () => {
+          controller.abort((incomingSignal as any).reason)
+        }
+        incomingSignal.addEventListener('abort', onAbort, { once: true })
+        cleanupSignalListener = () => {
+          incomingSignal.removeEventListener('abort', onAbort)
+        }
+      }
+      signal = controller.signal
+    }
+  } else {
+    signal = controller.signal
+  }
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal,
+    })
+  } finally {
+    clearTimeout(timer)
+    if (cleanupSignalListener) {
+      cleanupSignalListener()
+    }
+  }
+}
 
 export function resetSupabaseClient(): void {
   supabaseClient = null
@@ -42,6 +108,9 @@ export function getSupabaseClient(forceFresh = false): SupabaseClient<Database> 
       auth: {
         persistSession: false,
         autoRefreshToken: false
+      },
+      global: {
+        fetch: timeoutFetch
       }
     })
     cachedUrl = url
@@ -56,9 +125,11 @@ export function getSupabaseClient(forceFresh = false): SupabaseClient<Database> 
 export async function testSupabaseConnection(forceFresh = false): Promise<ConnectionTestResult> {
   const { url, key } = getSupabaseCredentials()
   if (!url || !key) {
+    const errorMsg = "Missing NEXT_PUBLIC_SUPABASE_URL or API key in environment variables."
+    supabaseCircuitBreaker.recordFailure(errorMsg)
     return {
       ok: false,
-      error: "Missing NEXT_PUBLIC_SUPABASE_URL or API key in environment variables."
+      error: errorMsg
     }
   }
 
@@ -72,10 +143,18 @@ export async function testSupabaseConnection(forceFresh = false): Promise<Connec
     const latencyMs = Date.now() - startTime
 
     if (error) {
+      supabaseCircuitBreaker.recordFailure(error)
       let detailedMsg = error.message
       if (error.message && error.message.includes('fetch failed')) {
         const details = (error as any).details || ''
         detailedMsg = `Unable to reach Supabase at ${url}. ${details}`.trim()
+      } else if (
+        error.message &&
+        (error.message.includes('timed out') ||
+          error.message.includes('TimeoutError') ||
+          error.message.includes('AbortError'))
+      ) {
+        detailedMsg = `Connection to Supabase at ${url} timed out after ${SUPABASE_REQUEST_TIMEOUT_MS}ms.`
       }
       return {
         ok: false,
@@ -84,19 +163,30 @@ export async function testSupabaseConnection(forceFresh = false): Promise<Connec
       }
     }
 
+    supabaseCircuitBreaker.recordSuccess()
     return {
       ok: true,
       latencyMs
     }
   } catch (err) {
+    supabaseCircuitBreaker.recordFailure(err)
     const latencyMs = Date.now() - startTime
     const message = err instanceof Error ? err.message : "Connection to Supabase timed out or failed."
+    let formattedError = message
+    if (message.includes('fetch failed')) {
+      formattedError = `Unable to reach Supabase at ${url}. Please verify internet connection or host reachability.`
+    } else if (
+      message.includes('timed out') ||
+      message.includes('TimeoutError') ||
+      message.includes('AbortError')
+    ) {
+      formattedError = `Connection to Supabase at ${url} timed out after ${SUPABASE_REQUEST_TIMEOUT_MS}ms.`
+    }
+
     return {
       ok: false,
       latencyMs,
-      error: message.includes('fetch failed')
-        ? `Unable to reach Supabase at ${url}. Please verify internet connection or host reachability.`
-        : message
+      error: formattedError
     }
   }
 }

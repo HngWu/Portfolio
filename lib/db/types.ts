@@ -5,6 +5,7 @@ export interface DatabaseStatus {
   defaultProvider: DatabaseProvider
   isOverridden: boolean
   isSupabaseConfigured: boolean
+  isFallbackActive?: boolean
   latencyMs?: number
   error?: string
 }
