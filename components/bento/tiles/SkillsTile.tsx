@@ -90,15 +90,30 @@ export function SkillsTile({ id, size, content, isDragging, sortableProps }: Ski
                     <span className="text-white/40">{domain.progress}%</span>
                   </div>
                   {/* Animated Mastery Progress Bar */}
-                  <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
+                  <div className="relative w-full h-1.5 rounded-full bg-white/5">
                     <div
-                      className="h-full rounded-full transition-all duration-1000 ease-out"
+                      className="relative h-full rounded-full transition-all duration-1000 ease-out"
                       style={{
                         width: `${domain.progress}%`,
-                        backgroundColor: domain.color,
-                        boxShadow: `0 0 8px ${domain.color}88`,
+                        background: "linear-gradient(90deg, #2563EB 0%, #7C3AED 100%)",
+                        boxShadow: "0 0 10px rgba(106, 255, 255, 0.4)",
                       }}
-                    />
+                    >
+                      {/* Glowing laser-orange diamond crystal pin anchored at leading edge */}
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 flex items-center justify-center pointer-events-none z-10">
+                        <svg
+                          width="8"
+                          height="8"
+                          viewBox="0 0 8 8"
+                          fill="#F97316"
+                          className="overflow-visible"
+                          style={{ filter: "drop-shadow(0 0 8px #F97316)" }}
+                          aria-hidden="true"
+                        >
+                          <polygon points="4,0 8,4 4,8 0,4" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
                   <div className="text-[10px] font-mono text-white/40 truncate">
                     {domain.tech}

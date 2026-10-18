@@ -8,6 +8,7 @@ import { usePageTransition } from "@/hooks/usePageTransition"
 import { useTilt } from "./useTilt"
 import { useViewModeStore } from "@/store/useViewModeStore"
 import { useNavigationStore } from "@/store/useNavigationStore"
+import { useHoverStore } from "@/store/useHoverStore"
 import { motion } from "framer-motion"
 
 interface BentoTileProps {
@@ -64,6 +65,7 @@ export function BentoTile({
   const { navigateWithTransition } = usePageTransition()
   const { ref, onMouseEnter, onMouseMove, onMouseLeave } = useTilt()
   const mode = useViewModeStore((state) => state.mode)
+  const setHoveredTile = useHoverStore((state) => state.setHoveredTile)
   const isDeepDive = mode === "deep" && canDeepDive
   const forceMobile = React.useContext(ForceMobileContext)
 
@@ -106,6 +108,14 @@ export function BentoTile({
     return () => window.removeEventListener("resize", recalculateRows)
   }, [recalculateRows])
 
+  React.useEffect(() => {
+    return () => {
+      if (useHoverStore.getState().hoveredTileId === id) {
+        useHoverStore.getState().setHoveredTile(null)
+      }
+    }
+  }, [id])
+
   React.useLayoutEffect(() => {
     recalculateRows()
   }, [recalculateRows, deepContent])
@@ -131,6 +141,13 @@ export function BentoTile({
       data-id={id}
       layout={isMobileOverride ? false : layout}
       whileHover={!isMobileOverride && !sortableProps && !disableHoverScale ? { scale: 1.01, translateY: -4 } : undefined}
+      onPointerEnter={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect()
+        setHoveredTile(id, rect)
+      }}
+      onPointerLeave={() => {
+        setHoveredTile(null)
+      }}
       transition={{ 
         layout: { duration: 0.6, ease: [0.4, 0, 0.2, 1] },
         scale: { duration: 0.4, ease: "easeOut" },

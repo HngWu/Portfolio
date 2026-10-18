@@ -4,6 +4,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { useViewModeStore } from "@/store/useViewModeStore"
 import { ArcaneEmbers } from "./ArcaneEmbers"
+import { HextechBlueprint } from "./HextechBlueprint"
 
 export interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   glowColor?: "mint" | "blue" | "pink" | "amber" | "none"
@@ -196,6 +197,9 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
                   "radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(106, 255, 255, 0.07) 0%, rgba(37, 99, 235, 0.05) 40%, transparent 70%)",
               }}
             />
+
+            {/* Hextech Rotating Blueprint Background */}
+            <HextechBlueprint />
 
             {/* Header laser scanline across top border */}
             <div className="absolute top-0 left-0 right-0 h-[1.5px] overflow-hidden rounded-t-[inherit]">
