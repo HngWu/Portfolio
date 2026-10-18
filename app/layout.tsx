@@ -5,8 +5,7 @@ import { CommandPalette } from "@/components/cli/CommandPalette";
 import { UnifiedTransitionOverlay } from "@/components/layout/UnifiedTransitionOverlay";
 import { ModeTransitionOverlay } from "@/components/layout/ModeTransitionOverlay";
 import { InitialLoaderOverlay } from "@/components/layout/InitialLoaderOverlay";
-import { GenerativeBackground } from "@/components/canvas/GenerativeBackground";
-import { InfiniteGrid } from "@/components/ui/infinite-grid";
+import { ArcaneBackground } from "@/components/canvas/ArcaneBackground";
 import { ThemeApplier } from "@/components/providers/ThemeApplier";
 import { ModeApplier } from "@/components/providers/ModeApplier";
 import { CursorProvider } from "@/components/providers/CursorProvider";
@@ -65,8 +64,7 @@ export default async function RootLayout({
         <ThemeApplier />
         <ModeApplier />
         <CursorProvider />
-        <GenerativeBackground />
-        <InfiniteGrid />
+        <ArcaneBackground />
         <ModeTransitionOverlay />
         <UnifiedTransitionOverlay />
         <CommandPalette initialContent={searchableContent} />
