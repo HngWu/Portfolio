@@ -37,8 +37,8 @@ export function TerminalHeader({
           <div className="size-4 rounded flex items-center justify-center bg-white/10 text-white/80">
             <TerminalIcon className="size-2.5 text-[#cccccc]" />
           </div>
-          <span className="text-[11px] font-mono text-white/80 font-medium tracking-wide">
-            {headerTitle || "Command Prompt"}
+          <span className="text-[11px] font-mono text-white/80 font-medium tracking-wide truncate">
+            {headerTitle}
           </span>
         </div>
       ) : (

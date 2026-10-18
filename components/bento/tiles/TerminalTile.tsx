@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useIgniteStore } from "@/store/useIgniteStore"
+import { useViewModeStore } from "@/store/useViewModeStore"
 import { BentoTile } from "../BentoTile"
 import { cn } from "@/lib/utils"
 import { usePageTransition } from "@/hooks/usePageTransition"
@@ -101,22 +102,28 @@ export function TerminalTile({
   const { navigateWithTransition } = usePageTransition()
   const pathname = usePathname()
 
-  const config = React.useMemo(() => getTerminalConfig(os), [os])
+  const mode = useViewModeStore((state) => state.mode)
+  const config = React.useMemo(() => getTerminalConfig(os, mode), [os, mode])
+  const hasUserTypedRef = React.useRef(false)
 
   React.useEffect(() => {
     const detected = detectOS()
     setOS(detected)
-
-    setHistory([
-      {
-        type: "output",
-        content: detected === "windows"
-          ? "Microsoft Windows [Version 10.0.22631.3447]\n(c) Microsoft Corporation. All rights reserved."
-          : `Welcome to Lume OS v1.0.0 (${detected === "mac" ? "Darwin" : "Linux"} kernel)`
-      },
-      { type: "output", content: `Type 'help' to see available commands.` }
-    ])
   }, [])
+
+  React.useEffect(() => {
+    if (!hasUserTypedRef.current) {
+      const banner =
+        mode === "deep"
+          ? "◆ hexgate.cli // v2.6.0 — telemetry online"
+          : "✦ archive.codex [v1.0.0] — session initialized"
+
+      setHistory([
+        { type: "output", content: banner },
+        { type: "output", content: "Type 'help' to see available commands." }
+      ])
+    }
+  }, [mode])
 
   React.useEffect(() => {
     const isMobileViewport = window.innerWidth < 768
@@ -181,6 +188,7 @@ export function TerminalTile({
   }
 
   const handleCommand = (cmd: string) => {
+    hasUserTypedRef.current = true
     const trimmedCmd = cmd.trim().toLowerCase()
     const newHistory: HistoryItem[] = [...history, { type: "command", content: cmd }]
 

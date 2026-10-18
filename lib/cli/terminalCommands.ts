@@ -96,19 +96,24 @@ export function detectOS(): OSType {
   return "linux"
 }
 
-export function getTerminalConfig(os: OSType): TerminalConfig {
+export function getTerminalConfig(os: OSType, mode: "quick" | "deep" = "quick"): TerminalConfig {
+  const headerTitle =
+    mode === "deep"
+      ? "◆ hexgate.cli // v2.6.0 — telemetry online"
+      : "✦ archive.codex — type 'help' to inspect"
+
   if (os === "windows") {
     return {
       prompt: "C:\\Users\\Developer> ",
       cursorColor: "bg-[#cccccc]",
-      headerTitle: "Command Prompt",
+      headerTitle,
       commands: { list: "dir", read: "type", clear: "cls" }
     }
   }
   return {
     prompt: os === "mac" ? "developer@mac:~$ " : "developer@linux:~$ ",
     cursorColor: "bg-lume-primary",
-    headerTitle: os === "mac" ? "zsh" : "bash",
+    headerTitle,
     commands: { list: "ls", read: "cat", clear: "clear" }
   }
 }
