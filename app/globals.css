@@ -143,7 +143,60 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+  --animate-ember-float: ember-float 2.4s ease-out infinite;
+  --animate-astrolabe-outer: astrolabe-cw 80s linear infinite;
+  --animate-astrolabe-middle: astrolabe-ccw 55s linear infinite;
+  --animate-astrolabe-inner: astrolabe-cw 35s linear infinite;
+  --animate-clockwork-gear-1: clockwork-cw 40s linear infinite;
+  --animate-clockwork-gear-2: clockwork-ccw 28s linear infinite;
+  --animate-blueprint-spin: blueprint-spin 60s linear infinite;
+  --animate-scanline-sweep: scanline-sweep 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-rune-shimmer: rune-shimmer 1.2s ease-in-out forwards;
 
+  @keyframes ember-float {
+    0% { transform: translateY(0) translateX(0) scale(0.8); opacity: 0; }
+    20% { opacity: 0.8; }
+    80% { opacity: 0.6; transform: translateY(-35px) translateX(var(--drift, 4px)) scale(1.1); }
+    100% { transform: translateY(-50px) translateX(var(--drift, 8px)) scale(0.6); opacity: 0; }
+  }
+
+  @keyframes astrolabe-cw {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes astrolabe-ccw {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+  }
+
+  @keyframes clockwork-cw {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes clockwork-ccw {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+  }
+
+  @keyframes blueprint-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes scanline-sweep {
+    0% { transform: translateX(-100%); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateX(200%); opacity: 0; }
+  }
+
+  @keyframes rune-shimmer {
+    0% { filter: brightness(1); text-shadow: 0 0 0 transparent; }
+    50% { filter: brightness(1.8); text-shadow: 0 0 12px rgba(255, 217, 90, 0.6); }
+    100% { filter: brightness(1.2); text-shadow: 0 0 4px rgba(255, 217, 90, 0.2); }
+  }
 
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -214,6 +267,11 @@
     --mode-glow-rgb: 201, 162, 39;
     --mode-bg-tint: rgba(201, 162, 39, 0.04);
     --mode-text-accent: #FFD66B;
+    --glass-surface-bg: rgba(9, 9, 11, 0.65);
+    --mode-primary: #E8A838;
+    --mode-primary-bright: #FFD95A;
+    --mode-secondary-amethyst: #8E44AD;
+    --mode-secondary-ember: #E67E22;
 
     --text-primary: rgba(255, 255, 255, 0.92);
     --text-secondary: rgba(255, 255, 255, 0.55);
@@ -261,6 +319,11 @@
     --mode-glow-rgb: 74, 143, 255;
     --mode-bg-tint: rgba(74, 143, 255, 0.05);
     --mode-text-accent: #8FB8FF;
+    --glass-surface-bg: rgba(9, 9, 11, 0.65);
+    --mode-primary: #2563EB;
+    --mode-primary-bright: #6AFFFF;
+    --mode-secondary-laser: #F97316;
+    --mode-secondary-quantum: #7C3AED;
   }
 
   /* === LIGHT THEME (FROSTED SILICA / ALABASTER) === */
