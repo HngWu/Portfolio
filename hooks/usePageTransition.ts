@@ -20,6 +20,7 @@ export function usePageTransition(): UsePageTransitionReturn {
   const setActivePreset = useNavigationStore((s) => s.setActivePreset)
   const setTargetPath = useNavigationStore((s) => s.setTargetPath)
   const setOriginRect = useNavigationStore((s) => s.setOriginRect)
+  const setOriginTileId = useNavigationStore((s) => s.setOriginTileId)
 
   const navigateWithTransition = React.useCallback(
     (path: string, originEl?: Element | null) => {
@@ -66,6 +67,16 @@ export function usePageTransition(): UsePageTransitionReturn {
 
       // 4. Validate origin element bounds with defensive error handling
       let originRect: OriginRect | null = null
+      let originTileId: string | null = null
+      if (originEl && originEl.isConnected !== false) {
+        const tileEl = (typeof originEl.closest === "function" ? originEl.closest("[data-id]") : null) || originEl
+        const idAttr =
+          (tileEl as HTMLElement).getAttribute?.("data-id") ||
+          (tileEl as HTMLElement).dataset?.id
+        if (idAttr) {
+          originTileId = idAttr
+        }
+      }
       if (
         originEl &&
         originEl.isConnected !== false &&
@@ -90,6 +101,7 @@ export function usePageTransition(): UsePageTransitionReturn {
 
       // Orchestrate page transition via UnifiedTransitionOverlay
       setOriginRect(originRect)
+      setOriginTileId(originTileId)
       setActivePreset(preset)
       setTargetPath(path)
       setPageLoaded(false)
@@ -106,6 +118,7 @@ export function usePageTransition(): UsePageTransitionReturn {
       setActivePreset,
       setTargetPath,
       setOriginRect,
+      setOriginTileId,
     ]
   )
 

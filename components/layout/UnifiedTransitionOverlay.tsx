@@ -78,6 +78,7 @@ export function UnifiedTransitionOverlay() {
   const setActivePreset = useNavigationStore((s) => s.setActivePreset)
   const originRect = useNavigationStore((s) => s.originRect)
   const setOriginRect = useNavigationStore((s) => s.setOriginRect)
+  const setOriginTileId = useNavigationStore((s) => s.setOriginTileId)
 
   // Mirror isPageLoaded to a ref for synchronous zero-latency consumption in the 60FPS renderLoop
   const isPageLoadedRef = React.useRef(isPageLoaded)
@@ -163,6 +164,7 @@ export function UnifiedTransitionOverlay() {
       setPageLoaded(false)
       setTargetPath(null)
       setOriginRect(null)
+      setOriginTileId(null)
     }
   }, [
     prefersReduced,
@@ -172,6 +174,7 @@ export function UnifiedTransitionOverlay() {
     setPageLoaded,
     setTargetPath,
     setOriginRect,
+    setOriginTileId,
   ])
 
   // Transition is active only when not idle and reduced motion is disabled
@@ -335,6 +338,7 @@ export function UnifiedTransitionOverlay() {
           setPageLoaded(false)
           setTargetPath(null)
           setOriginRect(null)
+          setOriginTileId(null)
           safeDispose()
           return
         }
@@ -365,6 +369,7 @@ export function UnifiedTransitionOverlay() {
     setPageLoaded,
     setTargetPath,
     setOriginRect,
+    setOriginTileId,
   ])
 
   // Accessibility check: if prefers-reduced-motion matches, returns null.
