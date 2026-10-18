@@ -273,7 +273,7 @@ export default function TransitionsAdminPage() {
       )}
 
       {/* Preset Reference Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         {PRESETS.map((p) => (
           <GlassCard key={p.id} className="p-3.5 border-white/5 bg-white/[0.015] rounded-2xl flex flex-col justify-between">
             <div>
@@ -298,7 +298,7 @@ export default function TransitionsAdminPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between text-xs font-mono text-white/40 uppercase tracking-wider px-2">
             <span>Configured Route Rules ({rules.length})</span>
-            <span>Target Performance: 200–350ms (GPU Transforms Only)</span>
+            <span>Target Performance: 200–700ms (GPU & Canvas Accelerated)</span>
           </div>
 
           <div className="grid gap-4">
@@ -364,16 +364,16 @@ export default function TransitionsAdminPage() {
                         </div>
                         <input
                           type="range"
-                          min={150}
-                          max={450}
+                          min={100}
+                          max={1000}
                           step={10}
                           value={rule.quickDurationMs}
                           onChange={(e) => handleRuleChange(rule.id, "quickDurationMs", Number(e.target.value))}
                           className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-400"
                         />
                         <div className="flex justify-between text-[9px] font-mono text-white/30">
-                          <span>150ms</span>
-                          <span>450ms</span>
+                          <span>100ms</span>
+                          <span>1000ms</span>
                         </div>
                       </div>
 
@@ -387,16 +387,16 @@ export default function TransitionsAdminPage() {
                         </div>
                         <input
                           type="range"
-                          min={150}
-                          max={450}
+                          min={100}
+                          max={1000}
                           step={10}
                           value={rule.deepDurationMs}
                           onChange={(e) => handleRuleChange(rule.id, "deepDurationMs", Number(e.target.value))}
                           className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-cyan-400"
                         />
                         <div className="flex justify-between text-[9px] font-mono text-white/30">
-                          <span>150ms</span>
-                          <span>450ms</span>
+                          <span>100ms</span>
+                          <span>1000ms</span>
                         </div>
                       </div>
                     </div>
@@ -480,7 +480,26 @@ export default function TransitionsAdminPage() {
                 </label>
                 <select
                   value={newPreset}
-                  onChange={(e) => setNewPreset(e.target.value as TransitionPreset)}
+                  onChange={(e) => {
+                    const preset = e.target.value as TransitionPreset
+                    setNewPreset(preset)
+                    if (preset === "arcane-rune") {
+                      setNewQuickDuration(700)
+                      setNewDeepDuration(650)
+                    } else if (preset === "singularity-bloom") {
+                      setNewQuickDuration(280)
+                      setNewDeepDuration(220)
+                    } else if (preset === "matrix-pulse") {
+                      setNewQuickDuration(240)
+                      setNewDeepDuration(200)
+                    } else if (preset === "clean-lift") {
+                      setNewQuickDuration(220)
+                      setNewDeepDuration(200)
+                    } else {
+                      setNewQuickDuration(260)
+                      setNewDeepDuration(220)
+                    }
+                  }}
                   className="w-full px-3.5 py-2.5 bg-black/60 border border-white/10 rounded-xl text-xs font-mono text-white focus:border-lume-primary focus:outline-none"
                 >
                   {PRESETS.map((p) => (
@@ -498,8 +517,8 @@ export default function TransitionsAdminPage() {
                   </label>
                   <input
                     type="number"
-                    min={150}
-                    max={450}
+                    min={100}
+                    max={1000}
                     step={10}
                     value={newQuickDuration}
                     onChange={(e) => setNewQuickDuration(Number(e.target.value))}
@@ -513,8 +532,8 @@ export default function TransitionsAdminPage() {
                   </label>
                   <input
                     type="number"
-                    min={150}
-                    max={450}
+                    min={100}
+                    max={1000}
                     step={10}
                     value={newDeepDuration}
                     onChange={(e) => setNewDeepDuration(Number(e.target.value))}

@@ -7,6 +7,7 @@ import { SpellPageSpread, type BookLifecycle } from "./SpellPageSpread"
 import { SpellAmbientMana } from "./SpellAmbientMana"
 import { ExperienceBackBtn } from "./ExperienceBackBtn"
 import { usePageTransition } from "@/hooks/usePageTransition"
+import { useNavigationStore } from "@/store/useNavigationStore"
 import { playPageTurnSound } from "@/lib/experience/bookAudio"
 import {
   ChevronLeft,
@@ -23,6 +24,10 @@ interface ExperienceSpellbookProps {
 
 export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps) {
   const { navigateWithTransition } = usePageTransition()
+
+  React.useEffect(() => {
+    useNavigationStore.getState().reportPageLoaded("/experience")
+  }, [])
 
   // Map experiences to book data (strictly verified 2 career roles: DBS Bank & TTP)
   const spells: SpellData[] = React.useMemo(() => {
@@ -123,13 +128,15 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
   React.useEffect(() => {
     if (typeof window === "undefined") return
 
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (prefersReduced) {
-      setLifecycle("idle")
-      return
-    }
-
     if (lifecycle === "prologue") {
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      if (prefersReduced) {
+        const timer = setTimeout(() => {
+          setLifecycle("idle")
+        }, 0)
+        return () => clearTimeout(timer)
+      }
+
       const openTimer = setTimeout(() => {
         triggerOpeningFlip()
       }, 2500)

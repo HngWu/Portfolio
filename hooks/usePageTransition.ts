@@ -4,29 +4,53 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { useViewModeStore } from "@/store/useViewModeStore"
 import { usePageTransitionsStore } from "@/store/usePageTransitionsStore"
-import { useNavigationStore } from "@/store/useNavigationStore"
+import { useNavigationStore, type OriginRect } from "@/store/useNavigationStore"
 
-// Holds in-flight transition reference to support clean rapid cancellation
-let activeTransition: { skipTransition: () => void } | null = null
+const EXTERNAL_LINK_REGEX = /^(https?:|\/\/|mailto:|tel:)/i
 
-export function usePageTransition() {
+export interface UsePageTransitionReturn {
+  navigateWithTransition: (path: string, originEl?: Element | null) => void
+}
+
+export function usePageTransition(): UsePageTransitionReturn {
   const router = useRouter()
-  const mode = useViewModeStore((s) => s.mode)
   const resolveTransition = usePageTransitionsStore((s) => s.resolveTransition)
   const setCurtainState = useNavigationStore((s) => s.setCurtainState)
   const setPageLoaded = useNavigationStore((s) => s.setPageLoaded)
   const setActivePreset = useNavigationStore((s) => s.setActivePreset)
+  const setTargetPath = useNavigationStore((s) => s.setTargetPath)
+  const setOriginRect = useNavigationStore((s) => s.setOriginRect)
 
   const navigateWithTransition = React.useCallback(
-    async (path: string, _originEl?: Element | null) => {
-      // 1. Prefetch destination route immediately so assets/RSC are warm
+    (path: string, originEl?: Element | null) => {
+      // 1. Guard against external links
+      if (EXTERNAL_LINK_REGEX.test(path)) {
+        if (typeof window !== "undefined") {
+          window.location.href = path
+        }
+        return
+      }
+
+      // 2. Guard against in-page hash anchors
+      if (path.startsWith("#")) {
+        router.push(path)
+        return
+      }
+
+      // 3. Guard against duplicate rapid clicks
+      const { curtainState, targetPath } = useNavigationStore.getState()
+      if (curtainState !== "idle" && targetPath === path) {
+        return
+      }
+
+      // Prefetch destination route immediately so assets/RSC are warm
       try {
         router.prefetch(path)
       } catch {
         // Ignored if prefetching is unavailable
       }
 
-      // 2. Feature detection and accessibility checks
+      // Feature detection and accessibility checks
       const prefersReduced =
         typeof window !== "undefined" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -36,76 +60,54 @@ export function usePageTransition() {
         return
       }
 
-      // 3. Resolve preset and duration based on target path & current mode
-      const { preset, durationMs } = resolveTransition(path, mode)
-      const currentPath = typeof window !== "undefined" ? window.location.pathname : ""
-      const isBlueprint =
-        preset === "blueprint-draft" ||
-        preset === "blueprint-slide" ||
-        path.startsWith("/projects") ||
-        currentPath.startsWith("/projects")
+      // Read view mode on-demand to keep callback referentially stable
+      const mode = useViewModeStore.getState().mode
+      const { preset } = resolveTransition(path, mode)
 
-      // 4. If target or origin is projects or uses blueprint preset, trigger BlueprintTransitionOverlay
-      if (isBlueprint) {
-        setActivePreset(preset === "blueprint-draft" || preset === "blueprint-slide" ? preset : "blueprint-draft")
-        setPageLoaded(false)
-        setCurtainState("covering")
-
-        // Wait for cover phase to fully occlude the viewport before swapping route
-        const coverDelay = mode === "deep" ? 220 : 250
-        await new Promise((resolve) => setTimeout(resolve, coverDelay))
-
-        router.push(path)
-        return
-      }
-
-      // 5. Fallback to native View Transitions for other routes if available
-      const hasNativeVT =
-        typeof document !== "undefined" &&
-        "startViewTransition" in document &&
-        typeof (document as any).startViewTransition === "function"
-
-      if (!hasNativeVT) {
-        router.push(path)
-        return
-      }
-
-      // Cancel in-flight transition if user navigated rapidly
-      if (activeTransition) {
+      // 4. Validate origin element bounds with defensive error handling
+      let originRect: OriginRect | null = null
+      if (
+        originEl &&
+        originEl.isConnected !== false &&
+        typeof originEl.getBoundingClientRect === "function"
+      ) {
         try {
-          activeTransition.skipTransition()
+          const rect = originEl.getBoundingClientRect()
+          if (rect.width > 0 && rect.height > 0 && Number.isFinite(rect.left)) {
+            originRect = {
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+              height: rect.height,
+              right: rect.right,
+              bottom: rect.bottom,
+            }
+          }
         } catch {
-          // Transition might have already finished
-        }
-        activeTransition = null
-      }
-
-      // Apply transition attributes to <html> for CSS scoping
-      document.documentElement.setAttribute("data-page-transition", preset)
-      document.documentElement.setAttribute("data-mode", mode)
-      document.documentElement.style.setProperty("--vt-duration", `${durationMs}ms`)
-
-      try {
-        const transition = (document as any).startViewTransition(async () => {
-          router.push(path)
-        })
-
-        activeTransition = transition
-
-        await transition.finished.catch(() => {
-          // Clean skip/cancel
-        })
-      } catch {
-        router.push(path)
-      } finally {
-        if (activeTransition) {
-          activeTransition = null
+          originRect = null
         }
       }
+
+      // Orchestrate page transition via UnifiedTransitionOverlay
+      setOriginRect(originRect)
+      setActivePreset(preset)
+      setTargetPath(path)
+      setPageLoaded(false)
+      setCurtainState("covering")
+
+      // Trigger route swap
+      router.push(path)
     },
-    [router, mode, resolveTransition, setActivePreset, setCurtainState, setPageLoaded]
+    [
+      router,
+      resolveTransition,
+      setCurtainState,
+      setPageLoaded,
+      setActivePreset,
+      setTargetPath,
+      setOriginRect,
+    ]
   )
 
   return { navigateWithTransition }
 }
-

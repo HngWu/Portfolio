@@ -22,6 +22,7 @@ import {
   playCarouselTick,
 } from "@/lib/projects/audio"
 import { usePageTransition } from "@/hooks/usePageTransition"
+import { useNavigationStore } from "@/store/useNavigationStore"
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react"
 
 interface Infinite3DCarouselProps {
@@ -34,6 +35,10 @@ export function Infinite3DCarousel({
   initialSlug,
 }: Infinite3DCarouselProps) {
   const { navigateWithTransition } = usePageTransition()
+
+  React.useEffect(() => {
+    useNavigationStore.getState().reportPageLoaded("/projects")
+  }, [])
   const [projects, setProjects] = React.useState<ProjectItemData[]>(initialProjects)
   const [selectedLanguage, setSelectedLanguage] = React.useState("all")
   const [selectedStatus, setSelectedStatus] = React.useState("all")
@@ -67,7 +72,7 @@ export function Infinite3DCarousel({
   const activeIndexRef = React.useRef(0)
   const containerRef = React.useRef<HTMLDivElement>(null)
   const animationFrameRef = React.useRef<number | null>(null)
-  const entranceStartTimeRef = React.useRef(typeof performance !== "undefined" ? performance.now() : 0)
+  const entranceStartTimeRef = React.useRef<number | null>(null)
 
   // Screen size for responsive radius and grid columns
   const [viewportWidth, setViewportWidth] = React.useState(1200)
@@ -127,16 +132,24 @@ export function Infinite3DCarousel({
   React.useEffect(() => {
     if (filteredProjects.length === 0) return
     if (focusedIndex >= filteredProjects.length) {
-      setFocusedIndex(0)
       targetRotationRef.current = 0
       rotationRef.current = 0
+      const timer = setTimeout(() => {
+        setFocusedIndex(0)
+      }, 0)
+      return () => clearTimeout(timer)
     }
   }, [filteredProjects.length, focusedIndex])
 
   // Check prefers-reduced-motion and screen resize
   React.useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
-    setPrefersReducedMotion(mediaQuery.matches)
+    let motionTimer: NodeJS.Timeout | null = null
+    if (mediaQuery.matches) {
+      motionTimer = setTimeout(() => {
+        setPrefersReducedMotion(true)
+      }, 0)
+    }
 
     const handleMediaChange = (e: MediaQueryListEvent) => {
       setPrefersReducedMotion(e.matches)
@@ -150,6 +163,7 @@ export function Infinite3DCarousel({
     window.addEventListener("resize", handleResize)
 
     return () => {
+      if (motionTimer) clearTimeout(motionTimer)
       mediaQuery.removeEventListener("change", handleMediaChange)
       window.removeEventListener("resize", handleResize)
     }
@@ -391,7 +405,6 @@ export function Infinite3DCarousel({
 
     const count = filteredProjects.length
     const step = (Math.PI * 2) / count
-    let lastTime = performance.now()
 
     const tick = (currentTime: number) => {
       // 1. Smoothly spring towards targetRotationRef.current when not dragging
@@ -420,6 +433,9 @@ export function Infinite3DCarousel({
       const cardH = viewportWidth < 640 ? 400 : 480
 
       // Staggered fan-out entrance timing (first 1.2s)
+      if (entranceStartTimeRef.current === null) {
+        entranceStartTimeRef.current = currentTime
+      }
       const elapsedEntrance = currentTime - entranceStartTimeRef.current
 
       const transforms = filteredProjects.map((_, i) => {

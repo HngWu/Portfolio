@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 import { PageHero } from "./PageHero"
 import { ModeScrollFx } from "./ModeScrollFx"
 import { useGsap } from "@/hooks/useGsap"
@@ -31,6 +32,8 @@ export function DetailShell({
   const mode = useViewModeStore((s) => s.mode)
   const curtainState = useNavigationStore((s) => s.curtainState)
   const originRect = useNavigationStore((s) => s.originRect)
+  const reportPageLoaded = useNavigationStore((s) => s.reportPageLoaded)
+  const pathname = usePathname()
 
   const shellRef = React.useRef<HTMLElement | null>(null)
 
@@ -51,6 +54,11 @@ export function DetailShell({
       }
     }
   }, [curtainState])
+
+  // Report page readiness once mounted on client
+  React.useEffect(() => {
+    reportPageLoaded(pathname)
+  }, [pathname, reportPageLoaded])
 
   // 2. Reveal — only play once the curtain is unwinding (or immediately on a
   //    direct load / refresh where curtainState is idle). Gating on curtainState

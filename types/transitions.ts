@@ -6,6 +6,8 @@ export type TransitionPreset =
   | "matrix-pulse"
   | "clean-lift"
 
+export type CurtainState = "idle" | "covering" | "holding" | "peak" | "revealing"
+
 export interface PageTransitionRule {
   id: string
   route: string

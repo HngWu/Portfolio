@@ -6,6 +6,7 @@ import { useIgniteStore } from "@/store/useIgniteStore"
 import gsap from "gsap"
 import { ForceMobileContext } from "./ForceMobileContext"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
+import { useNavigationStore } from "@/store/useNavigationStore"
 
 export function BentoGrid({
   className,
@@ -20,6 +21,10 @@ export function BentoGrid({
   const flashRef = React.useRef<HTMLDivElement>(null)
   const prevIgnited = React.useRef(isIgnited)
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
+
+  React.useEffect(() => {
+    useNavigationStore.getState().reportPageLoaded("/")
+  }, [])
 
   // Handle initial bento radial shockwave entrance from Hero Tile origin
   React.useEffect(() => {
