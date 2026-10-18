@@ -159,19 +159,28 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
       canExpand={false}
       deepContent={
         <div className="flex flex-col h-full justify-center relative">
+          {/* Elder Futhark Runic Watermark Banner */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 select-none whitespace-nowrap font-mono text-3xl sm:text-4xl md:text-5xl font-bold tracking-[0.25em] text-[#FFD95A] opacity-[0.03] transition-all duration-700 ease-out group-hover:opacity-[0.12] group-hover:animate-rune-shimmer z-0"
+            style={{ fontFamily: "'NotoSansRunic-Regular', var(--font-mono), monospace" }}
+          >
+            ᛗᛃᛏᛒᛏᚺᚠᚢᚦᚨᚱᚲᚷᚹᛊ
+          </div>
+
           {/* Main Content */}
           <h1 
             ref={deepMarkRef}
-            className="text-2xl md:text-3xl font-display leading-tight text-white/90 min-h-[1.3em] font-bold tracking-tight break-words"
+            className="relative z-10 text-2xl md:text-3xl font-display leading-tight text-white/90 min-h-[1.3em] font-bold tracking-tight break-words"
           >
             {mark}
           </h1>
-          <p className="text-base md:text-lg mt-4 sm:mt-6 text-white/50 w-full leading-relaxed">
+          <p className="relative z-10 text-base md:text-lg mt-4 sm:mt-6 text-white/50 w-full leading-relaxed">
             {description}
           </p>
 
           {/* Horizontal Footer Chrome */}
-          <div className="border-t border-white/5 pt-3 sm:pt-4 flex flex-wrap items-center justify-between gap-2.5 w-full mt-4 sm:mt-6 md:mt-8">
+          <div className="relative z-10 border-t border-white/5 pt-3 sm:pt-4 flex flex-wrap items-center justify-between gap-2.5 w-full mt-4 sm:mt-6 md:mt-8">
             {/* Bottom Left: Download CV Button */}
             <div className="flex items-center gap-2">
               <a 
@@ -235,19 +244,28 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
       }
     >
       <div className="flex flex-col h-full justify-center relative">
+        {/* Elder Futhark Runic Watermark Banner */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 select-none whitespace-nowrap font-mono text-3xl sm:text-4xl md:text-5xl font-bold tracking-[0.25em] text-[#FFD95A] opacity-[0.03] transition-all duration-700 ease-out group-hover:opacity-[0.12] group-hover:animate-rune-shimmer z-0"
+          style={{ fontFamily: "'NotoSansRunic-Regular', var(--font-mono), monospace" }}
+        >
+          ᛗᛃᛏᛒᛏᚺᚠᚢᚦᚨᚱᚲᚷᚹᛊ
+        </div>
+
         {/* Main Content */}
         <h1 
           ref={markRef}
-          className="text-2xl md:text-3xl font-display leading-tight text-white/90 min-h-[1.3em] font-bold tracking-tight break-words"
+          className="relative z-10 text-2xl md:text-3xl font-display leading-tight text-white/90 min-h-[1.3em] font-bold tracking-tight break-words"
         >
           {mark}
         </h1>
-        <p className="text-base md:text-lg mt-4 sm:mt-6 text-white/50 w-full leading-relaxed">
+        <p className="relative z-10 text-base md:text-lg mt-4 sm:mt-6 text-white/50 w-full leading-relaxed">
           {description}
         </p>
 
         {/* Horizontal Footer Chrome */}
-        <div className="border-t border-white/5 pt-3 sm:pt-4 flex flex-wrap items-center justify-between gap-2.5 w-full mt-4 sm:mt-6 md:mt-8">
+        <div className="relative z-10 border-t border-white/5 pt-3 sm:pt-4 flex flex-wrap items-center justify-between gap-2.5 w-full mt-4 sm:mt-6 md:mt-8">
           {/* Bottom Left: Download CV Button */}
           <div className="flex items-center gap-2">
             <a 

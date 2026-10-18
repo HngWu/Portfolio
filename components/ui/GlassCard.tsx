@@ -3,6 +3,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { useViewModeStore } from "@/store/useViewModeStore"
+import { ArcaneEmbers } from "./ArcaneEmbers"
 
 export interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   glowColor?: "mint" | "blue" | "pink" | "amber" | "none"
@@ -172,6 +173,9 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
                   "radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 217, 90, 0.08) 0%, rgba(142, 68, 173, 0.04) 40%, transparent 70%)",
               }}
             />
+
+            {/* Arcane Alchemy Rising Embers */}
+            <ArcaneEmbers />
           </div>
         )}
 

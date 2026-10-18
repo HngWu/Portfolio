@@ -127,78 +127,154 @@ export function SkillsTile({ id, size, content, isDragging, sortableProps }: Ski
 
           {/* Mini-Constellation SVG Graphic */}
           <div className="w-full h-14 mb-3 rounded-lg bg-white/[0.02] border border-white/5 relative overflow-hidden flex items-center justify-center">
-            <svg viewBox="0 0 280 60" className="w-full h-full opacity-70">
+            <svg viewBox="0 0 280 60" aria-hidden="true" className="w-full h-full opacity-75 transition-opacity duration-500 group-hover:opacity-100">
               <defs>
-                <filter id="constellation-glow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="2" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                {/* Amber-Gold Filament Glow Filter */}
+                <filter id="constellation-amber-glow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+                  <feFlood floodColor="#FFD95A" floodOpacity="0.7" result="color" />
+                  <feComposite in="color" in2="blur" operator="in" result="glow" />
+                  <feMerge>
+                    <feMergeNode in="glow" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
                 </filter>
+                {/* Intense Amber Node Core Glow Filter */}
+                <filter id="node-amber-glow" x="-60%" y="-60%" width="220%" height="220%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur" />
+                  <feFlood floodColor="#FFD95A" floodOpacity="0.85" result="color" />
+                  <feComposite in="color" in2="blur" operator="in" result="glow" />
+                  <feMerge>
+                    <feMergeNode in="glow" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                {/* Subtle Linear Gradient for Breathing Filaments */}
+                <linearGradient id="amber-filament-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#E8A838" stopOpacity="0.7" />
+                  <stop offset="50%" stopColor="#FFD95A" stopOpacity="0.95" />
+                  <stop offset="100%" stopColor="#E8A838" stopOpacity="0.7" />
+                </linearGradient>
               </defs>
+
+              {/* Organic Breathing Filament Lines */}
               <line
                 x1="40"
                 y1="30"
                 x2="110"
                 y2="18"
-                stroke="#4AFFB4"
+                stroke="#FFD95A"
                 strokeWidth="1.5"
                 strokeDasharray="3 3"
-                opacity="0.6"
-                className="animate-pulse"
+                opacity="0.7"
+                filter="url(#constellation-amber-glow)"
+                className="animate-pulse transition-all duration-500 group-hover:opacity-100"
               />
               <line
                 x1="40"
                 y1="30"
                 x2="110"
                 y2="42"
-                stroke="#4A8FFF"
+                stroke="#E8A838"
                 strokeWidth="1.5"
-                opacity="0.4"
+                opacity="0.5"
+                className="transition-all duration-500 group-hover:opacity-85 group-hover:stroke-[#FFD95A]"
               />
               <line
                 x1="110"
                 y1="18"
                 x2="190"
                 y2="24"
-                stroke="#C9A227"
+                stroke="url(#amber-filament-grad)"
                 strokeWidth="1.5"
-                opacity="0.5"
+                opacity="0.65"
+                filter="url(#constellation-amber-glow)"
+                className="animate-pulse transition-all duration-500 group-hover:opacity-100"
+                style={{ animationDuration: "3s" }}
               />
               <line
                 x1="110"
                 y1="42"
                 x2="190"
                 y2="38"
-                stroke="#FF4A8F"
+                stroke="#E8A838"
                 strokeWidth="1.5"
-                opacity="0.4"
+                opacity="0.5"
+                className="transition-all duration-500 group-hover:opacity-85"
               />
               <line
                 x1="190"
                 y1="24"
                 x2="250"
                 y2="30"
-                stroke="#4AFFB4"
+                stroke="#FFD95A"
                 strokeWidth="1.5"
                 strokeDasharray="3 3"
-                opacity="0.6"
-                className="animate-pulse"
+                opacity="0.7"
+                filter="url(#constellation-amber-glow)"
+                className="animate-pulse transition-all duration-500 group-hover:opacity-100"
+                style={{ animationDuration: "2.4s" }}
               />
               <line
                 x1="190"
                 y1="38"
                 x2="250"
                 y2="30"
-                stroke="#4A8FFF"
+                stroke="#E8A838"
                 strokeWidth="1.5"
-                opacity="0.4"
+                opacity="0.5"
+                className="transition-all duration-500 group-hover:opacity-85 group-hover:stroke-[#FFD95A]"
               />
 
-              <circle cx="40" cy="30" r="4" fill="#4AFFB4" filter="url(#constellation-glow)" />
-              <circle cx="110" cy="18" r="4.5" fill="#4AFFB4" filter="url(#constellation-glow)" />
-              <circle cx="110" cy="42" r="3.5" fill="#4A8FFF" />
-              <circle cx="190" cy="24" r="4" fill="#C9A227" />
-              <circle cx="190" cy="38" r="3.5" fill="#FF4A8F" />
-              <circle cx="250" cy="30" r="4.5" fill="#4AFFB4" filter="url(#constellation-glow)" />
+              {/* Glowing Amber-Gold Constellation Node Circles */}
+              <circle
+                cx="40"
+                cy="30"
+                r="4"
+                fill="#FFD95A"
+                filter="url(#node-amber-glow)"
+                className="transition-all duration-500 drop-shadow-[0_0_6px_#FFD95A] group-hover:drop-shadow-[0_0_12px_#FFD95A] group-hover:fill-[#FFF3B0]"
+              />
+              <circle
+                cx="110"
+                cy="18"
+                r="4.5"
+                fill="#FFD95A"
+                filter="url(#node-amber-glow)"
+                className="transition-all duration-500 drop-shadow-[0_0_8px_#FFD95A] group-hover:drop-shadow-[0_0_14px_#FFD95A] group-hover:fill-[#FFF3B0]"
+              />
+              <circle
+                cx="110"
+                cy="42"
+                r="3.5"
+                fill="#E8A838"
+                filter="url(#constellation-amber-glow)"
+                className="transition-all duration-500 drop-shadow-[0_0_4px_#E8A838] group-hover:drop-shadow-[0_0_10px_#FFD95A] group-hover:fill-[#FFD95A]"
+              />
+              <circle
+                cx="190"
+                cy="24"
+                r="4"
+                fill="#FFD95A"
+                filter="url(#node-amber-glow)"
+                className="transition-all duration-500 drop-shadow-[0_0_6px_#FFD95A] group-hover:drop-shadow-[0_0_12px_#FFD95A] group-hover:fill-[#FFF3B0]"
+              />
+              <circle
+                cx="190"
+                cy="38"
+                r="3.5"
+                fill="#E8A838"
+                filter="url(#constellation-amber-glow)"
+                className="transition-all duration-500 drop-shadow-[0_0_4px_#E8A838] group-hover:drop-shadow-[0_0_10px_#FFD95A] group-hover:fill-[#FFD95A]"
+              />
+              <circle
+                cx="250"
+                cy="30"
+                r="4.5"
+                fill="#FFD95A"
+                filter="url(#node-amber-glow)"
+                className="transition-all duration-500 drop-shadow-[0_0_8px_#FFD95A] group-hover:drop-shadow-[0_0_14px_#FFD95A] group-hover:fill-[#FFF3B0]"
+              />
             </svg>
             <div className="absolute inset-0 flex items-center justify-between px-3 pointer-events-none text-[9px] font-mono text-white/30 uppercase tracking-widest">
               <span>Foundations</span>
