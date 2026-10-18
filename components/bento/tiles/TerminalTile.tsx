@@ -103,7 +103,7 @@ export function TerminalTile({
   const pathname = usePathname()
 
   const mode = useViewModeStore((state) => state.mode)
-  const config = React.useMemo(() => getTerminalConfig(os, mode), [os, mode])
+  const config = React.useMemo(() => getTerminalConfig(os), [os])
   const hasUserTypedRef = React.useRef(false)
 
   React.useEffect(() => {
@@ -116,11 +116,10 @@ export function TerminalTile({
       const banner =
         mode === "deep"
           ? "◆ hexgate.cli // v2.6.0 — telemetry online"
-          : "✦ archive.codex [v1.0.0] — session initialized"
+          : "✦ archive.codex — type 'help' to inspect"
 
       setHistory([
-        { type: "output", content: banner },
-        { type: "output", content: "Type 'help' to see available commands." }
+        { type: "output", content: banner }
       ])
     }
   }, [mode])
