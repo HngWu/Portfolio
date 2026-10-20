@@ -26,6 +26,7 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
     },
     ref
   ) => {
+    const [isHovered, setIsHovered] = React.useState(false)
     const localRef = React.useRef<HTMLDivElement | null>(null)
     const rafRef = React.useRef<number | null>(null)
     const mousePosRef = React.useRef<{ x: number; y: number } | null>(null)
@@ -73,6 +74,7 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
     }
 
     const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+      setIsHovered(true)
       if (interactive && localRef.current) {
         const rect = localRef.current.getBoundingClientRect()
         const x = e.clientX - rect.left
@@ -89,6 +91,7 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
     }
 
     const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+      setIsHovered(false)
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current)
         rafRef.current = null
@@ -101,7 +104,15 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
       blue: "hover:border-[rgba(74,143,255,0.3)] shadow-[0_0_40px_rgba(74,143,255,0.05)]",
       pink: "hover:border-[rgba(255,74,143,0.3)] shadow-[0_0_40px_rgba(255,74,143,0.05)]",
       amber: "hover:border-[rgba(255,180,74,0.3)] shadow-[0_0_40px_rgba(255,180,74,0.05)]",
-      none: "",
+      none: "hover:border-white/10",
+    }
+
+    const accentColor = {
+      mint: "rgba(74,255,180,0.15)",
+      blue: "rgba(74,143,255,0.15)",
+      pink: "rgba(255,74,143,0.15)",
+      amber: "rgba(255,180,74,0.15)",
+      none: "rgba(255,255,255,0.05)",
     }
 
     return (
@@ -111,20 +122,14 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "relative group rounded-2xl overflow-hidden",
-          "backdrop-blur-[20px] backdrop-saturate-[140%]",
-          "transition-all duration-300",
+          "relative group bg-[var(--glass-fill,rgba(255,255,255,0.03))] backdrop-blur-xl rounded-2xl border border-[var(--glass-border,rgba(255,255,255,0.08))] overflow-hidden",
+          "shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]",
+          "transition-all duration-500",
           "transform-gpu backface-hidden",
           glowClasses[glowColor],
           className
         )}
-        style={{
-          backgroundColor: "rgba(9, 9, 11, 0.65)",
-          backdropFilter: "blur(20px) saturate(140%)",
-          WebkitBackdropFilter: "blur(20px) saturate(140%)",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
-          ...style,
-        }}
+        style={style}
         {...props}
       >
         {/* Base Noise/Grain Texture */}
@@ -133,19 +138,26 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
           className="pointer-events-none absolute inset-0 z-0 opacity-[0.03] mix-blend-overlay bg-[url('/assets/noise.svg')]"
         />
 
-        {/* Resting Top-Down Hairline Specular Border */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-0 rounded-[inherit] p-[1px]"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.03))",
-            WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-            WebkitMaskComposite: "xor",
-            mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-            maskComposite: "exclude",
-          }}
-        />
+        {/* Dynamic Interactive Glow */}
+        {interactive && (
+          <div
+            aria-hidden="true"
+            style={{
+              left: "var(--mouse-x, 50%)",
+              top: "var(--mouse-y, 50%)",
+              background: `radial-gradient(circle at center, ${accentColor[glowColor]}, transparent 70%)`,
+            }}
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 w-64 h-64 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+          />
+        )}
+
+        {/* Animated Liquid Blobs */}
+        {isHovered && (
+          <div className="absolute inset-0 opacity-20 filter blur-[80px] pointer-events-none text-lume-primary" aria-hidden="true">
+            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-current opacity-20 animate-liquid-1" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-lume-secondary/20 animate-liquid-2" />
+          </div>
+        )}
 
         {/* Quick Pitch Hover Overlays (Gold Core -> Amethyst Edge) */}
         {interactive && mode === "quick" && (
@@ -241,10 +253,10 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
           </div>
         )}
 
-        {/* Refraction Sheen */}
+        {/* Shine/Refraction Effect */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+          className="pointer-events-none absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-br from-white/5 via-transparent to-transparent"
         />
 
         <div className="relative z-10 flex h-full w-full flex-col">
