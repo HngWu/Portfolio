@@ -1,3 +1,4 @@
+import { cache } from "react"
 import { parseTileContent, parseTileDeepDive } from "@/lib/tiles/schemas"
 import type { Database } from "@/types/supabase"
 import type { SearchResult } from "@/lib/search"
@@ -305,7 +306,7 @@ export function parseTilesToPortfolioContent(tiles: Tile[]): PortfolioContent {
   return content
 }
 
-export async function getPortfolioContent(): Promise<PortfolioContent> {
+export const getPortfolioContent = cache(async function getPortfolioContent(): Promise<PortfolioContent> {
   let tilesData: any[] = []
   let detailedData: any[] = []
 
@@ -401,7 +402,7 @@ export async function getPortfolioContent(): Promise<PortfolioContent> {
   content.education.sort((a, b) => (a.startDate || "").localeCompare(b.startDate || ""))
 
   return content
-}
+})
 
 export function getSearchableContent(content: PortfolioContent): SearchResult[] {
   const list: SearchResult[] = [

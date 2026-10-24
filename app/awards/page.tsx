@@ -2,6 +2,8 @@ import { DetailShell } from "@/components/detail/DetailShell"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { getPortfolioContent } from "@/lib/content/portfolio"
 
+export const revalidate = 3600
+
 export default async function AwardsPage() {
   const { awards } = await getPortfolioContent()
 
@@ -19,4 +21,3 @@ export default async function AwardsPage() {
     </DetailShell>
   )
 }
-

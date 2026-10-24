@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import Database from 'better-sqlite3'
 import path from 'path'
 import fs from 'fs'
@@ -912,17 +913,20 @@ export function deleteSystemSettingDb(key: string): void {
 
 export interface QueryOptions {
   allowFallback?: boolean
+  allowCookie?: boolean
 }
 
-export async function getActiveProvider(): Promise<DatabaseProvider> {
-  try {
-    const cookieStore = await cookies()
-    const cookieOverride = cookieStore.get('admin_db_provider')?.value
-    if (cookieOverride === 'supabase' || cookieOverride === 'sqlite') {
-      return cookieOverride as DatabaseProvider
+export async function getActiveProvider(options?: QueryOptions): Promise<DatabaseProvider> {
+  if (options?.allowCookie) {
+    try {
+      const cookieStore = await cookies()
+      const cookieOverride = cookieStore.get('admin_db_provider')?.value
+      if (cookieOverride === 'supabase' || cookieOverride === 'sqlite') {
+        return cookieOverride as DatabaseProvider
+      }
+    } catch {
+      // Outside request context or cookies not accessible
     }
-  } catch {
-    // Outside request context or cookies not accessible
   }
 
   const override = getSystemSettingDb('database_provider')
@@ -964,7 +968,7 @@ export async function clearActiveProviderOverride(): Promise<void> {
 }
 
 export async function getDatabaseStatus(): Promise<DatabaseStatus> {
-  const activeProvider = await getActiveProvider()
+  const activeProvider = await getActiveProvider({ allowCookie: true })
   const envDefaultRaw = (process.env.DEFAULT_DATABASE || '').toLowerCase().trim()
   const defaultProvider: DatabaseProvider = envDefaultRaw === 'supabase' ? 'supabase' : 'sqlite'
   
@@ -1005,8 +1009,8 @@ export async function getDatabaseStatus(): Promise<DatabaseStatus> {
 // Unified Async CRUD Delegators with Auto-Fallback
 // -------------------------------------------------------------
 
-export async function getTiles(options?: QueryOptions): Promise<TileRow[]> {
-  const provider = await getActiveProvider()
+export const getTiles = cache(async function getTiles(options?: QueryOptions): Promise<TileRow[]> {
+  const provider = await getActiveProvider(options)
   if (provider === 'supabase') {
     if (options?.allowFallback !== false && supabaseCircuitBreaker.isOpen()) {
       return getTilesDb()
@@ -1027,10 +1031,10 @@ export async function getTiles(options?: QueryOptions): Promise<TileRow[]> {
     }
   }
   return getTilesDb()
-}
+})
 
-export async function getTileById(id: string, options?: QueryOptions): Promise<TileRow | null> {
-  const provider = await getActiveProvider()
+export const getTileById = cache(async function getTileById(id: string, options?: QueryOptions): Promise<TileRow | null> {
+  const provider = await getActiveProvider(options)
   if (provider === 'supabase') {
     if (options?.allowFallback !== false && supabaseCircuitBreaker.isOpen()) {
       return getTileByIdDb(id)
@@ -1051,10 +1055,10 @@ export async function getTileById(id: string, options?: QueryOptions): Promise<T
     }
   }
   return getTileByIdDb(id)
-}
+})
 
-export async function getTilesByType(type: string, options?: QueryOptions): Promise<TileRow[]> {
-  const provider = await getActiveProvider()
+export const getTilesByType = cache(async function getTilesByType(type: string, options?: QueryOptions): Promise<TileRow[]> {
+  const provider = await getActiveProvider(options)
   if (provider === 'supabase') {
     if (options?.allowFallback !== false && supabaseCircuitBreaker.isOpen()) {
       return getTilesByTypeDb(type)
@@ -1075,7 +1079,7 @@ export async function getTilesByType(type: string, options?: QueryOptions): Prom
     }
   }
   return getTilesByTypeDb(type)
-}
+})
 
 export async function createTile(tile: TileInsert, options?: QueryOptions): Promise<TileRow> {
   const provider = await getActiveProvider()
@@ -1177,8 +1181,8 @@ export async function deleteTile(id: string, options?: QueryOptions): Promise<vo
   deleteTileDb(id)
 }
 
-export async function getDetailedItems(type?: string, options?: QueryOptions): Promise<DetailedItemRow[]> {
-  const provider = await getActiveProvider()
+export const getDetailedItems = cache(async function getDetailedItems(type?: string, options?: QueryOptions): Promise<DetailedItemRow[]> {
+  const provider = await getActiveProvider(options)
   if (provider === 'supabase') {
     if (options?.allowFallback !== false && supabaseCircuitBreaker.isOpen()) {
       if (type && type !== 'all') {
@@ -1208,10 +1212,10 @@ export async function getDetailedItems(type?: string, options?: QueryOptions): P
     return getDetailedItemsByTypeDb(type)
   }
   return getDetailedItemsDb()
-}
+})
 
-export async function getDetailedItemById(id: string, options?: QueryOptions): Promise<DetailedItemRow | null> {
-  const provider = await getActiveProvider()
+export const getDetailedItemById = cache(async function getDetailedItemById(id: string, options?: QueryOptions): Promise<DetailedItemRow | null> {
+  const provider = await getActiveProvider(options)
   if (provider === 'supabase') {
     if (options?.allowFallback !== false && supabaseCircuitBreaker.isOpen()) {
       return getDetailedItemByIdDb(id)
@@ -1232,7 +1236,7 @@ export async function getDetailedItemById(id: string, options?: QueryOptions): P
     }
   }
   return getDetailedItemByIdDb(id)
-}
+})
 
 export async function getDetailedItemsByType(type: string, options?: QueryOptions): Promise<DetailedItemRow[]> {
   return getDetailedItems(type, options)

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { cn } from "@/lib/utils"
 import type { ProjectItemData } from "@/lib/projects/types"
 import type { CardTransform3D } from "@/lib/projects/layoutMath"
@@ -11,7 +12,6 @@ import {
   Github,
   Sparkles,
   Maximize2,
-  Calendar,
 } from "lucide-react"
 
 interface ProjectCardProps {
@@ -185,11 +185,12 @@ export function ProjectCard({
             className="w-full h-full object-cover opacity-80"
           />
         ) : project.previewImage && !imageError ? (
-          <img
+          <Image
             src={project.previewImage}
-            alt=""
-            loading="lazy"
-            className="w-full h-full object-cover opacity-80 transition-transform duration-500 hover:scale-105"
+            alt={project.name || "Project Preview"}
+            fill
+            sizes="(max-width: 640px) 320px, (max-width: 1024px) 380px, 420px"
+            className="object-cover opacity-80 transition-transform duration-500 hover:scale-105"
             onError={() => setImageError(true)}
           />
         ) : (

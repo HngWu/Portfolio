@@ -1,7 +1,8 @@
 import { DetailShell } from "@/components/detail/DetailShell"
 import { getInitialProjectItems, enrichProjectsWithLiveGitHub } from "@/lib/projects/data"
 import { Infinite3DCarousel } from "@/components/projects/Infinite3DCarousel"
-import Link from "next/link"
+
+export const revalidate = 3600
 
 export const metadata = {
   title: "Projects Showcase | HngWu",

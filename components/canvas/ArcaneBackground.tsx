@@ -155,23 +155,30 @@ export function ArcaneBackground() {
   useEffect(() => {
     if (!hoveredTileId) return
 
+    let rafId: number | null = null
+
     const updateHoveredPosition = () => {
-      const el = document.querySelector(`[data-id="${hoveredTileId}"]`)
-      if (el) {
-        const domRect = el.getBoundingClientRect()
-        setRect({
-          left: domRect.left,
-          top: domRect.top,
-          width: domRect.width,
-          height: domRect.height,
-        })
-      }
+      if (rafId !== null) return
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null
+        const el = document.querySelector(`[data-id="${hoveredTileId}"]`)
+        if (el) {
+          const domRect = el.getBoundingClientRect()
+          setRect({
+            left: domRect.left,
+            top: domRect.top,
+            width: domRect.width,
+            height: domRect.height,
+          })
+        }
+      })
     }
 
     window.addEventListener("scroll", updateHoveredPosition, { passive: true })
     window.addEventListener("resize", updateHoveredPosition, { passive: true })
 
     return () => {
+      if (rafId !== null) window.cancelAnimationFrame(rafId)
       window.removeEventListener("scroll", updateHoveredPosition)
       window.removeEventListener("resize", updateHoveredPosition)
     }

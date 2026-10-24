@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import type { ProjectItemData } from "@/lib/projects/types"
@@ -177,13 +178,12 @@ export function CaseStudyPanel({ project, isOpen, onClose }: CaseStudyPanelProps
               {/* Media banner if available */}
               {project.previewImage && (
                 <div className="relative w-full h-48 sm:h-72 rounded-2xl overflow-hidden border border-white/10 bg-black/50">
-                  <img
+                  <Image
                     src={project.previewImage}
                     alt={project.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      ;(e.target as HTMLElement).parentElement!.style.display = "none"
-                    }}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 800px, 900px"
+                    className="object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a0b0f] via-transparent to-transparent opacity-80" />
                 </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import type { EducationLocation } from "@/types/education-map";
 import { TYPE_CONFIGS } from "./EducationPinSvg";
 import { cn } from "@/lib/utils";
@@ -13,9 +14,7 @@ import {
   Calendar,
   Award,
   GraduationCap,
-  Sparkles,
   Compass,
-  X,
 } from "lucide-react";
 
 interface GoogleMapsPlacePanelProps {
@@ -159,11 +158,13 @@ export function GoogleMapsPlacePanel({
         {/* Header Cover Photo */}
         <div className="relative w-full h-40 sm:h-52 md:h-56 lg:h-64 bg-neutral-900 overflow-hidden shrink-0">
           {location.thumbnail ? (
-            <img
+            <Image
               src={location.thumbnail}
               alt={location.name}
-              className="w-full h-full object-cover"
-              loading="eager"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 480px, 540px"
+              className="object-cover"
+              priority={currentIndex === 0}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-neutral-900 via-neutral-800 to-black flex items-center justify-center">

@@ -27,6 +27,7 @@ interface CacheEntry {
 }
 
 const CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
+const serverStatsCache = new Map<string, { timestamp: number; data: GitHubRepoStats }>()
 
 /**
  * Deterministic fallback sparkline generator based on repo name.
@@ -58,7 +59,13 @@ export async function fetchGitHubRepoStats(
   const normalizedRepo = repoFullName.replace(/^https?:\/\/github\.com\//, "").replace(/\/$/, "")
   const cacheKey = `gh_repo_cache_${normalizedRepo.replace("/", "_")}`
 
-  // 1. Try reading from localStorage cache if in browser
+  // 1. Try reading from server-side memory cache
+  const serverCached = serverStatsCache.get(normalizedRepo)
+  if (serverCached && Date.now() - serverCached.timestamp < CACHE_TTL_MS) {
+    return serverCached.data
+  }
+
+  // 2. Try reading from localStorage cache if in browser
   if (typeof window !== "undefined") {
     try {
       const cached = window.localStorage.getItem(cacheKey)
@@ -73,12 +80,13 @@ export async function fetchGitHubRepoStats(
     }
   }
 
-  // 2. Attempt fetching from GitHub REST API
+  // 3. Attempt fetching from GitHub REST API with 1-hour ISR revalidation
   try {
     const response = await fetch(`https://api.github.com/repos/${normalizedRepo}`, {
       headers: {
         Accept: "application/vnd.github.v3+json",
       },
+      next: { revalidate: 3600 },
     })
 
     if (response.ok) {
@@ -95,7 +103,10 @@ export async function fetchGitHubRepoStats(
         sparkline: generateFallbackSparkline(normalizedRepo),
       }
 
-      // Cache the successful response
+      // Cache the successful response on server
+      serverStatsCache.set(normalizedRepo, { timestamp: Date.now(), data: stats })
+
+      // Cache the successful response on client
       if (typeof window !== "undefined") {
         try {
           window.localStorage.setItem(
@@ -113,8 +124,8 @@ export async function fetchGitHubRepoStats(
     // Offline or network error: gracefully proceed to fallback
   }
 
-  // 3. Fallback when network failed or rate-limited
-  return {
+  // 4. Fallback when network failed or rate-limited
+  const fallbackStats: GitHubRepoStats = {
     stars: 1,
     forks: 0,
     language: fallbackLanguage,
@@ -123,4 +134,9 @@ export async function fetchGitHubRepoStats(
     topics: [],
     sparkline: generateFallbackSparkline(normalizedRepo),
   }
+
+  // Cache fallback briefly (5 minutes) to avoid repeated rate-limit timeouts
+  serverStatsCache.set(normalizedRepo, { timestamp: Date.now() - (CACHE_TTL_MS - 5 * 60 * 1000), data: fallbackStats })
+
+  return fallbackStats
 }

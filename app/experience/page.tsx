@@ -1,6 +1,8 @@
 import { getPortfolioContent } from "@/lib/content/portfolio"
 import { ExperienceSpellbook } from "@/components/experience/ExperienceSpellbook"
 
+export const revalidate = 3600
+
 export default async function ExperiencePage() {
   const { experience } = await getPortfolioContent()
 

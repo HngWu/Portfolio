@@ -4,6 +4,8 @@ import { SkillTree } from "@/components/skills/SkillTree"
 import skillTreeData from "@/lib/data/skill-tree-data.json"
 import type { SkillTreeData } from "@/types/skill-tree"
 
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: "Interactive Skill Tree | Capabilities & Roadmap",
   description:

@@ -18,16 +18,22 @@ import "./globals.css";
 const geistSans = Geist({
   variable: "--font-ui",
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 });
 
 const playfair = Playfair_Display({
   variable: "--font-display",
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 });
 
 export const viewport: Viewport = {
@@ -76,8 +82,3 @@ export default async function RootLayout({
     </html>
   );
 }
-
-
-// Shimmer Revamp Cache Invalidator
-
-

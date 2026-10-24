@@ -1,6 +1,8 @@
 import { getPortfolioContent } from "@/lib/content/portfolio"
 import { EducationMap } from "@/components/education/EducationMap"
 
+export const revalidate = 3600
+
 export default async function EducationPage() {
   const { education } = await getPortfolioContent()
 

@@ -2,6 +2,18 @@ import { getInitialProjectItems, enrichProjectsWithLiveGitHub } from "@/lib/proj
 import { ProjectDetailClient } from "@/components/projects/ProjectDetailClient"
 import { notFound } from "next/navigation"
 
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  const initialProjects = getInitialProjectItems()
+  const params: { slug: string }[] = []
+  for (const p of initialProjects) {
+    if (p.slug) params.push({ slug: p.slug })
+    if (p.id && p.id !== p.slug) params.push({ slug: p.id })
+  }
+  return params
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const initialProjects = getInitialProjectItems()

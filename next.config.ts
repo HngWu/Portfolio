@@ -4,6 +4,20 @@ import path from "path";
 const nextConfig: NextConfig = {
   experimental: {
     viewTransition: true,
+    optimizePackageImports: [
+      "lucide-react",
+      "three",
+      "@react-three/fiber",
+      "@react-three/drei",
+      "@react-three/postprocessing",
+      "framer-motion",
+      "gsap",
+    ],
+  },
+  images: {
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   serverExternalPackages: ["better-sqlite3"],
   turbopack: {
@@ -17,7 +31,7 @@ const nextConfig: NextConfig = {
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      'three$': path.resolve(process.cwd(), './lib/three-wrapper.ts'),
+      'three$': path.resolve(/*turbopackIgnore: true*/ process.cwd(), './lib/three-wrapper.ts'),
     };
     return config;
   },

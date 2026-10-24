@@ -5,6 +5,8 @@ import { CvDossierViewer } from "@/components/cv/CvDossierViewer"
 import { VAULT_FOLDERS, applyVaultConfig } from "@/lib/cv/documents"
 import { getVaultConfigAction } from "@/app/actions/vault"
 
+export const revalidate = 3600
+
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getPortfolioContent()
   const name = content.hero?.mark || "Curriculum Vitae"

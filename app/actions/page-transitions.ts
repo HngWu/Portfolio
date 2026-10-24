@@ -1,12 +1,13 @@
 "use server"
 
+import { cache } from "react"
 import { revalidatePath } from "next/cache"
 import { getTilesByType, updateTile, createTile } from "@/lib/db"
 import { DEFAULT_PAGE_TRANSITIONS, type PageTransitionRule } from "@/types/transitions"
 
 const CONFIG_KEY = "page_transitions"
 
-export async function getPageTransitions(): Promise<PageTransitionRule[]> {
+export const getPageTransitions = cache(async function getPageTransitions(): Promise<PageTransitionRule[]> {
   try {
     const tiles = await getTilesByType("config")
     if (tiles.length === 0) {
@@ -24,7 +25,7 @@ export async function getPageTransitions(): Promise<PageTransitionRule[]> {
   } catch {
     return DEFAULT_PAGE_TRANSITIONS
   }
-}
+})
 
 export async function savePageTransitions(rules: PageTransitionRule[]) {
   const tiles = await getTilesByType("config")
