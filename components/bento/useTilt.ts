@@ -1,8 +1,10 @@
 "use client"
 
 import { useCallback, useEffect, useRef } from "react"
+import { usePerformanceStore } from "@/store/usePerformanceStore"
 
 export function useTilt() {
+  const enableCardTilt = usePerformanceStore((s) => s.enableCardTilt)
   const ref = useRef<HTMLDivElement>(null)
   const rectRef = useRef<DOMRect | null>(null)
   const rafIdRef = useRef<number | null>(null)
@@ -26,16 +28,27 @@ export function useTilt() {
     }
   }, [])
 
+  // When card tilt is toggled off, reset any active perspective skewing
+  useEffect(() => {
+    if (!enableCardTilt && ref.current) {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current)
+        rafIdRef.current = null
+      }
+      ref.current.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) translate3d(0, 0, 0) scale3d(1, 1, 1)`
+    }
+  }, [enableCardTilt])
+
   const onMouseEnter = useCallback((_e?: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return
+    if (!enableCardTilt || !ref.current) return
     // Ignore coarse pointer devices (touchscreens) to prevent permanent skewing
     if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) return
 
     rectRef.current = ref.current.getBoundingClientRect()
-  }, [])
+  }, [enableCardTilt])
 
   const onMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return
+    if (!enableCardTilt || !ref.current) return
     // Ignore coarse pointer devices (touchscreens) to prevent permanent skewing
     if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) return
 
@@ -62,7 +75,7 @@ export function useTilt() {
         rafIdRef.current = null
       })
     }
-  }, [])
+  }, [enableCardTilt])
 
   const onMouseLeave = useCallback(() => {
     if (rafIdRef.current !== null) {

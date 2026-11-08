@@ -165,6 +165,25 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-0 rounded-[inherit] opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100"
           >
+            {/* Liquid Gold-Amethyst Rotating Border Beam */}
+            <div
+              className="pointer-events-none absolute inset-0 rounded-[inherit] p-[1px] overflow-hidden"
+              style={{
+                WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                WebkitMaskComposite: "xor",
+                mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                maskComposite: "exclude",
+              }}
+            >
+              <div
+                className="absolute -inset-[100%] animate-border-beam motion-reduce:animate-none"
+                style={{
+                  background:
+                    "conic-gradient(from 0deg, transparent 0deg, #FFD95A 60deg, #8E44AD 120deg, transparent 180deg)",
+                }}
+              />
+            </div>
+
             {/* Radial specular border reveal */}
             <div
               className="absolute inset-0 rounded-[inherit] p-[1px]"
@@ -186,6 +205,82 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
                   "radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 217, 90, 0.08) 0%, rgba(142, 68, 173, 0.04) 40%, transparent 70%)",
               }}
             />
+
+            {/* Ethereal Sacred Geometry Watermark */}
+            <div
+              className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180px] h-[180px] select-none opacity-[0.05]"
+              aria-hidden="true"
+            >
+              <svg
+                viewBox="0 0 180 180"
+                fill="none"
+                className="w-full h-full animate-[border-beam-rotate_60s_linear_infinite] motion-reduce:animate-none transform-gpu origin-center"
+              >
+                {/* Outer dotted calibration circle */}
+                <circle cx="90" cy="90" r="84" stroke="#FFD95A" strokeWidth="0.75" strokeDasharray="3 3" />
+                {/* Concentric boundary rings */}
+                <circle cx="90" cy="90" r="78" stroke="#FFE875" strokeWidth="1" />
+                <circle cx="90" cy="90" r="70" stroke="#8E44AD" strokeWidth="0.75" strokeDasharray="6 4" />
+                {/* Sacred 16-point Octagram Star Polygon */}
+                <polygon
+                  points="156,90 132.5,107.6 136.7,136.7 107.6,132.5 90,156 72.4,132.5 43.3,136.7 47.5,107.6 24,90 47.5,72.4 43.3,43.3 72.4,47.5 90,24 107.6,47.5 136.7,43.3 132.5,72.4"
+                  stroke="#FFD95A"
+                  strokeWidth="1"
+                  strokeDasharray="4 2"
+                  fill="none"
+                />
+                {/* Inner containment rings */}
+                <circle cx="90" cy="90" r="46" stroke="#FFE875" strokeWidth="0.75" />
+                <circle cx="90" cy="90" r="40" stroke="#8E44AD" strokeWidth="0.75" strokeDasharray="2 3" />
+                {/* Cardinal and diagonal celestial axes */}
+                <line x1="90" y1="12" x2="90" y2="168" stroke="#FFD95A" strokeWidth="0.5" strokeDasharray="4 4" />
+                <line x1="12" y1="90" x2="168" y2="90" stroke="#FFD95A" strokeWidth="0.5" strokeDasharray="4 4" />
+                <line x1="35" y1="35" x2="145" y2="145" stroke="#8E44AD" strokeWidth="0.5" strokeDasharray="3 5" />
+                <line x1="145" y1="35" x2="35" y2="145" stroke="#8E44AD" strokeWidth="0.5" strokeDasharray="3 5" />
+                {/* Inner core ring and central diamond prism */}
+                <circle cx="90" cy="90" r="22" stroke="#FFD95A" strokeWidth="1" />
+                <circle cx="90" cy="90" r="12" stroke="#8E44AD" strokeWidth="0.75" strokeDasharray="2 2" />
+                <polygon points="90,83 97,90 90,97 83,90" fill="#FFD95A" stroke="#FFE875" strokeWidth="0.5" />
+                <circle cx="90" cy="90" r="1.5" fill="#FFF" />
+              </svg>
+            </div>
+
+            {/* Four Alchemical Corner Filigree Brackets with Glowing Diamond Nodes */}
+            {/* Top-Left */}
+            <div className="absolute top-2.5 left-2.5 transition-transform duration-300 ease-out group-hover:translate-x-[2px] group-hover:translate-y-[2px]">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="overflow-visible">
+                <path d="M1 13V5C1 2.8 2.8 1 5 1H13" stroke="#FFE875" strokeWidth="1" strokeLinecap="round" />
+                <path d="M3 9C3 5.7 5.7 3 9 3" stroke="#FFD95A" strokeWidth="0.75" strokeLinecap="round" />
+                <polygon points="7,4 10,7 7,10 4,7" fill="#FFD95A" className="filter drop-shadow-[0_0_4px_#FFD95A]" />
+              </svg>
+            </div>
+
+            {/* Top-Right */}
+            <div className="absolute top-2.5 right-2.5 transition-transform duration-300 ease-out group-hover:-translate-x-[2px] group-hover:translate-y-[2px]">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="overflow-visible">
+                <path d="M13 13V5C13 2.8 11.2 1 9 1H1" stroke="#FFE875" strokeWidth="1" strokeLinecap="round" />
+                <path d="M11 9C11 5.7 8.3 3 5 3" stroke="#FFD95A" strokeWidth="0.75" strokeLinecap="round" />
+                <polygon points="7,4 10,7 7,10 4,7" fill="#FFD95A" className="filter drop-shadow-[0_0_4px_#FFD95A]" />
+              </svg>
+            </div>
+
+            {/* Bottom-Left */}
+            <div className="absolute bottom-2.5 left-2.5 transition-transform duration-300 ease-out group-hover:translate-x-[2px] group-hover:-translate-y-[2px]">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="overflow-visible">
+                <path d="M1 1V9C1 11.2 2.8 13 5 13H13" stroke="#FFE875" strokeWidth="1" strokeLinecap="round" />
+                <path d="M3 5C3 8.3 5.7 11 9 11" stroke="#FFD95A" strokeWidth="0.75" strokeLinecap="round" />
+                <polygon points="7,4 10,7 7,10 4,7" fill="#FFD95A" className="filter drop-shadow-[0_0_4px_#FFD95A]" />
+              </svg>
+            </div>
+
+            {/* Bottom-Right */}
+            <div className="absolute bottom-2.5 right-2.5 transition-transform duration-300 ease-out group-hover:-translate-x-[2px] group-hover:-translate-y-[2px]">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="overflow-visible">
+                <path d="M13 1V9C13 11.2 11.2 13 9 13H1" stroke="#FFE875" strokeWidth="1" strokeLinecap="round" />
+                <path d="M11 5C11 8.3 8.3 11 5 11" stroke="#FFD95A" strokeWidth="0.75" strokeLinecap="round" />
+                <polygon points="7,4 10,7 7,10 4,7" fill="#FFD95A" className="filter drop-shadow-[0_0_4px_#FFD95A]" />
+              </svg>
+            </div>
 
             {/* Arcane Alchemy Rising Embers */}
             <ArcaneEmbers />

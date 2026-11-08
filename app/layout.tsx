@@ -5,10 +5,11 @@ import { CommandPalette } from "@/components/cli/CommandPalette";
 import { UnifiedTransitionOverlay } from "@/components/layout/UnifiedTransitionOverlay";
 import { ModeTransitionOverlay } from "@/components/layout/ModeTransitionOverlay";
 import { InitialLoaderOverlay } from "@/components/layout/InitialLoaderOverlay";
-import { ArcaneBackground } from "@/components/canvas/ArcaneBackground";
+import { ArcaneBackground } from "@/components/background/ArcaneBackground";
 import { ThemeApplier } from "@/components/providers/ThemeApplier";
 import { ModeApplier } from "@/components/providers/ModeApplier";
 import { CursorProvider } from "@/components/providers/CursorProvider";
+import { PerformanceMonitor } from "@/components/performance/PerformanceMonitor";
 import { PageTransitionsProvider } from "@/components/providers/PageTransitionsProvider";
 import { getPageTransitions } from "@/app/actions/page-transitions";
 import { getPortfolioContent, getSearchableContent } from "@/lib/content/portfolio";
@@ -70,6 +71,7 @@ export default async function RootLayout({
         <ThemeApplier />
         <ModeApplier />
         <CursorProvider />
+        <PerformanceMonitor />
         <ArcaneBackground />
         <ModeTransitionOverlay />
         <UnifiedTransitionOverlay />

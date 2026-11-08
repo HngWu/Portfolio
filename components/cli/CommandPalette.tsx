@@ -1,12 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { Search, Palette, Monitor, X } from "lucide-react"
+import { Search, Palette, Monitor, X, Gauge } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { usePageTransition } from "@/hooks/usePageTransition"
 import { useThemeStore } from "@/store/useThemeStore"
 import { useViewModeStore } from "@/store/useViewModeStore"
 import { useModeTransitionStore } from "@/store/useModeTransitionStore"
+import { usePerformanceStore } from "@/store/usePerformanceStore"
 import { SEARCHABLE_CONTENT, type SearchResult } from "@/lib/search"
 
 type CommandAction = {
@@ -35,6 +36,7 @@ export function CommandPalette({ initialContent }: { initialContent?: SearchResu
   const toggleTheme = useThemeStore((state) => state.togglePrimaryColor)
   const { mode } = useViewModeStore()
   const startModeTransition = useModeTransitionStore((state) => state.startTransition)
+  const setPerfPromptOpen = usePerformanceStore((state) => state.setPromptOpen)
 
   const commands: CommandAction[] = React.useMemo(() => [
     { id: "home", label: "Home", path: "/", category: "Navigation" },
@@ -42,13 +44,23 @@ export function CommandPalette({ initialContent }: { initialContent?: SearchResu
     { id: "experience", label: "Experience", path: "/experience", category: "Navigation" },
     { id: "theme", label: "Toggle Accent Color", action: toggleTheme, category: "Theme", icon: Palette },
     { id: "mode", label: `Switch to ${mode === "quick" ? "Deep Dive" : "Quick-Pitch"}`, action: () => startModeTransition(mode === "quick" ? "deep" : "quick"), category: "Theme", icon: Monitor },
+    {
+      id: "performance",
+      label: "Graphics & Performance Settings",
+      action: () => {
+        setIsOpen(false)
+        setPerfPromptOpen(true)
+      },
+      category: "Settings",
+      icon: Gauge,
+    },
     ...(initialContent || SEARCHABLE_CONTENT).filter(item => !["home", "projects", "experience"].includes(item.id)).map(item => ({
       id: item.id,
       label: item.title,
       category: item.category,
       path: item.path
     }))
-  ], [toggleTheme, mode, startModeTransition, initialContent])
+  ], [toggleTheme, mode, startModeTransition, initialContent, setPerfPromptOpen])
 
   const filteredCommands = React.useMemo(() => {
     if (!search) return commands

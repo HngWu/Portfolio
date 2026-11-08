@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react"
 import { useHoverStore, TileRect } from "@/store/useHoverStore"
 import { useViewModeStore } from "@/store/useViewModeStore"
+import { usePerformanceStore } from "@/store/usePerformanceStore"
 
 // 24 Elder Futhark runes for the Astrolabe Outer Ring
 const ELDER_FUTHARK = [
@@ -119,6 +120,7 @@ export function ArcaneBackground() {
   const mode = useViewModeStore((s) => s.mode)
   const hoveredTileId = useHoverStore((s) => s.hoveredTileId)
   const storeHoveredRect = useHoverStore((s) => s.hoveredRect)
+  const enableBackgroundFx = usePerformanceStore((s) => s.enableBackgroundFx)
 
   const [rect, setRect] = useState<TileRect | null>(null)
   const [windowSize, setWindowSize] = useState({ width: 1920, height: 1080 })
@@ -153,7 +155,7 @@ export function ArcaneBackground() {
 
   // Keep rect accurately anchored during scrolling or layout shifts while hovered
   useEffect(() => {
-    if (!hoveredTileId) return
+    if (!enableBackgroundFx || !hoveredTileId) return
 
     let rafId: number | null = null
 
@@ -191,7 +193,7 @@ export function ArcaneBackground() {
   }
   const activeRect = rect || lastRectRef.current
 
-  const isHoverActive = Boolean(rect && hoveredTileId && !isCoarsePointer)
+  const isHoverActive = Boolean(enableBackgroundFx && rect && hoveredTileId && !isCoarsePointer)
 
   // Card center coordinates
   const cx = activeRect.left + activeRect.width / 2

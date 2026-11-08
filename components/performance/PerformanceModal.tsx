@@ -1,0 +1,350 @@
+"use client"
+
+import * as React from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  Gauge,
+  Box,
+  MousePointer,
+  Sparkles,
+  Move3d,
+  Zap,
+  RotateCcw,
+  X,
+  AlertTriangle,
+  CheckCircle2,
+  type LucideIcon,
+} from "lucide-react"
+import { usePerformanceStore, type PerformanceToggles } from "@/store/usePerformanceStore"
+import { GlassCard } from "@/components/ui/GlassCard"
+import { cn } from "@/lib/utils"
+
+interface FeatureItem {
+  key: keyof PerformanceToggles
+  title: string
+  description: string
+  activeLabel: string
+  disabledLabel: string
+  icon: LucideIcon
+  impact: "High" | "Medium" | "Low"
+}
+
+const FEATURES: FeatureItem[] = [
+  {
+    key: "enable3DModel",
+    title: "3D HexCore Artifact",
+    description: "WebGL 3x3 Rubik's pyramid simulation with lightning arcs and particle streams.",
+    activeLabel: "Live WebGL Simulation",
+    disabledLabel: "Blueprint Mode (0% GPU)",
+    icon: Box,
+    impact: "High",
+  },
+  {
+    key: "enableCustomCursor",
+    title: "Arcane Mouse Cursor",
+    description: "Custom WebGL rune glow shaders, mouse velocity tracking, and trailing canvas runes.",
+    activeLabel: "Arcane Rune Shaders",
+    disabledLabel: "Native OS Cursor",
+    icon: MousePointer,
+    impact: "High",
+  },
+  {
+    key: "enableBackgroundFx",
+    title: "Clockwork Astrolabe & Gears",
+    description: "Continuous rotational SVG gear kinematics and real-time vernier caliper tracking.",
+    activeLabel: "Dynamic Animations",
+    disabledLabel: "Static Backdrop",
+    icon: Sparkles,
+    impact: "Medium",
+  },
+  {
+    key: "enableCardTilt",
+    title: "3D Perspective Card Tilt",
+    description: "Interactive perspective skewing and lighting transforms on bento card hover.",
+    activeLabel: "Perspective Tilt Active",
+    disabledLabel: "Flat Cards",
+    icon: Move3d,
+    impact: "Low",
+  },
+]
+
+export function PerformanceModal() {
+  const {
+    fps,
+    isLagging,
+    isPromptOpen,
+    enable3DModel,
+    enableCustomCursor,
+    enableBackgroundFx,
+    enableCardTilt,
+    neverShowAutoPrompt,
+    setToggle,
+    setPromptOpen,
+    optimizeAll,
+    restoreHighQuality,
+    dismissPrompt,
+  } = usePerformanceStore()
+
+  const [neverShowAgain, setNeverShowAgain] = React.useState(neverShowAutoPrompt)
+
+  React.useEffect(() => {
+    setNeverShowAgain(neverShowAutoPrompt)
+  }, [neverShowAutoPrompt])
+
+  // Handle escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isPromptOpen) {
+        dismissPrompt(neverShowAgain)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isPromptOpen, dismissPrompt, neverShowAgain])
+
+  const toggles = {
+    enable3DModel,
+    enableCustomCursor,
+    enableBackgroundFx,
+    enableCardTilt,
+  }
+
+  const allOptimized = !enable3DModel && !enableCustomCursor && !enableBackgroundFx && !enableCardTilt
+  const allMaxQuality = enable3DModel && enableCustomCursor && enableBackgroundFx && enableCardTilt
+
+  return (
+    <AnimatePresence>
+      {isPromptOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 select-none">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => dismissPrompt(neverShowAgain)}
+            className="fixed inset-0 bg-black/80 backdrop-blur-md"
+            aria-hidden="true"
+          />
+
+          {/* Modal Container */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 12 }}
+            transition={{ type: "spring", damping: 25, stiffness: 350 }}
+            className="relative w-full max-w-xl z-10"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="perf-modal-title"
+          >
+            <GlassCard
+              glowColor="mint"
+              interactive={false}
+              className="p-6 sm:p-7 bg-[#0b0c10]/95 border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.8)] overflow-hidden"
+            >
+              {/* Top Accent Light Beam */}
+              <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-lume-primary/60 to-transparent pointer-events-none" />
+
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4 pb-5 border-b border-white/10">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-lume-primary/10 border border-lume-primary/30 text-lume-primary">
+                      <Gauge className="size-4" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold uppercase tracking-widest text-lume-primary">
+                      Performance Telemetry
+                    </span>
+
+                    {/* Live FPS Tag */}
+                    <div
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-medium border",
+                        fps < 30 || isLagging
+                          ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                          : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "size-1.5 rounded-full animate-pulse",
+                          fps < 30 || isLagging ? "bg-amber-400" : "bg-emerald-400"
+                        )}
+                      />
+                      <span>{fps} FPS</span>
+                      {fps < 30 && <span className="text-[9px] text-amber-400/80">• LAG DETECTED</span>}
+                    </div>
+                  </div>
+
+                  <h2 id="perf-modal-title" className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                    {isLagging ? "Optimize Smoothness" : "Graphics & Performance Settings"}
+                  </h2>
+                  <p className="text-xs text-white/60 leading-relaxed max-w-md">
+                    {isLagging
+                      ? "We detected frame drops on your device. You can toggle off heavy visual effects below to restore fluid 60 FPS browsing."
+                      : "Fine-tune visual fidelity and GPU workload to match your device capabilities."}
+                  </p>
+                </div>
+
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={() => dismissPrompt(neverShowAgain)}
+                  className="p-1.5 text-white/50 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+                  aria-label="Close modal"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+
+              {/* Feature Toggles List */}
+              <div className="py-5 space-y-3">
+                {FEATURES.map((feat) => {
+                  const Icon = feat.icon
+                  const isEnabled = toggles[feat.key]
+
+                  return (
+                    <div
+                      key={feat.key}
+                      onClick={() => setToggle(feat.key, !isEnabled)}
+                      className={cn(
+                        "group flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer",
+                        isEnabled
+                          ? "bg-white/[0.04] border-white/10 hover:border-white/20 hover:bg-white/[0.06]"
+                          : "bg-black/30 border-white/5 hover:border-white/10 opacity-70 hover:opacity-90"
+                      )}
+                    >
+                      <div className="flex items-start gap-3.5 pr-4">
+                        <div
+                          className={cn(
+                            "p-2.5 rounded-xl border mt-0.5 shrink-0 transition-colors",
+                            isEnabled
+                              ? "bg-lume-primary/10 border-lume-primary/20 text-lume-primary"
+                              : "bg-white/5 border-white/10 text-white/40"
+                          )}
+                        >
+                          <Icon className="size-4" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-white/95 group-hover:text-white">
+                              {feat.title}
+                            </span>
+                            <span
+                              className={cn(
+                                "font-mono text-[9px] px-1.5 py-0.2 rounded border uppercase tracking-wider",
+                                feat.impact === "High"
+                                  ? "bg-red-500/10 border-red-500/20 text-red-400"
+                                  : feat.impact === "Medium"
+                                  ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                                  : "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                              )}
+                            >
+                              {feat.impact} Impact
+                            </span>
+                          </div>
+                          <p className="text-xs text-white/50 leading-relaxed">{feat.description}</p>
+                          <span className="inline-block font-mono text-[10px] text-white/40">
+                            Status:{" "}
+                            <span className={isEnabled ? "text-lume-primary" : "text-amber-300/80"}>
+                              {isEnabled ? feat.activeLabel : feat.disabledLabel}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Switch Element */}
+                      <div className="shrink-0 flex items-center">
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={isEnabled}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setToggle(feat.key, !isEnabled)
+                          }}
+                          className={cn(
+                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lume-primary/50",
+                            isEnabled ? "bg-lume-primary" : "bg-white/15"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "inline-block size-4 transform rounded-full bg-black shadow-md transition-transform duration-200 ease-in-out",
+                              isEnabled ? "translate-x-6 bg-[#050505]" : "translate-x-1 bg-white/70"
+                            )}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Quick Actions & Footer */}
+              <div className="pt-4 border-t border-white/10 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  {/* Preset Shortcuts */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={optimizeAll}
+                      disabled={allOptimized}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-semibold border transition-all active:scale-95",
+                        allOptimized
+                          ? "bg-white/5 border-white/5 text-white/30 cursor-not-allowed"
+                          : "bg-lume-primary/15 border-lume-primary/40 text-lume-primary hover:bg-lume-primary/25 shadow-[0_0_15px_rgba(74,255,180,0.15)]"
+                      )}
+                    >
+                      <Zap className="size-3.5" />
+                      <span>Optimize All</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={restoreHighQuality}
+                      disabled={allMaxQuality}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs text-white/60 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all active:scale-95",
+                        allMaxQuality && "opacity-40 cursor-not-allowed"
+                      )}
+                    >
+                      <RotateCcw className="size-3" />
+                      <span>Max Quality</span>
+                    </button>
+                  </div>
+
+                  {/* Apply & Close */}
+                  <button
+                    type="button"
+                    onClick={() => dismissPrompt(neverShowAgain)}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold text-xs transition-all active:scale-95 shadow-lg shadow-white/10"
+                  >
+                    <CheckCircle2 className="size-3.5" />
+                    <span>Apply & Close</span>
+                  </button>
+                </div>
+
+                {/* Never Show Again Preference */}
+                <div className="flex items-center justify-between pt-1 text-[11px] text-white/40 font-mono">
+                  <label className="flex items-center gap-2 cursor-pointer hover:text-white/60 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={neverShowAgain}
+                      onChange={(e) => setNeverShowAgain(e.target.checked)}
+                      className="rounded border-white/20 bg-white/5 text-lume-primary focus:ring-0 focus:ring-offset-0 cursor-pointer size-3.5"
+                    />
+                    <span>Don&apos;t prompt automatically again</span>
+                  </label>
+                  <span>Reopen anytime via Navbar or ⌘K</span>
+                </div>
+              </div>
+            </GlassCard>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  )
+}

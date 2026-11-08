@@ -6,6 +6,7 @@ import dynamic from "next/dynamic"
 import { useViewModeStore } from "@/store/useViewModeStore"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 import { Render3DContext } from "../Render3DContext"
+import { usePerformanceStore } from "@/store/usePerformanceStore"
 
 // Non-SSR dynamic import to prevent WebGL initialization errors
 const PolyhedronCanvas = dynamic(() => import("./PolyhedronCanvas"), { 
@@ -35,7 +36,8 @@ export function Hero3DTile({
   const isDraggingActive = !!isDragging
   const containerRef = useRef<HTMLDivElement | null>(null)
   const setHeroAnchorRect = useSiteLoaderStore((s) => s.setHeroAnchorRect)
-  const showTemplate = render3DMode === "template" || isDraggingActive
+  const enable3DModel = usePerformanceStore((state) => state.enable3DModel)
+  const showTemplate = render3DMode === "template" || isDraggingActive || !enable3DModel
 
   useEffect(() => {
     const updateAnchor = () => {
