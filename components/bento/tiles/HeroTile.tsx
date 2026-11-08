@@ -24,7 +24,6 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
   const mode = useViewModeStore((state) => state.mode)
   
   const chars = "!<>-_\\/[]{}—=+*^?#________"
-  const runes = ["ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ", "ᛇ", "ᛈ", "ᛉ", "ᛊ", "ᛏ", "ᛒ", "ᛖ", "ᛗ", "ᛚ", "ᛜ", "ᛞ", "ᛟ"]
 
   const [mounted, setMounted] = React.useState(false)
   const [isMac, setIsMac] = React.useState(false)
@@ -122,7 +121,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
   React.useEffect(() => {
     // When mode switches, trigger scramble on the visible elements safely
     if (mode === "quick") {
-      if (markRef.current) scramble("mark", markRef.current, mark, runes)
+      if (markRef.current) scramble("mark", markRef.current, mark, chars.split(""))
     } else {
       if (deepMarkRef.current) scramble("deepMark", deepMarkRef.current, mark, chars.split(""))
     }
@@ -132,7 +131,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
     // Periodic scramble on the active face's mark together safely
     const timer = setInterval(() => {
       if (mode === "quick") {
-        if (markRef.current) scramble("mark", markRef.current, mark, runes)
+        if (markRef.current) scramble("mark", markRef.current, mark, chars.split(""))
       } else {
         if (deepMarkRef.current) scramble("deepMark", deepMarkRef.current, mark, chars.split(""))
       }
@@ -159,15 +158,6 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
       canExpand={false}
       deepContent={
         <div className="flex flex-col h-full justify-center relative">
-          {/* Elder Futhark Runic Watermark Banner */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 select-none whitespace-nowrap font-mono text-3xl sm:text-4xl md:text-5xl font-bold tracking-[0.25em] text-[#FFD95A] opacity-[0.03] transition-all duration-700 ease-out group-hover:opacity-[0.12] group-hover:animate-rune-shimmer z-0"
-            style={{ fontFamily: "'NotoSansRunic-Regular', var(--font-mono), monospace" }}
-          >
-            ᛗᛃᛏᛒᛏᚺᚠᚢᚦᚨᚱᚲᚷᚹᛊ
-          </div>
-
           {/* Main Content */}
           <h1 
             ref={deepMarkRef}
@@ -244,15 +234,6 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
       }
     >
       <div className="flex flex-col h-full justify-center relative">
-        {/* Elder Futhark Runic Watermark Banner */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 select-none whitespace-nowrap font-mono text-3xl sm:text-4xl md:text-5xl font-bold tracking-[0.25em] text-[#FFD95A] opacity-[0.03] transition-all duration-700 ease-out group-hover:opacity-[0.12] group-hover:animate-rune-shimmer z-0"
-          style={{ fontFamily: "'NotoSansRunic-Regular', var(--font-mono), monospace" }}
-        >
-          ᛗᛃᛏᛒᛏᚺᚠᚢᚦᚨᚱᚲᚷᚹᛊ
-        </div>
-
         {/* Main Content */}
         <h1 
           ref={markRef}

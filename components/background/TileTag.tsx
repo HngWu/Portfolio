@@ -44,25 +44,8 @@ function getRuneText(id: string): string {
   return `${r1}${r2} // ${r3}${r4}`
 }
 
-export const TileTag = React.memo(function TileTag({ id, index, className }: TileTagProps) {
-  const mode = useViewModeStore((s) => s.mode)
-  const isDeep = mode === "deep"
-
-  const hexHash = React.useMemo(() => getHexHash(id), [id])
-  const runeText = React.useMemo(() => getRuneText(id), [id])
-  const deepText = isDeep ? `NODE_${String((index ?? 0) + 1).padStart(2, "0")} // 0x${hexHash}` : ""
-
-  return (
-    <div
-      aria-hidden="true"
-      className={cn(
-        "absolute top-2.5 right-5 z-20 pointer-events-none select-none font-mono text-[10px] tracking-widest text-[var(--mode-text-accent)] opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-        className
-      )}
-    >
-      {isDeep ? deepText : runeText}
-    </div>
-  )
+export const TileTag = React.memo(function TileTag(_props: TileTagProps) {
+  return null
 })
 
 export default TileTag

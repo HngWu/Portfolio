@@ -10,7 +10,6 @@ import { useViewModeStore } from "@/store/useViewModeStore"
 import { useNavigationStore } from "@/store/useNavigationStore"
 import { useHoverStore } from "@/store/useHoverStore"
 import { motion } from "framer-motion"
-import { TileTag } from "@/components/background/TileTag"
 
 interface BentoTileProps {
   id: string
@@ -201,7 +200,6 @@ export function BentoTile({
               className
             )}
           >
-            <TileTag id={id} index={index} />
             {children}
             {isClickable && !href?.startsWith("http") && (
               <div className="absolute bottom-0 right-4 z-20 opacity-0 transform translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 flex items-center gap-2 text-xs font-mono text-white/50 pointer-events-none">
@@ -225,12 +223,11 @@ export function BentoTile({
             interactive={!isDragging && isDeepDive}
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
-              "flex flex-col h-full bg-lume-secondary/5 border-lume-secondary/20",
+              "flex flex-col h-full",
               isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
               className
             )}
           >
-            <TileTag id={id} index={index} />
             <div ref={backRef} className={cn("w-full", canMorph ? "h-fit" : "h-full flex flex-col flex-1")}>
               {deepContent || (
                 <div className="flex flex-col h-full justify-center items-center text-center opacity-40 italic">
