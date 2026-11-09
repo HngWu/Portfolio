@@ -4,7 +4,59 @@ import { GraduationCap, Zap, LayoutGrid, BarChart3 } from "lucide-react"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
 
-import type { StatContent } from "@/lib/tiles/schemas"
+import type { StatContent, StatDeepDive } from "@/lib/tiles/schemas"
+
+const ODOMETER_SEQUENCE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const
+
+export function renderOdometerDigits(val: string | number | null | undefined) {
+  if (val == null || val === '') return null
+
+  const stringVal = String(val)
+
+  return (
+    <span className="inline-flex items-baseline" aria-label={stringVal}>
+      <span className="sr-only">{stringVal}</span>
+      <span aria-hidden="true" className="inline-flex items-baseline">
+        {stringVal.split('').map((char, i) => {
+          const digit = parseInt(char, 10)
+          const isDigit = !isNaN(digit)
+
+          if (!isDigit) {
+            return (
+              <span key={i} className="inline-block">
+                {char === ' ' ? '\u00A0' : char}
+              </span>
+            )
+          }
+
+          return (
+            <span key={i} className="inline-block overflow-hidden h-[1em] leading-[1] align-bottom">
+              <span className="block" style={{ transform: `translateY(${-digit}em)` }}>
+                <span
+                  className="flex flex-col group-hover/stat:animate-odometer-roll"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  {ODOMETER_SEQUENCE.map((n, j) => (
+                    <span key={j} className="block h-[1em] leading-[1]">{n}</span>
+                  ))}
+                </span>
+              </span>
+            </span>
+          )
+        })}
+      </span>
+    </span>
+  )
+}
+
+export interface StatTileProps {
+  id: string
+  size: string
+  content: StatContent
+  deepDive?: unknown
+  isDragging?: boolean
+  sortableProps?: Record<string, unknown>
+}
 
 export function StatTile({ 
   id, 
@@ -13,19 +65,13 @@ export function StatTile({
   deepDive,
   isDragging, 
   sortableProps 
-}: { 
-  id: string
-  size: string
-  content: StatContent
-  deepDive?: unknown
-  isDragging?: boolean
-  sortableProps?: Record<string, unknown> 
-}) {
+}: StatTileProps) {
   const { value, label } = content
   const forceMobile = React.useContext(ForceMobileContext)
   const typo = getTypographyClasses(size, false, forceMobile)
+  const deepTypo = getTypographyClasses(size, true, forceMobile)
 
-  const deep = deepDive as Record<string, unknown> | null
+  const deep = deepDive as (StatDeepDive & Record<string, unknown>) | null
   const deepValue = deep?.value as string | number | undefined
   const deepLabel = deep?.label as string | undefined
 
@@ -51,8 +97,8 @@ export function StatTile({
       deepContent={
         <div className="flex flex-col h-full w-full">
           <div className="flex items-start justify-between w-full mb-1">
-            <div className={cn(typo.meta, "font-semibold tracking-[0.12em] uppercase text-white/20 line-clamp-1 mr-2")}>
-              {deepLabel || label}
+            <div className={cn(deepTypo.meta, "font-semibold tracking-[0.12em] uppercase text-white/20 line-clamp-1 mr-2")}>
+              {deepLabel ?? label}
             </div>
             <div className="shrink-0">
               {getIcon()}
@@ -60,10 +106,10 @@ export function StatTile({
           </div>
           <div className="flex flex-col items-center justify-center flex-1 w-full h-full pb-2">
             <div className={cn(
-              "font-mono text-lume-secondary tracking-tighter drop-shadow-[0_0_10px_rgba(74,180,255,0.3)] leading-none",
+              "font-mono text-mode-accent-bright tracking-tighter drop-shadow-[0_0_10px_rgba(106,255,255,0.3)] leading-none",
               size === '1x1' ? "text-2xl md:text-3xl" : "text-3xl sm:text-4xl md:text-5xl"
             )}>
-              {deepValue || value}
+              {renderOdometerDigits(deepValue ?? value)}
             </div>
           </div>
         </div>
@@ -82,33 +128,7 @@ export function StatTile({
           "font-mono text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.15)] leading-none",
           size === '1x1' ? "text-2xl md:text-3xl" : "text-3xl sm:text-4xl md:text-5xl"
         )}>
-          {String(value).split('').map((char, i) => {
-            const digit = parseInt(char)
-            const isDigit = !isNaN(digit)
-
-            if (!isDigit) {
-              return (
-                <span key={i} className="inline-block">
-                  {char === ' ' ? '\u00A0' : char}
-                </span>
-              )
-            }
-
-            return (
-              <span key={i} className="inline-block overflow-hidden h-[1em] leading-[1] align-bottom">
-                <span className="block" style={{ transform: `translateY(${-digit}em)` }}>
-                  <span
-                    className="flex flex-col group-hover/stat:animate-odometer-roll"
-                    style={{ animationDelay: `${i * 60}ms` }}
-                  >
-                    {[0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9].map((n, j) => (
-                      <span key={j} className="block h-[1em] leading-[1]">{n}</span>
-                    ))}
-                  </span>
-                </span>
-              </span>
-            )
-          })}
+          {renderOdometerDigits(value)}
         </div>
       </div>
     </BentoTile>
