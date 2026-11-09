@@ -197,7 +197,7 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
           <div className="flex justify-between items-start gap-3 mb-2 shrink-0 min-w-0">
             <div className="min-w-0 shrink">
               <div className="flex items-center gap-2 min-w-0">
-                <h3 className="font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight shrink-0">
+                <h3 className="font-mono tracking-tight font-bold text-lg sm:text-xl text-white/90 shrink-0">
                   Stack & Strategy
                 </h3>
                 {activeItem.category && (

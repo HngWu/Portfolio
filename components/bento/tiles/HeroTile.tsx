@@ -161,7 +161,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
           {/* Main Content */}
           <h1 
             ref={deepMarkRef}
-            className="relative z-10 text-2xl md:text-3xl font-display leading-tight text-white/90 min-h-[1.3em] font-bold tracking-tight break-words"
+            className="relative z-10 text-2xl md:text-3xl font-mono tracking-tight font-bold leading-tight text-white/90 min-h-[1.3em] break-words"
           >
             {mark}
           </h1>

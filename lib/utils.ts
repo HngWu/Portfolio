@@ -56,14 +56,14 @@ export function getTypographyClasses(sizeKey: string, isDeepDive: boolean = fals
   let classesObj;
   if (isSmall) {
     classesObj = {
-      heading: isDeepDive ? "text-base md:text-lg font-display" : "text-base md:text-lg font-display",
+      heading: isDeepDive ? "text-base md:text-lg font-mono tracking-tight font-bold" : "text-base md:text-lg font-display",
       body: "text-[10px] md:text-xs leading-relaxed",
       meta: "text-[9px] font-mono",
       icon: "size-3.5"
     }
   } else if (isMedium) {
     classesObj = {
-      heading: isDeepDive ? "text-lg md:text-xl font-display" : "text-xl md:text-2xl font-display",
+      heading: isDeepDive ? "text-lg md:text-xl font-mono tracking-tight font-bold" : "text-xl md:text-2xl font-display",
       body: "text-xs md:text-sm leading-relaxed",
       meta: "text-[10px] font-mono",
       icon: "size-4.5"
@@ -71,7 +71,7 @@ export function getTypographyClasses(sizeKey: string, isDeepDive: boolean = fals
   } else {
     // Large or default
     classesObj = {
-      heading: isDeepDive ? "text-xl md:text-2xl font-display" : "text-2xl md:text-3xl font-display",
+      heading: isDeepDive ? "text-xl md:text-2xl font-mono tracking-tight font-bold" : "text-2xl md:text-3xl font-display",
       body: "text-sm md:text-base leading-relaxed",
       meta: "text-xs font-mono",
       icon: "size-5"
