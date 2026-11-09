@@ -5,7 +5,7 @@ import { BentoTile } from "../BentoTile"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
 import { useViewModeStore } from "@/store/useViewModeStore"
-import { GraduationCap, TrendingUp, Award, ChevronUp, ChevronDown } from "lucide-react"
+import { GraduationCap, ChevronUp, ChevronDown } from "lucide-react"
 import { parseTileDeepDive, type EducationContent, type EducationItem } from "@/lib/tiles/schemas"
 import type { Json } from "@/types/supabase"
 import { motion, AnimatePresence, type PanInfo } from "framer-motion"
@@ -80,8 +80,9 @@ export function EducationTile({
 }: EducationTileProps) {
   const forceMobile = React.useContext(ForceMobileContext)
   const mode = useViewModeStore((state) => state.mode)
-  const typo = getTypographyClasses(size, mode === "deep", forceMobile)
-  const deep = parseTileDeepDive("education", deepDive)
+  const typo = getTypographyClasses(size, false, forceMobile)
+  const deepTypo = getTypographyClasses(size, true, forceMobile)
+  const deep = React.useMemo(() => parseTileDeepDive("education", deepDive), [deepDive])
 
   // Resolve items: prefer items array, fallback to single content fields merged with default items
   const items: EducationItem[] = React.useMemo(() => {
@@ -110,17 +111,10 @@ export function EducationTile({
 
   const [activeIndex, setActiveIndex] = React.useState(0)
   const [direction, setDirection] = React.useState(0)
-  const isInteractingRef = React.useRef(false)
 
   // Safe clamping
   const safeIndex = Math.min(Math.max(0, activeIndex), items.length - 1)
   const activeItem = items[safeIndex] || items[0]
-  const hasGpa = Boolean(
-    activeItem.gpa &&
-    activeItem.gpa !== "-" &&
-    !isNaN(parseFloat(activeItem.gpa)) &&
-    parseFloat(activeItem.gpa) <= 4.0
-  )
 
   const goToNext = React.useCallback(() => {
     setDirection(1)
@@ -153,15 +147,7 @@ export function EducationTile({
   const isMobileEffective = forceMobile || isMobile
 
   // Swipe / Drag Gestures
-  const handleDragStart = () => {
-    isInteractingRef.current = true
-  }
-
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    setTimeout(() => {
-      isInteractingRef.current = false
-    }, 100)
-
     const offsetThreshold = 40
     const velocityThreshold = 250
 
@@ -194,159 +180,39 @@ export function EducationTile({
   }
 
   // Next 2 peek cards for stacked depth effect
-  const peekCard1 = items[(safeIndex + 1) % items.length]
+  const peekCard1 = items.length > 1 ? items[(safeIndex + 1) % items.length] : null
   const peekCard2 = items.length > 2 ? items[(safeIndex + 2) % items.length] : null
 
-  return (
-    <BentoTile
-      id={id}
-      size={size}
-      href="/education"
-      glowColor="blue"
-      isDragging={isDragging}
-      sortableProps={sortableProps}
-      deepContent={
-        <div
-          tabIndex={0}
-          onKeyDown={handleKeyDown}
-          className="flex flex-col h-full overflow-hidden select-none outline-none"
-        >
-          {/* Header */}
-          <div className="flex justify-between items-start mb-3 shrink-0">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className={cn(typo.heading, "text-white/90")}>Academic Profile</h3>
-                <span className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-mode-accent/10 border border-mode-accent/20 text-mode-accent-bright font-semibold uppercase tracking-wider">
-                  {activeItem.levelLabel || activeItem.level || "Academic"}
-                </span>
-              </div>
-              <p className={cn(typo.body, "text-white/70 mt-0.5 text-xs sm:text-sm line-clamp-2 leading-snug")}>{activeItem.institution}</p>
-            </div>
+  const renderFace = (isDeep: boolean) => {
+    const isCurrentActiveFace = isDeep ? mode === "deep" : mode !== "deep"
+    const currentTypo = isDeep ? deepTypo : typo
+    const accentIconClass = isDeep ? "text-mode-accent-bright" : "text-[#4A8FFF]"
+    const badgeClass = isDeep
+      ? "font-mono text-[9px] px-2 py-0.5 rounded-full bg-mode-accent/10 border border-mode-accent/20 text-mode-accent-bright font-semibold uppercase tracking-wider"
+      : "font-mono text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider"
+    const activeDotClass = isDeep
+      ? "w-1.5 h-3.5 bg-mode-accent-bright shadow-[0_0_8px_rgba(106,255,255,0.7)]"
+      : "w-1.5 h-3.5 bg-[#4A8FFF] shadow-[0_0_8px_rgba(74,143,255,0.7)]"
+    const headingClass = isDeep
+      ? "font-mono tracking-tight font-bold text-lg sm:text-xl text-white/90 mb-1 line-clamp-2 leading-tight"
+      : "font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight"
 
-            {/* Desktop Chevrons for Deep Dive */}
-            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-              <span className="text-[10px] font-mono text-white/30 mr-1 select-none">
-                {String(safeIndex + 1).padStart(2, "0")}/{String(items.length).padStart(2, "0")}
-              </span>
-              <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-lg p-0.5 shadow-sm">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    goToPrev()
-                  }}
-                  aria-label="Previous education level"
-                  title="Previous level (Swipe Down / Up Arrow)"
-                  className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
-                >
-                  <ChevronUp className="size-3.5" />
-                </button>
-                <div className="w-[1px] h-3 bg-white/10" />
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    goToNext()
-                  }}
-                  aria-label="Next education level"
-                  title="Next level (Swipe Up / Down Arrow)"
-                  className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
-                >
-                  <ChevronDown className="size-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Deep Dive Body */}
-          <div className="flex-1 space-y-3.5">
-            <div className="space-y-0.5">
-              <span className={cn(typo.meta, "text-white/30 uppercase tracking-widest text-[9px]")}>
-                Program / Degree
-              </span>
-              <p className={cn(typo.body, "text-white/85 font-medium leading-tight text-xs sm:text-sm line-clamp-2")}>
-                {activeItem.degree}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              {/* Metric Box */}
-              <div className="relative p-3.5 bg-transparent rounded-xl border border-white/5 overflow-hidden group/gpa flex flex-col justify-between">
-                <div className="absolute top-0 right-0 p-2 opacity-20 group-hover/gpa:opacity-40 transition-opacity">
-                  <TrendingUp className="size-3.5 text-lume-primary" />
-                </div>
-                <span className={cn(typo.meta, "block text-white/40 text-[10px] mb-1")}>
-                  {hasGpa ? "Cumulative GPA" : activeItem.gpa && activeItem.gpa !== "-" ? "Score" : "Standing"}
-                </span>
-                <div className="flex items-baseline gap-1 my-0.5">
-                  <span className={cn(typo.heading, "text-mode-accent-bright leading-none font-mono text-xl md:text-2xl")}>
-                    {activeItem.gpa && activeItem.gpa !== "-" ? activeItem.gpa : "Honours Track"}
-                  </span>
-                  {hasGpa && <span className="text-[10px] text-white/30 font-mono">/ 4.00</span>}
-                </div>
-                {hasGpa && (
-                  <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-mode-accent-bright/60"
-                      style={{ width: `${(parseFloat(activeItem.gpa!) / 4) * 100}%` }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Period & Honours Box */}
-              <div className="p-3.5 bg-transparent rounded-xl border border-white/5 flex flex-col justify-between">
-                <div>
-                  <span className={cn(typo.meta, "block text-white/40 text-[10px] mb-1")}>Study Period</span>
-                  <span className={cn(typo.body, "text-white/85 font-medium leading-tight text-xs sm:text-sm")}>
-                    {activeItem.date}
-                  </span>
-                </div>
-                {activeItem.honours && activeItem.honours !== "-" && (
-                  <div className="flex items-center gap-1.5 mt-2">
-                    <Award className="size-3.5 text-lume-primary/80 shrink-0" />
-                    <span
-                      className="text-xs text-lume-primary font-semibold uppercase tracking-tight truncate"
-                      title={activeItem.honours}
-                    >
-                      {activeItem.honours}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Highlights / Specializations */}
-            {activeItem.highlights && activeItem.highlights.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {activeItem.highlights.slice(0, 3).map((hl, i) => (
-                  <span
-                    key={i}
-                    className="text-xs px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/10 text-white/70 font-mono"
-                  >
-                    {hl}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      }
-    >
-      {/* Front Face: Quick Pitch 3D Stack */}
+    return (
       <div
+        role="region"
+        aria-label="Education history carousel"
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className="relative flex flex-col h-full w-full outline-none"
+        className="relative flex flex-col h-full w-full outline-none focus-visible:ring-1 focus-visible:ring-mode-accent rounded-xl"
       >
         {/* Top Header with Level badge and Desktop Controls */}
         <div className="flex items-center justify-between mb-2 shrink-0 relative z-30">
           <div className="flex items-center gap-2">
-            <span className={cn(typo.meta, "text-white/40 uppercase tracking-widest flex items-center gap-1.5")}>
-              <GraduationCap className={cn(typo.icon, "text-[#4A8FFF]")} />
+            <span className={cn(currentTypo.meta, "text-white/40 uppercase tracking-widest flex items-center gap-1.5")}>
+              <GraduationCap className={cn(currentTypo.icon, accentIconClass)} aria-hidden="true" />
               Education
             </span>
-            <span className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider">
+            <span className={cn("hidden sm:inline-flex", badgeClass)}>
               {activeItem.levelLabel || activeItem.level || "Academic"}
             </span>
           </div>
@@ -367,7 +233,7 @@ export function EducationTile({
                 title="Previous level (Swipe Down / Up Arrow)"
                 className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
               >
-                <ChevronUp className="size-3.5" />
+                <ChevronUp className="size-3.5" aria-hidden="true" />
               </button>
               <div className="w-[1px] h-3 bg-white/10" />
               <button
@@ -380,7 +246,7 @@ export function EducationTile({
                 title="Next level (Swipe Up / Down Arrow)"
                 className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
               >
-                <ChevronDown className="size-3.5" />
+                <ChevronDown className="size-3.5" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -423,6 +289,7 @@ export function EducationTile({
                 <button
                   key={item.id || idx}
                   type="button"
+                  aria-current={isCurrent ? "true" : undefined}
                   onClick={(e) => {
                     e.stopPropagation()
                     goToIndex(idx)
@@ -435,7 +302,7 @@ export function EducationTile({
                     className={cn(
                       "transition-all duration-300 rounded-full",
                       isCurrent
-                        ? "w-1.5 h-3.5 bg-[#4A8FFF] shadow-[0_0_8px_rgba(74,143,255,0.7)]"
+                        ? activeDotClass
                         : "w-1.5 h-1.5 bg-white/20 hover:bg-white/50 hover:scale-125"
                     )}
                   />
@@ -447,7 +314,7 @@ export function EducationTile({
           {/* Active Card Surface with Framer Motion Drag & Transitions */}
           <AnimatePresence custom={direction} mode="popLayout">
             <motion.div
-              key={activeItem.id || safeIndex}
+              key={`${isDeep ? "deep" : "qp"}-${activeItem.id || safeIndex}`}
               custom={direction}
               variants={{
                 enter: (dir: number) => ({
@@ -485,26 +352,42 @@ export function EducationTile({
               dragDirectionLock={true}
               dragConstraints={isMobileEffective ? { left: 0, right: 0 } : { top: 0, bottom: 0 }}
               dragElastic={0.2}
-              onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y min-h-0"
             >
               <div className="pr-5 select-none">
-                <h3 className="font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight">
+                <h3 className={headingClass}>
                   {activeItem.institution}
                 </h3>
-                <p className={cn(typo.body, "text-white/70 text-xs sm:text-sm font-normal line-clamp-2 leading-snug")}>
+                <p className={cn(currentTypo.body, "text-white/70 text-xs sm:text-sm font-normal line-clamp-2 leading-snug")}>
                   {activeItem.degree}
                 </p>
               </div>
 
               <div className="mt-auto pt-2.5 flex items-center justify-between border-t border-white/5 pr-5 select-none shrink-0">
-                <span className={cn(typo.meta, "text-white/60 font-mono text-xs")}>{activeItem.date}</span>
+                <span className={cn(currentTypo.meta, "text-white/60 font-mono text-xs")}>{activeItem.date}</span>
               </div>
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
+    )
+  }
+
+  return (
+    <BentoTile
+      id={id}
+      size={size}
+      href="/education"
+      glowColor="blue"
+      isDragging={isDragging}
+      sortableProps={sortableProps}
+      canDeepDive={true}
+      canMorph={false}
+      canExpand={false}
+      deepContent={renderFace(true)}
+    >
+      {renderFace(false)}
     </BentoTile>
   )
 }
