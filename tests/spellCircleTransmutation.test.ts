@@ -1,4 +1,4 @@
-import { describe, it, expect, mock } from "bun:test"
+import { describe, it, expect } from "bun:test"
 import { renderSpellCircle } from "@/components/background/layers/spellCircle"
 import { LayerContext } from "@/components/background/types"
 
