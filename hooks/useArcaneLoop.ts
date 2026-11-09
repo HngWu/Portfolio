@@ -336,7 +336,19 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
 
       const enableFx = usePerformanceStore.getState().enableBackgroundFx
       if (!enableFx) {
-        ctx.clearRect(0, 0, width, height)
+        // Clear full canvas buffer accounting for device pixel ratio
+        ctx.clearRect(0, 0, Math.round(width * dpr), Math.round(height * dpr))
+        // Render static void backdrop matching current mode & palette
+        ctx.save()
+        ctx.scale(dpr, dpr)
+        ctx.fillStyle = paletteRef.current.isLight
+          ? 'rgba(250, 250, 252, 0.35)'
+          : (mixRef.current > 0.5 ? '#06080e' : '#050409')
+        ctx.fillRect(0, 0, width, height)
+        ctx.restore()
+
+        // Keep lastTime current so resuming doesn't produce a delta-time spike
+        lastTime = now
         animationFrameId = requestAnimationFrame(render)
         return
       }
