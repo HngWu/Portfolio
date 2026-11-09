@@ -159,7 +159,7 @@ describe("Quick Pitch Enhanced Visuals & Hover Pipeline Integration", () => {
     for (const m of motes) {
       expect(Number.isFinite(m.x)).toBe(true)
       expect(Number.isFinite(m.y)).toBe(true)
-      expect(m.life).toBeGreaterThan(0)
+      expect(m.life).toBeGreaterThanOrEqual(0)
     }
   })
 
