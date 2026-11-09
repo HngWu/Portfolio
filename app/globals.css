@@ -570,11 +570,13 @@
   animation: glitch-2 0.2s infinite reverse;
 }
 
-/* Custom Rune Cursor Styles */
+/* Custom Rune Cursor Styles (temporarily disabled) */
+/*
 body.rune-cursor,
 body.custom-cursor-active {
   cursor: none !important;
 }
+*/
 
 
 #custom-cursor {
