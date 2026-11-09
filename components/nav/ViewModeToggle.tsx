@@ -22,7 +22,7 @@ export function ViewModeToggle() {
       <button
         onClick={() => select("quick")}
         disabled={isTransitioning}
-        aria-label="Switch to Quick-Pitch Mode (30-second summary)"
+        aria-label="Switch to Quick Pitch mode"
         aria-pressed={mode === "quick"}
         className={`relative z-10 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-500 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed ${
           mode === "quick"
@@ -32,12 +32,12 @@ export function ViewModeToggle() {
       >
         <Zap className={`size-3 shrink-0 transition-transform duration-500 ${mode === "quick" ? "scale-110" : ""}`} />
         <span className="sm:hidden">Quick</span>
-        <span className="hidden sm:inline">Quick-Pitch <span className="opacity-60 text-[10px] font-mono lowercase tracking-normal">(30s)</span></span>
+        <span className="hidden sm:inline">Quick Pitch</span>
       </button>
       <button
         onClick={() => select("deep")}
         disabled={isTransitioning}
-        aria-label="Switch to Deep Dive Mode (detailed case studies)"
+        aria-label="Switch to Deep Dive mode"
         aria-pressed={mode === "deep"}
         className={`relative z-10 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-500 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed ${
           mode === "deep"
@@ -47,7 +47,7 @@ export function ViewModeToggle() {
       >
         <Microscope className={`size-3 shrink-0 transition-transform duration-500 ${mode === "deep" ? "scale-110" : ""}`} />
         <span className="sm:hidden">Deep</span>
-        <span className="hidden sm:inline">Deep Dive <span className="opacity-60 text-[10px] font-mono lowercase tracking-normal">(detail)</span></span>
+        <span className="hidden sm:inline">Deep Dive</span>
       </button>
     </div>
   )
