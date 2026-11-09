@@ -180,10 +180,10 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
                 onMouseEnter={prefetchCvAssets}
                 onFocus={prefetchCvAssets}
                 aria-label="Download CV as PDF"
-                className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-[#4AFFB4]/10 border border-white/5 hover:border-[#4AFFB4]/30 rounded-xl text-white/50 hover:text-[#4AFFB4] transition-all duration-300 select-none cursor-pointer group/cv"
+                className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-mode-accent/10 border border-white/5 hover:border-mode-accent/30 rounded-xl text-white/50 hover:text-mode-accent-bright transition-all duration-300 select-none cursor-pointer group/cv"
               >
                 <Download className="w-4 h-4 transition-transform group-hover/cv:-translate-y-0.5" />
-                <span className="text-sm font-semibold tracking-wide pl-1 text-white/50 group-hover/cv:text-[#4AFFB4] transition-colors">
+                <span className="text-sm font-semibold tracking-wide pl-1 text-white/50 group-hover/cv:text-mode-accent-bright transition-colors">
                   Download CV
                 </span>
               </a>
@@ -193,7 +193,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
             {mounted ? (
               <button
                 onClick={handleBadgeClick}
-                className="relative flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-all duration-300 rounded-lg px-2.5 py-1 bg-white/[0.01] overflow-hidden"
+                className="relative flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-mode-accent-bright transition-all duration-300 rounded-lg px-2.5 py-1 bg-white/[0.01] overflow-hidden"
               >
                 {/* Hover-triggered background sheen (Pulse Wave) */}
                 <div className="shimmer-pulse-bg group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse" />
@@ -208,19 +208,19 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
                   WebkitMaskComposite: "xor"
                 }}
                 >
-                  <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_60%,#4AFFB4_85%,transparent_100%)] animate-border-beam group-hover/cmd:animate-border-beam-fast" />
+                  <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_60%,var(--mode-accent-bright,#FFE875)_85%,transparent_100%)] animate-border-beam group-hover/cmd:animate-border-beam-fast" />
                 </div>
 
                 {/* Button Contents */}
-                <span className="relative z-10 text-sm tracking-wide text-white/40 group-hover/cmd:text-[#4AFFB4] transition-colors pl-1">
+                <span className="relative z-10 text-sm tracking-wide text-white/40 group-hover/cmd:text-mode-accent-bright transition-colors pl-1">
                   Try the command menu
                 </span>
                 {!isMobile && (
                   <div className="relative z-10 flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
-                    <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
+                    <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                       {isMac ? "⌘" : "Ctrl"}
                     </kbd>
-                    <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
+                    <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                       K
                     </kbd>
                   </div>
@@ -256,10 +256,10 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
               onMouseEnter={prefetchCvAssets}
               onFocus={prefetchCvAssets}
               aria-label="Download CV as PDF"
-              className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-[#4AFFB4]/10 border border-white/5 hover:border-[#4AFFB4]/30 rounded-xl text-white/50 hover:text-[#4AFFB4] transition-all duration-300 select-none cursor-pointer group/cv"
+              className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-mode-accent/10 border border-white/5 hover:border-mode-accent/30 rounded-xl text-white/50 hover:text-mode-accent-bright transition-all duration-300 select-none cursor-pointer group/cv"
             >
               <Download className="w-4 h-4 transition-transform group-hover/cv:-translate-y-0.5" />
-              <span className="text-sm font-semibold tracking-wide pl-1 text-white/50 group-hover/cv:text-[#4AFFB4] transition-colors">
+              <span className="text-sm font-semibold tracking-wide pl-1 text-white/50 group-hover/cv:text-mode-accent-bright transition-colors">
                 Download CV
               </span>
             </a>
@@ -269,7 +269,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
           {mounted ? (
             <button
               onClick={handleBadgeClick}
-              className="relative flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-[#4AFFB4] transition-all duration-300 rounded-lg px-2.5 py-1 bg-white/[0.01] overflow-hidden"
+              className="relative flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-mode-accent-bright transition-all duration-300 rounded-lg px-2.5 py-1 bg-white/[0.01] overflow-hidden"
             >
               {/* Hover-triggered background sheen (Pulse Wave) */}
               <div className="shimmer-pulse-bg group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse" />
@@ -284,19 +284,19 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
                   WebkitMaskComposite: "xor"
                 }}
               >
-                <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_60%,#4AFFB4_85%,transparent_100%)] animate-border-beam group-hover/cmd:animate-border-beam-fast" />
+                <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_60%,var(--mode-accent-bright,#FFE875)_85%,transparent_100%)] animate-border-beam group-hover/cmd:animate-border-beam-fast" />
               </div>
 
               {/* Button Contents */}
-              <span className="relative z-10 text-sm tracking-wide text-white/40 group-hover/cmd:text-[#4AFFB4] transition-colors pl-1">
+              <span className="relative z-10 text-sm tracking-wide text-white/40 group-hover/cmd:text-mode-accent-bright transition-colors pl-1">
                 Try the command menu
               </span>
               {!isMobile && (
                 <div className="relative z-10 flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
-                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
+                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                     {isMac ? "⌘" : "Ctrl"}
                   </kbd>
-                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-[#4AFFB4] group-hover/cmd:border-[#4AFFB4]/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
+                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
                     K
                   </kbd>
                 </div>

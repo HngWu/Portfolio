@@ -221,9 +221,9 @@ export function ContactTile({
             <div>
               <h3 className={cn(deepTypo.heading, "font-medium text-white/90 font-mono text-base md:text-lg")}>Contact</h3>
             </div>
-            <div className="flex items-center gap-2 p-2 bg-lume-primary/5 rounded-lg border border-lume-primary/10 select-none">
-              <div className="size-2 rounded-full bg-lume-primary animate-pulse" />
-              <span className="font-mono text-[9px] text-lume-primary tracking-widest font-black uppercase">Online</span>
+            <div className="flex items-center gap-2 p-2 bg-mode-accent/10 rounded-lg border border-mode-accent/20 select-none">
+              <div className="size-2 rounded-full bg-mode-accent-bright animate-pulse" />
+              <span className="font-mono text-[9px] text-mode-accent-bright tracking-widest font-black uppercase">Online</span>
             </div>
           </div>
 
@@ -296,20 +296,20 @@ export function ContactTile({
         {/* Clean Copiable Email Container without Transmission label */}
         <div 
           onClick={handleCopy}
-          className="group/email flex items-center justify-between p-4 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-lume-primary/25 rounded-2xl cursor-pointer transition-all duration-300 select-all"
+          className="group/email flex items-center justify-between p-4 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-mode-accent/30 rounded-2xl cursor-pointer transition-all duration-300 select-all"
         >
           <div className="flex flex-col gap-1 min-w-0 pr-3">
-            <span className={cn("text-white/90 font-mono font-medium leading-tight break-all text-sm md:text-base selection:bg-lume-primary selection:text-black")}>
+            <span className={cn("text-white/90 font-mono font-medium leading-tight break-all text-sm md:text-base selection:bg-mode-accent selection:text-black")}>
               {email}
             </span>
           </div>
-          <div className="shrink-0 p-2.5 bg-white/5 rounded-xl border border-white/5 group-hover/email:border-lume-primary/20 transition-all flex items-center justify-center relative">
+          <div className="shrink-0 p-2.5 bg-white/5 rounded-xl border border-white/5 group-hover/email:border-mode-accent/30 transition-all flex items-center justify-center relative">
             {copied ? (
-              <Check className="size-4 text-lume-primary animate-in zoom-in-75 duration-200" />
+              <Check className="size-4 text-mode-accent-bright animate-in zoom-in-75 duration-200" />
             ) : (
               <>
-                <Copy className="size-4 text-white/40 group-hover/email:text-lume-primary group-hover/email:scale-105 transition-all" />
-                <span className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 opacity-0 group-hover/email:opacity-100 font-mono text-[8px] uppercase text-lume-primary bg-black/85 border border-lume-primary/20 px-2 py-0.5 rounded shadow-lg tracking-widest transition-all duration-300 pointer-events-none whitespace-nowrap scale-90 group-hover/email:scale-100 translate-y-1 group-hover/email:translate-y-0 backdrop-blur-sm z-50">
+                <Copy className="size-4 text-white/40 group-hover/email:text-mode-accent-bright group-hover/email:scale-105 transition-all" />
+                <span className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 opacity-0 group-hover/email:opacity-100 font-mono text-[8px] uppercase text-mode-accent-bright bg-black/85 border border-mode-accent/30 px-2 py-0.5 rounded shadow-lg tracking-widest transition-all duration-300 pointer-events-none whitespace-nowrap scale-90 group-hover/email:scale-100 translate-y-1 group-hover/email:translate-y-0 backdrop-blur-sm z-50">
                   Click to Copy
                 </span>
               </>

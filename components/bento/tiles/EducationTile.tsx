@@ -216,7 +216,7 @@ export function EducationTile({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className={cn(typo.heading, "text-white/90")}>Academic Profile</h3>
-                <span className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider">
+                <span className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-mode-accent/10 border border-mode-accent/20 text-mode-accent-bright font-semibold uppercase tracking-wider">
                   {activeItem.levelLabel || activeItem.level || "Academic"}
                 </span>
               </div>
@@ -237,7 +237,7 @@ export function EducationTile({
                   }}
                   aria-label="Previous education level"
                   title="Previous level (Swipe Down / Up Arrow)"
-                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                  className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
                 >
                   <ChevronUp className="size-3.5" />
                 </button>
@@ -250,7 +250,7 @@ export function EducationTile({
                   }}
                   aria-label="Next education level"
                   title="Next level (Swipe Up / Down Arrow)"
-                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                  className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
                 >
                   <ChevronDown className="size-3.5" />
                 </button>
@@ -279,7 +279,7 @@ export function EducationTile({
                   {hasGpa ? "Cumulative GPA" : activeItem.gpa && activeItem.gpa !== "-" ? "Score" : "Standing"}
                 </span>
                 <div className="flex items-baseline gap-1 my-0.5">
-                  <span className={cn(typo.heading, "text-lume-primary leading-none font-mono text-xl md:text-2xl")}>
+                  <span className={cn(typo.heading, "text-mode-accent-bright leading-none font-mono text-xl md:text-2xl")}>
                     {activeItem.gpa && activeItem.gpa !== "-" ? activeItem.gpa : "Honours Track"}
                   </span>
                   {hasGpa && <span className="text-[10px] text-white/30 font-mono">/ 4.00</span>}
@@ -287,7 +287,7 @@ export function EducationTile({
                 {hasGpa && (
                   <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-lume-primary/60"
+                      className="h-full bg-mode-accent-bright/60"
                       style={{ width: `${(parseFloat(activeItem.gpa!) / 4) * 100}%` }}
                     />
                   </div>
@@ -365,7 +365,7 @@ export function EducationTile({
                 }}
                 aria-label="Previous education level"
                 title="Previous level (Swipe Down / Up Arrow)"
-                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
               >
                 <ChevronUp className="size-3.5" />
               </button>
@@ -378,7 +378,7 @@ export function EducationTile({
                 }}
                 aria-label="Next education level"
                 title="Next level (Swipe Up / Down Arrow)"
-                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
               >
                 <ChevronDown className="size-3.5" />
               </button>
