@@ -196,6 +196,12 @@ describe("Tile Deep Dive Parity Suite", () => {
       expect(html).toContain('class="sr-only">99.9%</span>')
       expect(html).toContain('aria-hidden="true"')
     })
+
+    it("handles nullish and empty inputs gracefully in renderOdometerDigits", () => {
+      expect(renderOdometerDigits(null)).toBeNull()
+      expect(renderOdometerDigits(undefined)).toBeNull()
+      expect(renderOdometerDigits("")).toBeNull()
+    })
   })
 
   // =========================================================================
@@ -334,6 +340,44 @@ describe("Tile Deep Dive Parity Suite", () => {
       const [, qpSocialSection] = React.Children.toArray(lastBentoTileProps.children) as React.ReactElement<any>[]
       const qpCapsules = React.Children.toArray(qpSocialSection.props.children) as React.ReactElement<any>[]
       expect(qpCapsules).toHaveLength(2)
+    })
+
+    it("handles Enter and Space keydown events on copiable email box", () => {
+      renderToStaticMarkup(
+        React.createElement(ContactTile, {
+          id: "contact",
+          size: "4x3",
+          content: contactContent,
+        })
+      )
+
+      const deepContent = lastBentoTileProps.deepContent as React.ReactElement<any>
+      const [topSection] = React.Children.toArray(deepContent.props.children) as React.ReactElement<any>[]
+      const [, emailDiv] = React.Children.toArray(topSection.props.children) as React.ReactElement<any>[]
+
+      let enterPrevented = false
+      emailDiv.props.onKeyDown({
+        key: "Enter",
+        preventDefault: () => { enterPrevented = true },
+        stopPropagation: () => {},
+      } as any)
+      expect(enterPrevented).toBe(true)
+
+      let spacePrevented = false
+      emailDiv.props.onKeyDown({
+        key: " ",
+        preventDefault: () => { spacePrevented = true },
+        stopPropagation: () => {},
+      } as any)
+      expect(spacePrevented).toBe(true)
+
+      let tabPrevented = false
+      emailDiv.props.onKeyDown({
+        key: "Tab",
+        preventDefault: () => { tabPrevented = true },
+        stopPropagation: () => {},
+      } as any)
+      expect(tabPrevented).toBe(false)
     })
   })
 
