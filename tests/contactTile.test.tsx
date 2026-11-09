@@ -70,6 +70,10 @@ describe("ContactTile", () => {
 
     // Email container
     expect(typeof emailDiv.props.onClick).toBe("function")
+    expect(typeof emailDiv.props.onKeyDown).toBe("function")
+    expect(emailDiv.props.role).toBe("button")
+    expect(emailDiv.props.tabIndex).toBe(0)
+    expect(emailDiv.props["aria-label"]).toBe("Copy email address")
     expect(emailDiv.props.className).toContain("hover:border-mode-accent/30")
     expect(emailDiv.props.className).toContain("group/email")
 
