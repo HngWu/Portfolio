@@ -21,7 +21,6 @@ export function ContactTile({
   id,
   size,
   content,
-  deepDive: _deepDive,
   isDragging,
   sortableProps
 }: ContactTileProps) {

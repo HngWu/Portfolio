@@ -4,7 +4,6 @@ import * as React from "react"
 import { BentoTile } from "../BentoTile"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
-import { useViewModeStore } from "@/store/useViewModeStore"
 import { GraduationCap, ChevronUp, ChevronDown } from "lucide-react"
 import { parseTileDeepDive, type EducationContent, type EducationItem } from "@/lib/tiles/schemas"
 import type { Json } from "@/types/supabase"
@@ -79,7 +78,6 @@ export function EducationTile({
   sortableProps,
 }: EducationTileProps) {
   const forceMobile = React.useContext(ForceMobileContext)
-  const mode = useViewModeStore((state) => state.mode)
   const typo = getTypographyClasses(size, false, forceMobile)
   const deepTypo = getTypographyClasses(size, true, forceMobile)
   const deep = React.useMemo(() => parseTileDeepDive("education", deepDive), [deepDive])
@@ -184,7 +182,6 @@ export function EducationTile({
   const peekCard2 = items.length > 2 ? items[(safeIndex + 2) % items.length] : null
 
   const renderFace = (isDeep: boolean) => {
-    const isCurrentActiveFace = isDeep ? mode === "deep" : mode !== "deep"
     const currentTypo = isDeep ? deepTypo : typo
     const accentIconClass = isDeep ? "text-mode-accent-bright" : "text-[#4A8FFF]"
     const badgeClass = isDeep
