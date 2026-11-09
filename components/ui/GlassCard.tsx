@@ -165,6 +165,20 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-0 rounded-[inherit] opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100"
           >
+            {/* Diagonal Refractive Glass Sheen Sweep */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]"
+            >
+              <div
+                className="pointer-events-none absolute -top-[50%] -bottom-[50%] -left-[100%] w-[60%] -rotate-45 opacity-0 group-hover:animate-sheen-sweep motion-reduce:animate-none"
+                style={{
+                  background:
+                    "linear-gradient(90deg, transparent 0%, rgba(255, 232, 117, 0.1) 35%, rgba(255, 255, 255, 0.28) 50%, rgba(255, 232, 117, 0.1) 65%, transparent 100%)",
+                }}
+              />
+            </div>
+
             {/* Liquid Gold-Amethyst Rotating Border Beam */}
             <div
               className="pointer-events-none absolute inset-0 rounded-[inherit] p-[1px] overflow-hidden"
@@ -251,7 +265,10 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="overflow-visible">
                 <path d="M1 13V5C1 2.8 2.8 1 5 1H13" stroke="#FFE875" strokeWidth="1" strokeLinecap="round" />
                 <path d="M3 9C3 5.7 5.7 3 9 3" stroke="#FFD95A" strokeWidth="0.75" strokeLinecap="round" />
-                <polygon points="7,4 10,7 7,10 4,7" fill="#FFD95A" className="filter drop-shadow-[0_0_4px_#FFD95A]" />
+                <polygon
+                  points="7,4 10,7 7,10 4,7"
+                  className="fill-[#C9A227] transition-all duration-300 group-hover:fill-[#FFE875] group-hover:drop-shadow-[0_0_6px_#FFE875] drop-shadow-[0_0_2px_rgba(201,162,39,0.4)]"
+                />
               </svg>
             </div>
 
@@ -260,7 +277,10 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="overflow-visible">
                 <path d="M13 13V5C13 2.8 11.2 1 9 1H1" stroke="#FFE875" strokeWidth="1" strokeLinecap="round" />
                 <path d="M11 9C11 5.7 8.3 3 5 3" stroke="#FFD95A" strokeWidth="0.75" strokeLinecap="round" />
-                <polygon points="7,4 10,7 7,10 4,7" fill="#FFD95A" className="filter drop-shadow-[0_0_4px_#FFD95A]" />
+                <polygon
+                  points="7,4 10,7 7,10 4,7"
+                  className="fill-[#C9A227] transition-all duration-300 group-hover:fill-[#FFE875] group-hover:drop-shadow-[0_0_6px_#FFE875] drop-shadow-[0_0_2px_rgba(201,162,39,0.4)]"
+                />
               </svg>
             </div>
 
@@ -269,7 +289,10 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="overflow-visible">
                 <path d="M1 1V9C1 11.2 2.8 13 5 13H13" stroke="#FFE875" strokeWidth="1" strokeLinecap="round" />
                 <path d="M3 5C3 8.3 5.7 11 9 11" stroke="#FFD95A" strokeWidth="0.75" strokeLinecap="round" />
-                <polygon points="7,4 10,7 7,10 4,7" fill="#FFD95A" className="filter drop-shadow-[0_0_4px_#FFD95A]" />
+                <polygon
+                  points="7,4 10,7 7,10 4,7"
+                  className="fill-[#C9A227] transition-all duration-300 group-hover:fill-[#FFE875] group-hover:drop-shadow-[0_0_6px_#FFE875] drop-shadow-[0_0_2px_rgba(201,162,39,0.4)]"
+                />
               </svg>
             </div>
 
@@ -278,7 +301,10 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="overflow-visible">
                 <path d="M13 1V9C13 11.2 11.2 13 9 13H1" stroke="#FFE875" strokeWidth="1" strokeLinecap="round" />
                 <path d="M11 5C11 8.3 8.3 11 5 11" stroke="#FFD95A" strokeWidth="0.75" strokeLinecap="round" />
-                <polygon points="7,4 10,7 7,10 4,7" fill="#FFD95A" className="filter drop-shadow-[0_0_4px_#FFD95A]" />
+                <polygon
+                  points="7,4 10,7 7,10 4,7"
+                  className="fill-[#C9A227] transition-all duration-300 group-hover:fill-[#FFE875] group-hover:drop-shadow-[0_0_6px_#FFE875] drop-shadow-[0_0_2px_rgba(201,162,39,0.4)]"
+                />
               </svg>
             </div>
 
