@@ -1,91 +1,130 @@
-import { LayerContext, lerpRGBA, rgbaToString } from '../types'
+import { LayerContext, rgbaToString } from '../types'
 
 /**
- * 12 Elder Futhark runes that materialize sequentially clockwise as hover intensity rises.
+ * 12 Elder Futhark runes split into top and bottom cartouche rails:
+ * Top (6 runes): ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ
+ * Bottom (6 runes): ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ
  */
-const RUNES = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ'] as const
+const RUNES_TOP = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ'] as const
+const RUNES_BOTTOM = ['ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ'] as const
 
 /**
- * 4 Cardinal Elemental Nodes inscribed at outer vertices:
- * North (270° / -π/2): △ Fire
- * East (0°): 🜁 Air
- * South (90° / π/2): ▽ Water
- * West (180° / π): 🜃 Earth
+ * Astrolabe Corner Quadrant Gear configuration:
+ * Radius: 24px, 16 teeth miniature spur profile.
+ * Precomputed at module scope for zero heap allocations during the render loop.
  */
-interface ElementalNode {
-  readonly s: string
-  readonly a: number
-}
+const GEAR_RADIUS = 24
+const GEAR_TEETH_COUNT = 16
 
-const ELEMENTAL_NODES: readonly ElementalNode[] = [
-  { s: '△', a: -Math.PI / 2 },
-  { s: '🜁', a: 0 },
-  { s: '▽', a: Math.PI / 2 },
-  { s: '🜃', a: Math.PI },
-] as const
-
-/**
- * Precomputed 16 points for the 8-pointed octagram star polygon (outer 0.88, inner 0.72)
- * alternating at intervals of π/8 at module scope for zero-allocation rendering.
- */
-interface OctagramPoint {
+interface GearToothPoint {
+  readonly cos: number
+  readonly sin: number
+  readonly r: number
   readonly x: number
   readonly y: number
 }
 
-const OCTAGRAM_POINTS_16: readonly OctagramPoint[] = (() => {
-  const points: OctagramPoint[] = []
-  for (let j = 0; j < 16; j++) {
-    const angle = (j * Math.PI) / 8
-    const r = j % 2 === 0 ? 0.88 : 0.72
-    points.push({
-      x: Math.cos(angle) * r,
-      y: Math.sin(angle) * r,
-    })
+/**
+ * Precomputed tooth profile with outer radius 24, inner pitch 19.5, root 17.5.
+ */
+const CORNER_GEAR_PROFILE: readonly GearToothPoint[] = (() => {
+  const points: GearToothPoint[] = []
+  const step = (Math.PI * 2) / GEAR_TEETH_COUNT
+  const tipHalfWidth = step * 0.12
+  const pitchHalfWidth = step * 0.22
+  const rootHalfGap = step * 0.36
+
+  for (let i = 0; i < GEAR_TEETH_COUNT; i++) {
+    const midAngle = i * step
+    const aRoot1 = midAngle - rootHalfGap
+    const aPitch1 = midAngle - pitchHalfWidth
+    const aTip1 = midAngle - tipHalfWidth
+    const aTip2 = midAngle + tipHalfWidth
+    const aPitch2 = midAngle + pitchHalfWidth
+    const aRoot2 = midAngle + rootHalfGap
+
+    const toothPoints = [
+      { a: aRoot1, r: 17.5 },
+      { a: aPitch1, r: 19.5 },
+      { a: aTip1, r: 24.0 },
+      { a: aTip2, r: 24.0 },
+      { a: aPitch2, r: 19.5 },
+      { a: aRoot2, r: 17.5 },
+    ]
+
+    for (let k = 0; k < toothPoints.length; k++) {
+      const { a, r } = toothPoints[k]
+      const cos = Math.cos(a)
+      const sin = Math.sin(a)
+      points.push({
+        cos,
+        sin,
+        r,
+        x: cos * r,
+        y: sin * r,
+      })
+    }
   }
   return Object.freeze(points)
 })()
 
 /**
- * 48 perimeter vernier degree micro-ticks along outer ring (1.00R).
+ * Corner definitions seated at the 4 astrolabe quadrant corners:
+ * - TL: Fire △ (Clockwise rotation)
+ * - TR: Air 🜁 (Counter-Clockwise rotation)
+ * - BR: Water ▽ (Clockwise rotation)
+ * - BL: Earth 🜃 (Counter-Clockwise rotation)
  */
-const TICKS_COUNT = 48
-interface TickCoordinate {
-  readonly cos: number
-  readonly sin: number
-  readonly innerR: number
-  readonly outerR: number
+interface CornerDef {
+  readonly signX: number
+  readonly signY: number
+  readonly isCW: boolean
+  readonly symbol: string
 }
 
-const TICKS_COORDINATES: readonly TickCoordinate[] = (() => {
-  const ticks: TickCoordinate[] = []
-  for (let k = 0; k < TICKS_COUNT; k++) {
-    const angle = (k * Math.PI * 2) / TICKS_COUNT
-    const isMajor = k % 6 === 0
-    ticks.push({
-      cos: Math.cos(angle),
-      sin: Math.sin(angle),
-      innerR: isMajor ? 0.95 : 0.97,
-      outerR: 1.0,
-    })
-  }
-  return Object.freeze(ticks)
-})()
+const CORNER_DEFS: readonly CornerDef[] = [
+  { signX: -1, signY: -1, isCW: true, symbol: '△' }, // TL: Fire
+  { signX: 1, signY: -1, isCW: false, symbol: '🜁' }, // TR: Air
+  { signX: 1, signY: 1, isCW: true, symbol: '▽' }, // BR: Water
+  { signX: -1, signY: 1, isCW: false, symbol: '🜃' }, // BL: Earth
+] as const
 
 const AMETHYST_DASH: number[] = [6, 6]
 const EMPTY_DASH: number[] = []
 
-// Static trail offsets and alphas for the comet spark to avoid runtime allocations
-const TRAIL_OFFSETS = [0.0698, 0.1396, 0.2094] as const // 4°, 8°, 12° in rad
-const TRAIL_SIZES = [2.0, 1.4, 0.9] as const
-const TRAIL_ALPHAS = [0.65, 0.4, 0.2] as const
+/**
+ * Draws a rounded rectangle path using standard canvas arc commands.
+ */
+function drawRoundedRect(
+  c: CanvasRenderingContext2D,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+  radius: number
+): void {
+  const r = Math.max(0, Math.min(radius, (right - left) * 0.5, (bottom - top) * 0.5))
+  c.moveTo(left + r, top)
+  c.lineTo(right - r, top)
+  c.arc(right - r, top + r, r, -Math.PI / 2, 0)
+  c.lineTo(right, bottom - r)
+  c.arc(right - r, bottom - r, r, 0, Math.PI / 2)
+  c.lineTo(left + r, bottom)
+  c.arc(left + r, bottom - r, r, Math.PI / 2, Math.PI)
+  c.lineTo(left, top + r)
+  c.arc(left + r, top + r, r, Math.PI, Math.PI * 1.5)
+  c.closePath()
+}
 
 /**
- * Renders a 4-Tier Sacred Transmutation Seal Mandala around the hovered Bento tile:
- * - Tier 1: Outer Sweeping Solar Arc with 48 Vernier Ticks and Radiant Comet Tip
- * - Tier 2: Counter-Rotating 8-Pointed Octagram Star with 4 Cardinal Elemental Nodes
- * - Tier 3: 12 Sequential Elder Futhark Runes Materializing with Hover Intensity
- * - Tier 4: Concentric Resonance Pulse Wave Ripple
+ * Renders the Conformal Celestial Cartouche & Astrolabe framing system around the hovered Bento tile:
+ * - Conformal Cartouche Geometry hugging tile bounds with radius padding
+ * - Astrolabe Corner Quadrant Gears (16-tooth, counter-meshing kinematics)
+ * - Brass rivet bosses and 4 Cardinal Elemental Nodes (Fire △, Air 🜁, Water ▽, Earth 🜃)
+ * - Outer Vernier Rail & Concentric Dashed Astrolabe Rail
+ * - Vernier Micro-Ticks along horizontal and vertical rails
+ * - Inscribed Elder Futhark Runes materializing progressively with hover intensity
+ * - Concentric Cartouche Resonance Pulse Wave ripple
  *
  * Bails early in Deep Dive mode (mix > 0.85) or when hover intensity is near zero.
  */
@@ -115,182 +154,171 @@ export function renderSpellCircle(ctx: LayerContext): void {
 
   const cx = rect.left + rect.width / 2
   const cy = rect.top + rect.height / 2
-  const radiusPadding = config?.intensity?.spellCircleRadiusPadding || 28
-  const radius = Math.hypot(rect.width, rect.height) * 0.5 + radiusPadding
-
-  // Safe palette fallback
-  const secondaryColor = palette.secondaryAmethyst ?? palette.accentSoft ?? palette.accent
-  const goldColor = lerpRGBA(palette.accent, palette.accentBright, 0.7)
-
-  const outerSpeed = 0.45
-  const innerSpeed = 0.35
-  const runeSpinSpeed = 0.15
-
-  const outerRotation = reducedMotion ? 0 : safeTime * outerSpeed
-  const innerRotation = reducedMotion ? 0 : -safeTime * innerSpeed
-  const runeRotation = reducedMotion ? 0 : safeTime * runeSpinSpeed
 
   c.save()
   c.translate(cx, cy)
 
-  // -------------------------------------------------------------
-  // 1. Sweeping Outer Gold Arc & 48 Vernier Micro-Ticks
-  // -------------------------------------------------------------
-  const sweepAngle = Math.PI * 2 * Math.min(1, intensity * 1.2)
+  const pad = config?.intensity?.spellCircleRadiusPadding
+    ? Math.min(config.intensity.spellCircleRadiusPadding, 24)
+    : 20
+  const halfW = rect.width * 0.5 + pad
+  const halfH = rect.height * 0.5 + pad
 
-  c.save()
-  c.rotate(outerRotation)
+  const secondaryColor = palette.secondaryAmethyst ?? palette.accentSoft ?? palette.accent
 
-  // 48 perimeter vernier micro-ticks drawn in a single path
+  // -------------------------------------------------------------
+  // 1. Conformal Vernier Rail & Concentric Dashed Astrolabe Rail
+  // -------------------------------------------------------------
+  // Outer Vernier Rail
   c.beginPath()
-  for (let k = 0; k < TICKS_COUNT; k++) {
-    const t = TICKS_COORDINATES[k]
-    c.moveTo(t.cos * radius * t.innerR, t.sin * radius * t.innerR)
-    c.lineTo(t.cos * radius * t.outerR, t.sin * radius * t.outerR)
+  drawRoundedRect(c, -halfW, -halfH, halfW, halfH, GEAR_RADIUS)
+  c.strokeStyle = rgbaToString(palette.accent, baseAlpha * 0.4)
+  c.lineWidth = 1.0
+  c.stroke()
+
+  // Inner Dashed Astrolabe Rail (inset by 4px)
+  const innerHalfW = halfW - 4
+  const innerHalfH = halfH - 4
+  const innerR = Math.max(1, GEAR_RADIUS - 4)
+
+  c.beginPath()
+  drawRoundedRect(c, -innerHalfW, -innerHalfH, innerHalfW, innerHalfH, innerR)
+  c.setLineDash(AMETHYST_DASH)
+  c.strokeStyle = rgbaToString(secondaryColor, baseAlpha * 0.5)
+  c.lineWidth = 1.0
+  c.stroke()
+  c.setLineDash(EMPTY_DASH)
+
+  // -------------------------------------------------------------
+  // 2. Vernier Micro-Ticks (Inward every 12px, major every 36px)
+  // -------------------------------------------------------------
+  c.beginPath()
+  const tickStep = 12
+  const startX = -halfW + GEAR_RADIUS
+  const endX = halfW - GEAR_RADIUS
+  for (let x = startX + tickStep, idx = 1; x <= endX - tickStep * 0.5; x += tickStep, idx++) {
+    const isMajor = idx % 3 === 0
+    const tickLen = isMajor ? 6 : 3
+    c.moveTo(x, -halfH)
+    c.lineTo(x, -halfH + tickLen)
+    c.moveTo(x, halfH)
+    c.lineTo(x, halfH - tickLen)
+  }
+
+  const startY = -halfH + GEAR_RADIUS
+  const endY = halfH - GEAR_RADIUS
+  for (let y = startY + tickStep, idx = 1; y <= endY - tickStep * 0.5; y += tickStep, idx++) {
+    const isMajor = idx % 3 === 0
+    const tickLen = isMajor ? 6 : 3
+    c.moveTo(-halfW, y)
+    c.lineTo(-halfW + tickLen, y)
+    c.moveTo(halfW, y)
+    c.lineTo(halfW - tickLen, y)
   }
   c.strokeStyle = rgbaToString(palette.accent, baseAlpha * 0.35)
   c.lineWidth = 0.8
   c.stroke()
 
-  // Faint guide circle
-  c.beginPath()
-  c.arc(0, 0, radius, 0, Math.PI * 2)
-  c.strokeStyle = rgbaToString(palette.accent, baseAlpha * 0.2)
-  c.lineWidth = 1.0
-  c.stroke()
+  // -------------------------------------------------------------
+  // 3. Astrolabe Corner Quadrant Gears & Brass Rivet Bosses
+  // -------------------------------------------------------------
+  const rotCW = reducedMotion ? 0 : safeTime * 0.5
+  const rotCCW = reducedMotion ? 0 : -safeTime * 0.5
 
-  // Active sweeping arc
-  if (sweepAngle > 0.001) {
+  for (let i = 0; i < CORNER_DEFS.length; i++) {
+    const corner = CORNER_DEFS[i]
+    const gx = corner.signX * (halfW - GEAR_RADIUS)
+    const gy = corner.signY * (halfH - GEAR_RADIUS)
+    const rot = corner.isCW ? rotCW : rotCCW
+
+    // Rotating gear teeth & spokes
+    c.save()
+    c.translate(gx, gy)
+    c.rotate(rot)
+
     c.beginPath()
-    c.arc(0, 0, radius, 0, sweepAngle)
-    c.strokeStyle = rgbaToString(goldColor, baseAlpha)
-    c.lineWidth = 1.8
-    c.stroke()
-
-    // Leading glowing comet spark at the sweep tip
-    if (sweepAngle > 0.05) {
-      const tipX = Math.cos(sweepAngle) * radius
-      const tipY = Math.sin(sweepAngle) * radius
-
-      c.beginPath()
-      c.arc(tipX, tipY, 3.0, 0, Math.PI * 2)
-      c.fillStyle = rgbaToString(palette.accentBright, baseAlpha)
-      c.shadowColor = rgbaToString(palette.accentBright, baseAlpha)
-      c.shadowBlur = 8
-      c.fill()
-      c.shadowBlur = 0
-
-      // Trailing spark motes (spaced by 4°, 8°, 12° behind tip)
-      if (!reducedMotion) {
-        for (let t = 0; t < TRAIL_OFFSETS.length; t++) {
-          const trailAngle = sweepAngle - TRAIL_OFFSETS[t]
-          if (trailAngle > 0) {
-            const tx = Math.cos(trailAngle) * radius
-            const ty = Math.sin(trailAngle) * radius
-            c.beginPath()
-            c.arc(tx, ty, TRAIL_SIZES[t], 0, Math.PI * 2)
-            c.fillStyle = rgbaToString(palette.accentBright, baseAlpha * TRAIL_ALPHAS[t])
-            c.fill()
-          }
-        }
-      }
+    c.moveTo(CORNER_GEAR_PROFILE[0].x, CORNER_GEAR_PROFILE[0].y)
+    for (let j = 1; j < CORNER_GEAR_PROFILE.length; j++) {
+      c.lineTo(CORNER_GEAR_PROFILE[j].x, CORNER_GEAR_PROFILE[j].y)
     }
-  }
+    c.closePath()
 
-  c.restore()
+    // Pitch circle and 4 cross-spokes
+    c.moveTo(19.5, 0)
+    c.arc(0, 0, 19.5, 0, Math.PI * 2)
+    c.moveTo(-17.5, 0)
+    c.lineTo(17.5, 0)
+    c.moveTo(0, -17.5)
+    c.lineTo(0, 17.5)
 
-  // -------------------------------------------------------------
-  // 2. Counter-Rotating 8-Pointed Octagram & 4 Elemental Nodes
-  // -------------------------------------------------------------
-  const innerRadius = radius * 0.88
+    c.strokeStyle = rgbaToString(secondaryColor, baseAlpha * 0.6)
+    c.lineWidth = 1.0
+    c.stroke()
+    c.restore()
 
-  c.save()
-  c.rotate(innerRotation)
-
-  // Rotating dashed amethyst inner ring
-  c.beginPath()
-  c.arc(0, 0, innerRadius, 0, Math.PI * 2)
-  c.setLineDash(AMETHYST_DASH)
-  c.strokeStyle = rgbaToString(secondaryColor, baseAlpha * 0.85)
-  c.lineWidth = 1.2
-  c.stroke()
-  c.setLineDash(EMPTY_DASH)
-
-  // Inscribed counter-rotating 8-pointed octagram star polygon
-  c.beginPath()
-  c.moveTo(OCTAGRAM_POINTS_16[0].x * radius, OCTAGRAM_POINTS_16[0].y * radius)
-  for (let j = 1; j < OCTAGRAM_POINTS_16.length; j++) {
-    c.lineTo(OCTAGRAM_POINTS_16[j].x * radius, OCTAGRAM_POINTS_16[j].y * radius)
-  }
-  c.closePath()
-  c.strokeStyle = rgbaToString(secondaryColor, baseAlpha * 0.65)
-  c.lineWidth = 1.0
-  c.stroke()
-
-  // 4 Cardinal Elemental Nodes (△ Fire, 🜁 Air, ▽ Water, 🜃 Earth)
-  for (let n = 0; n < ELEMENTAL_NODES.length; n++) {
-    const node = ELEMENTAL_NODES[n]
-    const nx = Math.cos(node.a) * innerRadius
-    const ny = Math.sin(node.a) * innerRadius
-
-    // Circular boss (r ≈ 5px)
+    // Brass rivet boss (r = 4.5)
     c.beginPath()
-    c.arc(nx, ny, 5, 0, Math.PI * 2)
-    c.fillStyle = rgbaToString(palette.accent, baseAlpha * 0.15)
+    c.arc(gx, gy, 4.5, 0, Math.PI * 2)
+    c.fillStyle = rgbaToString(palette.accent, baseAlpha * 0.2)
     c.fill()
-    c.strokeStyle = rgbaToString(secondaryColor, baseAlpha * 0.8)
+    c.strokeStyle = rgbaToString(palette.accentBright, baseAlpha * 0.8)
     c.lineWidth = 1.0
     c.stroke()
 
-    // Centered elemental glyph
-    c.save()
-    c.translate(nx, ny)
+    // Cardinal Elemental Node glyph (△, 🜁, ▽, 🜃)
     c.font = '9px "Segoe UI Historic", serif'
     c.textAlign = 'center'
     c.textBaseline = 'middle'
     c.fillStyle = rgbaToString(palette.accentBright, baseAlpha * 0.9)
-    c.fillText(node.s, 0, 0)
-    c.restore()
+    c.fillText(corner.symbol, gx, gy)
   }
 
-  c.restore()
-
   // -------------------------------------------------------------
-  // 3. Perimeter Elder Futhark Runes (12 Runes, Sequential)
+  // 4. Inscribed Elder Futhark Runes
   // -------------------------------------------------------------
-  const runeRadius = radius * 0.94
-  const runeCount = RUNES.length
   c.font = '12px NotoSansRunic-Regular, "Segoe UI Historic", serif'
   c.textAlign = 'center'
   c.textBaseline = 'middle'
 
-  for (let i = 0; i < runeCount; i++) {
-    const threshold = i / runeCount
-    const runeProgress = Math.min(1, Math.max(0, (intensity * 1.25 - threshold) * runeCount))
-    if (runeProgress <= 0.01) {
-      continue
+  const runeStartX = -halfW + GEAR_RADIUS + 12
+  const runeEndX = halfW - GEAR_RADIUS - 12
+  const runeSpan = runeEndX - runeStartX
+
+  // Top runes along y = -halfH
+  for (let i = 0; i < 6; i++) {
+    const threshold = i / 6
+    const runeProgress = Math.min(1, Math.max(0, (intensity * 1.25 - threshold) * 6))
+    if (runeProgress > 0.01) {
+      const rx = runeSpan > 0 ? runeStartX + (i / 5) * runeSpan : 0
+      c.fillStyle = rgbaToString(palette.accentBright, baseAlpha * runeProgress)
+      c.fillText(RUNES_TOP[i], rx, -halfH)
     }
+  }
 
-    const angle = (i * Math.PI * 2) / runeCount + runeRotation
-
-    c.save()
-    c.rotate(angle)
-    c.translate(0, -runeRadius)
-    c.fillStyle = rgbaToString(palette.accentBright, baseAlpha * runeProgress)
-    c.fillText(RUNES[i], 0, 0)
-    c.restore()
+  // Bottom runes along y = halfH
+  for (let i = 0; i < 6; i++) {
+    const threshold = i / 6
+    const runeProgress = Math.min(1, Math.max(0, (intensity * 1.25 - threshold) * 6))
+    if (runeProgress > 0.01) {
+      const rx = runeSpan > 0 ? runeStartX + (i / 5) * runeSpan : 0
+      c.fillStyle = rgbaToString(palette.accentBright, baseAlpha * runeProgress)
+      c.fillText(RUNES_BOTTOM[i], rx, halfH)
+    }
   }
 
   // -------------------------------------------------------------
-  // 4. Concentric Resonance Pulse Wave Ripple
+  // 5. Concentric Cartouche Resonance Pulse Wave
   // -------------------------------------------------------------
   if (!reducedMotion && intensity > 0.05) {
     const pulsePhase = (safeTime * 1.2) % 1.0
-    const pulseRadius = radius * (0.85 + pulsePhase * 0.35)
+    const expand = pulsePhase * 16
     const pulseAlpha = baseAlpha * 0.25 * (1 - pulsePhase)
     if (pulseAlpha > 0.005) {
+      const pulseHalfW = halfW + expand
+      const pulseHalfH = halfH + expand
+      const pulseR = GEAR_RADIUS + expand
       c.beginPath()
-      c.arc(0, 0, pulseRadius, 0, Math.PI * 2)
+      drawRoundedRect(c, -pulseHalfW, -pulseHalfH, pulseHalfW, pulseHalfH, pulseR)
       c.strokeStyle = rgbaToString(secondaryColor, pulseAlpha)
       c.lineWidth = 1.0
       c.stroke()
