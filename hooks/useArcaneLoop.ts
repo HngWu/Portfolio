@@ -27,6 +27,23 @@ import { renderTrail } from '@/components/background/layers/trail'
 import { renderScanline } from '@/components/background/layers/scan'
 import { usePerformanceStore } from '@/store/usePerformanceStore'
 
+/**
+ * Calculates responsive star/dust count scaling down with smaller viewports.
+ * Full count on desktop, scaled down on tablet, and compact on mobile.
+ */
+export function getResponsiveDustCount(width: number, baseCount = arcaneConfig.density.dustCount): number {
+  if (width <= 480) {
+    return Math.round(baseCount * 0.25) // ~28 stars on small mobile
+  }
+  if (width <= 768) {
+    return Math.round(baseCount * 0.45) // ~50 stars on tablet / larger mobile
+  }
+  if (width <= 1024) {
+    return Math.round(baseCount * 0.70) // ~77 stars on landscape tablet / small laptops
+  }
+  return baseCount // 110 stars on desktop
+}
+
 export const arcaneConfig: ArcaneConfig = {
   density: {
     dustCount: 110,
@@ -273,12 +290,26 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
         centers,
         arcaneConfig.density.hexRadius
       )
+
+      // Adjust star / dust motes count responsive to screen size
+      const targetDustCount = getResponsiveDustCount(width, arcaneConfig.density.dustCount)
+      if (dustRef.current.length > targetDustCount) {
+        dustRef.current = dustRef.current.slice(0, targetDustCount)
+      } else if (dustRef.current.length < targetDustCount) {
+        const additional = initDustMotes(targetDustCount - dustRef.current.length, width, height)
+        dustRef.current = [...dustRef.current, ...additional]
+      }
+      // Re-bound any motes that are now outside the new viewport
+      dustRef.current.forEach((mote) => {
+        if (mote.x > width) mote.x = Math.random() * width
+        if (mote.y > height) mote.y = Math.random() * height
+      })
     }
 
+    dustRef.current = []
     handleResize()
 
     // Initialize particles
-    dustRef.current = initDustMotes(arcaneConfig.density.dustCount, width, height)
     runesRef.current = initRunes(arcaneConfig.density.runeCount, width, height)
     embersRef.current = initTileEmbers(40)
 

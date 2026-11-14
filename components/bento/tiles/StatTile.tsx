@@ -88,6 +88,7 @@ export function StatTile({
     <BentoTile 
       id={id} 
       size={size} 
+      wrapperClassName="hidden md:block"
       className="flex flex-col p-3 sm:p-4 md:p-5 group/stat" 
       isDragging={isDragging} 
       sortableProps={sortableProps} 

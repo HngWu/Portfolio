@@ -27,17 +27,11 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
 
   const [mounted, setMounted] = React.useState(false)
   const [isMac, setIsMac] = React.useState(false)
-  const [isMobile, setIsMobile] = React.useState(false)
 
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
     setIsMac(/mac/i.test(navigator.userAgent))
-    
-    const checkMobile = () => setIsMobile(window.innerWidth < 768)
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
 
@@ -151,28 +145,30 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
     <BentoTile 
       id={id} 
       size={size} 
-      className="bg-white/[0.02] border border-white/5 p-4 sm:p-6 md:p-8 flex flex-col justify-center h-full group/hero"
+      className="bg-white/[0.02] border border-white/5 p-4 sm:p-6 md:p-8 flex flex-col justify-between sm:justify-center h-full group/hero"
       isDragging={isDragging}
       sortableProps={sortableProps}
       canMorph={false}
       canExpand={false}
       deepContent={
-        <div className="flex flex-col h-full justify-center relative">
+        <div className="flex flex-col h-full justify-between sm:justify-center relative">
           {/* Main Content */}
-          <h1 
-            ref={deepMarkRef}
-            className="relative z-10 text-2xl md:text-3xl font-mono tracking-tight font-bold leading-tight text-white/90 min-h-[1.3em] break-words"
-          >
-            {mark}
-          </h1>
-          <p className="relative z-10 text-base md:text-lg mt-4 sm:mt-6 text-white/50 w-full leading-relaxed">
-            {description}
-          </p>
+          <div>
+            <h1 
+              ref={deepMarkRef}
+              className="relative z-10 text-xl sm:text-2xl md:text-3xl font-mono tracking-tight font-bold leading-tight sm:leading-tight text-white/90 min-h-[1.3em] break-words"
+            >
+              {mark}
+            </h1>
+            <p className="relative z-10 text-xs sm:text-sm md:text-base mt-2.5 sm:mt-4 md:mt-6 text-white/60 w-full leading-relaxed">
+              {description}
+            </p>
+          </div>
 
           {/* Horizontal Footer Chrome */}
-          <div className="relative z-10 border-t border-white/5 pt-3 sm:pt-4 flex flex-wrap items-center justify-between gap-2.5 w-full mt-4 sm:mt-6 md:mt-8">
+          <div className="relative z-10 border-t border-white/5 pt-3 sm:pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 w-full mt-3 sm:mt-5 md:mt-8">
             {/* Bottom Left: Download CV Button */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center">
               <a 
                 href="/resume.pdf"
                 download="resume.pdf"
@@ -180,10 +176,10 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
                 onMouseEnter={prefetchCvAssets}
                 onFocus={prefetchCvAssets}
                 aria-label="Download CV as PDF"
-                className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-mode-accent/10 border border-white/5 hover:border-mode-accent/30 rounded-xl text-white/50 hover:text-mode-accent-bright transition-all duration-300 select-none cursor-pointer group/cv"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 py-2 sm:px-2.5 sm:py-1.5 bg-white/[0.02] hover:bg-mode-accent/10 border border-white/5 hover:border-mode-accent/30 rounded-xl text-white/60 hover:text-mode-accent-bright transition-all duration-300 select-none cursor-pointer group/cv"
               >
-                <Download className="w-4 h-4 transition-transform group-hover/cv:-translate-y-0.5" />
-                <span className="text-sm font-semibold tracking-wide pl-1 text-white/50 group-hover/cv:text-mode-accent-bright transition-colors">
+                <Download className="w-4 h-4 shrink-0 transition-transform group-hover/cv:-translate-y-0.5" />
+                <span className="text-xs sm:text-sm font-semibold tracking-wide text-white/60 group-hover/cv:text-mode-accent-bright transition-colors">
                   Download CV
                 </span>
               </a>
@@ -193,7 +189,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
             {mounted ? (
               <button
                 onClick={handleBadgeClick}
-                className="relative flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-mode-accent-bright transition-all duration-300 rounded-lg px-2.5 py-1 bg-white/[0.01] overflow-hidden"
+                className="relative w-full sm:w-auto inline-flex items-center justify-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/50 hover:text-mode-accent-bright transition-all duration-300 rounded-xl sm:rounded-lg px-3 py-2 sm:px-2.5 sm:py-1.5 bg-white/[0.01] overflow-hidden"
               >
                 {/* Hover-triggered background sheen (Pulse Wave) */}
                 <div className="shimmer-pulse-bg group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse" />
@@ -201,30 +197,28 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
                 {/* Idle border-beam orbit container */}
                 <div 
                   className="absolute inset-0 z-0 rounded-[inherit] p-[1.5px] pointer-events-none"
-                style={{
-                  mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-                  WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-                  maskComposite: "exclude",
-                  WebkitMaskComposite: "xor"
-                }}
+                  style={{
+                    mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                    WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                    maskComposite: "exclude",
+                    WebkitMaskComposite: "xor"
+                  }}
                 >
                   <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_60%,var(--mode-accent-bright,#FFE875)_85%,transparent_100%)] animate-border-beam group-hover/cmd:animate-border-beam-fast" />
                 </div>
 
                 {/* Button Contents */}
-                <span className="relative z-10 text-sm tracking-wide text-white/40 group-hover/cmd:text-mode-accent-bright transition-colors pl-1">
+                <span className="relative z-10 text-xs sm:text-sm tracking-wide text-white/50 group-hover/cmd:text-mode-accent-bright transition-colors">
                   Try the command menu
                 </span>
-                {!isMobile && (
-                  <div className="relative z-10 flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
-                    <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
-                      {isMac ? "⌘" : "Ctrl"}
-                    </kbd>
-                    <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
-                      K
-                    </kbd>
-                  </div>
-                )}
+                <div className="relative z-10 hidden sm:flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
+                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
+                    {isMac ? "⌘" : "Ctrl"}
+                  </kbd>
+                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
+                    K
+                  </kbd>
+                </div>
               </button>
             ) : (
               <div className="h-8 w-24" />
@@ -233,22 +227,24 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
         </div>
       }
     >
-      <div className="flex flex-col h-full justify-center relative">
+      <div className="flex flex-col h-full justify-between sm:justify-center relative">
         {/* Main Content */}
-        <h1 
-          ref={markRef}
-          className="relative z-10 text-2xl md:text-3xl font-display leading-tight text-white/90 min-h-[1.3em] font-bold tracking-tight break-words"
-        >
-          {mark}
-        </h1>
-        <p className="relative z-10 text-base md:text-lg mt-4 sm:mt-6 text-white/50 w-full leading-relaxed">
-          {description}
-        </p>
+        <div>
+          <h1 
+            ref={markRef}
+            className="relative z-10 text-xl sm:text-2xl md:text-3xl font-display leading-tight sm:leading-tight text-white/90 min-h-[1.3em] font-bold tracking-tight break-words"
+          >
+            {mark}
+          </h1>
+          <p className="relative z-10 text-xs sm:text-sm md:text-base mt-2.5 sm:mt-4 md:mt-6 text-white/60 w-full leading-relaxed">
+            {description}
+          </p>
+        </div>
 
         {/* Horizontal Footer Chrome */}
-        <div className="relative z-10 border-t border-white/5 pt-3 sm:pt-4 flex flex-wrap items-center justify-between gap-2.5 w-full mt-4 sm:mt-6 md:mt-8">
+        <div className="relative z-10 border-t border-white/5 pt-3 sm:pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 w-full mt-3 sm:mt-5 md:mt-8">
           {/* Bottom Left: Download CV Button */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <a 
               href="/resume.pdf"
               download="resume.pdf"
@@ -256,10 +252,10 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
               onMouseEnter={prefetchCvAssets}
               onFocus={prefetchCvAssets}
               aria-label="Download CV as PDF"
-              className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] hover:bg-mode-accent/10 border border-white/5 hover:border-mode-accent/30 rounded-xl text-white/50 hover:text-mode-accent-bright transition-all duration-300 select-none cursor-pointer group/cv"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 py-2 sm:px-2.5 sm:py-1.5 bg-white/[0.02] hover:bg-mode-accent/10 border border-white/5 hover:border-mode-accent/30 rounded-xl text-white/60 hover:text-mode-accent-bright transition-all duration-300 select-none cursor-pointer group/cv"
             >
-              <Download className="w-4 h-4 transition-transform group-hover/cv:-translate-y-0.5" />
-              <span className="text-sm font-semibold tracking-wide pl-1 text-white/50 group-hover/cv:text-mode-accent-bright transition-colors">
+              <Download className="w-4 h-4 shrink-0 transition-transform group-hover/cv:-translate-y-0.5" />
+              <span className="text-xs sm:text-sm font-semibold tracking-wide text-white/60 group-hover/cv:text-mode-accent-bright transition-colors">
                 Download CV
               </span>
             </a>
@@ -269,7 +265,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
           {mounted ? (
             <button
               onClick={handleBadgeClick}
-              className="relative flex items-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/40 hover:text-mode-accent-bright transition-all duration-300 rounded-lg px-2.5 py-1 bg-white/[0.01] overflow-hidden"
+              className="relative w-full sm:w-auto inline-flex items-center justify-center gap-2 cursor-pointer select-none border-none focus:outline-none group/cmd text-white/50 hover:text-mode-accent-bright transition-all duration-300 rounded-xl sm:rounded-lg px-3 py-2 sm:px-2.5 sm:py-1.5 bg-white/[0.01] overflow-hidden"
             >
               {/* Hover-triggered background sheen (Pulse Wave) */}
               <div className="shimmer-pulse-bg group-hover/cmd:opacity-100 group-hover/cmd:animate-shimmer-pulse" />
@@ -288,19 +284,17 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
               </div>
 
               {/* Button Contents */}
-              <span className="relative z-10 text-sm tracking-wide text-white/40 group-hover/cmd:text-mode-accent-bright transition-colors pl-1">
+              <span className="relative z-10 text-xs sm:text-sm tracking-wide text-white/50 group-hover/cmd:text-mode-accent-bright transition-colors">
                 Try the command menu
               </span>
-              {!isMobile && (
-                <div className="relative z-10 flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
-                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
-                    {isMac ? "⌘" : "Ctrl"}
-                  </kbd>
-                  <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
-                    K
-                  </kbd>
-                </div>
-              )}
+              <div className="relative z-10 hidden sm:flex items-center gap-1 font-mono text-[11px] text-white/20 ml-1">
+                <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
+                  {isMac ? "⌘" : "Ctrl"}
+                </kbd>
+                <kbd className="bg-white/[0.04] border border-white/10 text-white/40 group-hover/cmd:text-mode-accent-bright group-hover/cmd:border-mode-accent/30 px-1.5 py-0.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1.5px_0_rgba(0,0,0,0.3)] transition-all duration-300">
+                  K
+                </kbd>
+              </div>
             </button>
           ) : (
             <div className="h-8 w-24" />

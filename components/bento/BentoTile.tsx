@@ -18,6 +18,7 @@ interface BentoTileProps {
   href?: string
   glowColor?: "mint" | "blue" | "pink" | "amber" | "none"
   className?: string
+  wrapperClassName?: string
   children: React.ReactNode // Usually the Quick Pitch content
   deepContent?: React.ReactNode // Content for the back of the card
   isDragging?: boolean
@@ -50,6 +51,7 @@ export function BentoTile({
   href,
   glowColor = "none",
   className,
+  wrapperClassName,
   children,
   deepContent,
   isDragging,
@@ -163,7 +165,8 @@ export function BentoTile({
         "h-full",
         "perspective-[1500px]", 
         isDragging ? "touch-none opacity-30" : "touch-pan-y",
-        isDissolving && "transition-all duration-500 ease-out opacity-0 scale-95 pointer-events-none"
+        isDissolving && "transition-all duration-500 ease-out opacity-0 scale-95 pointer-events-none",
+        wrapperClassName
       )}
       {...sortableProps}
     >
