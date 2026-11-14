@@ -220,7 +220,7 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
 
     let animationFrameId: number | null = null
     let resizeTimer: ReturnType<typeof setTimeout> | null = null
-    let isPaused = false
+    let isPaused = typeof document !== 'undefined' && document.hidden
     let lastTime = performance.now()
     let width = window.innerWidth
     let height = window.innerHeight

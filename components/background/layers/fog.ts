@@ -38,7 +38,7 @@ function getRadialSprite(holder: RadialSpriteHolder, color: RGBA): HTMLCanvasEle
     return holder.canvas
   }
 
-  if (!holder.canvas) {
+  if (!holder.canvas || !holder.ctx) {
     holder.canvas = document.createElement('canvas')
     holder.canvas.width = SPRITE_SIZE
     holder.canvas.height = SPRITE_SIZE
@@ -63,24 +63,25 @@ function getRadialSprite(holder: RadialSpriteHolder, color: RGBA): HTMLCanvasEle
   return holder.canvas
 }
 
-// Static foundational indigo mist cached gradient
-let cachedIndigoGradient: CanvasGradient | null = null
-let cachedIndigoWidth = 0
-let cachedIndigoHeight = 0
-let cachedIndigoCtx: CanvasRenderingContext2D | null = null
+// Memory-safe WeakMap caching for context-bound static gradients
+interface CachedGradientEntry {
+  gradient: CanvasGradient
+  width: number
+  height: number
+  colorKey?: string
+}
+
+const indigoGradientCache = new WeakMap<CanvasRenderingContext2D, CachedGradientEntry>()
+const edgeGradientCache = new WeakMap<CanvasRenderingContext2D, CachedGradientEntry>()
 
 function getCachedIndigoGradient(
   c: CanvasRenderingContext2D,
   width: number,
   height: number
 ): CanvasGradient | null {
-  if (
-    cachedIndigoGradient &&
-    cachedIndigoCtx === c &&
-    cachedIndigoWidth === width &&
-    cachedIndigoHeight === height
-  ) {
-    return cachedIndigoGradient
+  const cached = indigoGradientCache.get(c)
+  if (cached && cached.width === width && cached.height === height) {
+    return cached.gradient
   }
 
   const cx0 = width * 0.5
@@ -91,20 +92,14 @@ function getCachedIndigoGradient(
   g0.addColorStop(0.5, rgbaToString(TWILIGHT_INDIGO, 0.5))
   g0.addColorStop(1, TWILIGHT_INDIGO_ZERO)
 
-  cachedIndigoGradient = g0
-  cachedIndigoWidth = width
-  cachedIndigoHeight = height
-  cachedIndigoCtx = c
+  indigoGradientCache.set(c, {
+    gradient: g0,
+    width,
+    height,
+  })
 
   return g0
 }
-
-// Deep Dive Arcane Edge Fog cached gradient
-let cachedEdgeGradient: CanvasGradient | null = null
-let cachedEdgeWidth = 0
-let cachedEdgeHeight = 0
-let cachedEdgeCtx: CanvasRenderingContext2D | null = null
-let cachedEdgeColorKey = ''
 
 function getCachedEdgeGradient(
   c: CanvasRenderingContext2D,
@@ -113,14 +108,14 @@ function getCachedEdgeGradient(
   color: RGBA
 ): CanvasGradient | null {
   const colorKey = `${color.r},${color.g},${color.b}`
+  const cached = edgeGradientCache.get(c)
   if (
-    cachedEdgeGradient &&
-    cachedEdgeCtx === c &&
-    cachedEdgeWidth === width &&
-    cachedEdgeHeight === height &&
-    cachedEdgeColorKey === colorKey
+    cached &&
+    cached.width === width &&
+    cached.height === height &&
+    cached.colorKey === colorKey
   ) {
-    return cachedEdgeGradient
+    return cached.gradient
   }
 
   const cx = width * 0.5
@@ -132,11 +127,12 @@ function getCachedEdgeGradient(
   gEdge.addColorStop(0.6, rgbaToString(color, 0.35))
   gEdge.addColorStop(1, rgbaToString(color, 1))
 
-  cachedEdgeGradient = gEdge
-  cachedEdgeWidth = width
-  cachedEdgeHeight = height
-  cachedEdgeCtx = c
-  cachedEdgeColorKey = colorKey
+  edgeGradientCache.set(c, {
+    gradient: gEdge,
+    width,
+    height,
+    colorKey,
+  })
 
   return gEdge
 }
@@ -307,11 +303,9 @@ export function renderFog(ctx: LayerContext): void {
     const violetColor = palette.secondaryAmethyst ?? palette.accentSoft ?? palette.accent
     const gEdge = getCachedEdgeGradient(c, width, height, violetColor)
     if (gEdge) {
-      c.save()
       c.globalAlpha = deepAlpha
       c.fillStyle = gEdge
       c.fillRect(0, 0, width, height)
-      c.restore()
     }
   }
 
