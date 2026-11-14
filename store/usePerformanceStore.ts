@@ -3,9 +3,9 @@ import { persist, createJSONStorage } from "zustand/middleware"
 
 export interface PerformanceToggles {
   enable3DModel: boolean
-  enableCustomCursor: boolean
   enableBackgroundFx: boolean
   enableCardTilt: boolean
+  enableCustomCursor?: boolean
 }
 
 export interface PerformanceState extends PerformanceToggles {
@@ -73,12 +73,12 @@ export const usePerformanceStore = create<PerformanceState>()(
       },
 
       reportLag: () => {
-        const { hasPrompted, neverShowAutoPrompt, enable3DModel, enableCustomCursor } = get()
+        const { hasPrompted, neverShowAutoPrompt, enable3DModel, enableBackgroundFx } = get()
         // If the user already suppressed auto prompts or has already been prompted in this session
         if (neverShowAutoPrompt || hasPrompted) return
 
         // If the user already turned off heavy features manually, don't nag them
-        if (!enable3DModel && !enableCustomCursor) return
+        if (!enable3DModel && !enableBackgroundFx) return
 
         set({
           isPromptOpen: true,

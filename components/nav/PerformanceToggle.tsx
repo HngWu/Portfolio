@@ -6,15 +6,12 @@ import { usePerformanceStore } from "@/store/usePerformanceStore"
 import { cn } from "@/lib/utils"
 
 export function PerformanceToggle() {
-  const {
-    fps,
-    isLagging,
-    enable3DModel,
-    enableCustomCursor,
-    enableBackgroundFx,
-    enableCardTilt,
-    setPromptOpen,
-  } = usePerformanceStore()
+  const fps = usePerformanceStore((s) => s.fps)
+  const isLagging = usePerformanceStore((s) => s.isLagging)
+  const enable3DModel = usePerformanceStore((s) => s.enable3DModel)
+  const enableBackgroundFx = usePerformanceStore((s) => s.enableBackgroundFx)
+  const enableCardTilt = usePerformanceStore((s) => s.enableCardTilt)
+  const setPromptOpen = usePerformanceStore((s) => s.setPromptOpen)
 
   const [mounted, setMounted] = React.useState(false)
 
@@ -28,7 +25,7 @@ export function PerformanceToggle() {
     )
   }
 
-  const isEcoMode = !enable3DModel || !enableCustomCursor || !enableBackgroundFx || !enableCardTilt
+  const isEcoMode = !enable3DModel || !enableBackgroundFx || !enableCardTilt
 
   return (
     <button

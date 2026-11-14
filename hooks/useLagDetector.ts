@@ -19,6 +19,9 @@ export function useLagDetector() {
   const isLaggingRef = useRef(false)
   const lagStartTimeRef = useRef<number | null>(null)
   const frameDeltasRef = useRef<number[]>([])
+  const runningDeltaSumRef = useRef<number>(0)
+  const lastReportedFpsRef = useRef<number>(60)
+  const lastReportedLaggingRef = useRef<boolean>(false)
   const lastFrameTimeRef = useRef<number | null>(null)
   const lastStateUpdateRef = useRef<number>(0)
   const mountTimeRef = useRef<number>(0)
@@ -32,11 +35,15 @@ export function useLagDetector() {
 
     // Debugging helpers for developers / testing
     window.__triggerLagPrompt = () => {
+      lastReportedFpsRef.current = 22
+      lastReportedLaggingRef.current = true
       usePerformanceStore.getState().setFps(22, true)
       usePerformanceStore.getState().setPromptOpen(true)
     }
 
     window.__simulateLag = (mockFps = 20) => {
+      lastReportedFpsRef.current = mockFps
+      lastReportedLaggingRef.current = true
       usePerformanceStore.getState().setFps(mockFps, true)
       usePerformanceStore.getState().setPromptOpen(true)
     }
@@ -47,6 +54,7 @@ export function useLagDetector() {
       // Reset timestamps when returning to the tab so throttled background frames don't skew FPS
       lastFrameTimeRef.current = performance.now()
       frameDeltasRef.current = []
+      runningDeltaSumRef.current = 0
       lagStartTimeRef.current = null
       isLaggingRef.current = false
     }
@@ -72,16 +80,17 @@ export function useLagDetector() {
       // Cap aberrant single pauses (e.g. system sleep/context lost) to 500ms
       const clampedDelta = Math.min(delta, 500)
       frameDeltasRef.current.push(clampedDelta)
+      runningDeltaSumRef.current += clampedDelta
       if (frameDeltasRef.current.length > SAMPLE_WINDOW_SIZE) {
-        frameDeltasRef.current.shift()
+        const removed = frameDeltasRef.current.shift()!
+        runningDeltaSumRef.current -= removed
       }
 
       // Only evaluate lag after the warm-up grace period
       const isWarmupOver = now - mountTimeRef.current > WARMUP_GRACE_PERIOD_MS
 
       if (isWarmupOver && frameDeltasRef.current.length >= 15) {
-        const totalDuration = frameDeltasRef.current.reduce((a, b) => a + b, 0)
-        const avgDelta = totalDuration / frameDeltasRef.current.length
+        const avgDelta = runningDeltaSumRef.current / frameDeltasRef.current.length
         const currentFps = Math.min(Math.round(1000 / avgDelta), 120)
 
         // Check if currently under the lag threshold
@@ -102,7 +111,14 @@ export function useLagDetector() {
         // Throttle UI store updates to twice per second (every 500ms)
         if (now - lastStateUpdateRef.current >= 500) {
           lastStateUpdateRef.current = now
-          usePerformanceStore.getState().setFps(currentFps, isLaggingRef.current)
+          if (
+            Math.abs(currentFps - lastReportedFpsRef.current) >= 3 ||
+            isLaggingRef.current !== lastReportedLaggingRef.current
+          ) {
+            lastReportedFpsRef.current = currentFps
+            lastReportedLaggingRef.current = isLaggingRef.current
+            usePerformanceStore.getState().setFps(currentFps, isLaggingRef.current)
+          }
         }
       }
 
