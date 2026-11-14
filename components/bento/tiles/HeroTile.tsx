@@ -151,7 +151,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
     <BentoTile 
       id={id} 
       size={size} 
-      className="bg-white/[0.02] border border-white/5 p-4 sm:p-6 md:p-8 flex flex-col justify-center h-full"
+      className="bg-white/[0.02] border border-white/5 p-4 sm:p-6 md:p-8 flex flex-col justify-center h-full group/hero"
       isDragging={isDragging}
       sortableProps={sortableProps}
       canMorph={false}
