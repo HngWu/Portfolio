@@ -1,7 +1,19 @@
 "use client"
 
 import React, { useEffect } from "react"
-import { MechanicalDeityScene } from "@/components/three/MechanicalDeityScene"
+import dynamic from "next/dynamic"
+
+const MechanicalDeityScene = dynamic(
+  () => import("@/components/three/MechanicalDeityScene").then((m) => m.MechanicalDeityScene),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-[#06070A]">
+        <div className="size-12 border-2 border-lume-primary/20 border-t-lume-primary rounded-full animate-spin" />
+      </div>
+    ),
+  }
+)
 import { DeityHudOverlay } from "@/components/three/deity/DeityHudOverlay"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { useViewModeStore } from "@/store/useViewModeStore"
