@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
 import {
   initGyroscope,
   drawGyroscope,
@@ -230,16 +231,11 @@ export function InitialLoaderOverlay() {
   return (
     <div className="fixed inset-0 z-[10002] font-mono select-none overflow-hidden pointer-events-none">
       {/* 1. Backdrop Veil: Starts opaque dark, dissolves immediately when implosion starts */}
-      <motion.div
-        initial={{ opacity: 1 }}
-        animate={{
-          opacity: phase === "booting" ? 1 : 0
-        }}
-        transition={{
-          duration: 0.45,
-          ease: [0.22, 1, 0.36, 1]
-        }}
-        className="absolute inset-0 bg-[#050505] z-0 pointer-events-auto"
+      <div
+        className={cn(
+          "absolute inset-0 bg-[#050505] z-0 pointer-events-auto transition-opacity duration-500 ease-out",
+          phase === "booting" ? "opacity-100" : "opacity-0"
+        )}
       />
 
       {/* 2. Gyroscope, Singularity Implosion & Arcane Handoff 2D Canvas */}
@@ -260,10 +256,10 @@ export function InitialLoaderOverlay() {
       <div className="w-64 h-64 sm:w-80 sm:h-80 pointer-events-none relative z-10 mx-auto my-auto" />
 
       {/* 5. Kinetic Progress & Telemetry HUD */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {phase === "booting" && (
           <motion.div 
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 1, y: 0 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20, scale: 0.95, filter: "blur(6px)", transition: { duration: 0.25 } }}
             className="absolute inset-x-0 bottom-24 sm:bottom-28 z-20 flex flex-col items-center gap-3.5 max-w-sm mx-auto px-4 pointer-events-none"
