@@ -27,11 +27,17 @@ const nextConfig: NextConfig = {
       'three/build/': './node_modules/three/build/',
       'three': './lib/three-wrapper.ts',
     },
+    ignoreIssue: [
+      {
+        path: '**/next.config.ts',
+        title: 'Encountered unexpected file in NFT list',
+      },
+    ],
   },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      'three$': path.resolve(/*turbopackIgnore: true*/ process.cwd(), './lib/three-wrapper.ts'),
+      'three$': path.join(__dirname, 'lib', 'three-wrapper.ts'),
     };
     return config;
   },
