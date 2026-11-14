@@ -145,7 +145,13 @@ export function BentoGrid({
         className="fixed inset-0 bg-white pointer-events-none z-[100] opacity-0"
       />
       
-      <div className="w-full relative" ref={gridRef}>
+      <div 
+        ref={gridRef}
+        className={cn(
+          "w-full relative transition-opacity duration-300",
+          !isLoaded ? "opacity-0 invisible pointer-events-none" : "opacity-100 visible"
+        )}
+      >
         <div
           className={cn(
             gridClasses,
