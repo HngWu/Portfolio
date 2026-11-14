@@ -222,6 +222,38 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
     let resizeTimer: ReturnType<typeof setTimeout> | null = null
     let isPaused = false
     let lastTime = performance.now()
+    let width = window.innerWidth
+    let height = window.innerHeight
+    let dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+
+    const paintStaticBackdrop = () => {
+      if (!ctx || !canvasRef.current) return
+      // Clear full canvas buffer accounting for device pixel ratio
+      ctx.clearRect(0, 0, Math.round(width * dpr), Math.round(height * dpr))
+      // Render static void backdrop matching current mode & palette
+      ctx.save()
+      ctx.scale(dpr, dpr)
+      ctx.fillStyle = paletteRef.current.isLight
+        ? 'rgba(250, 250, 252, 0.35)'
+        : (mixRef.current > 0.5 ? '#06080e' : '#050409')
+      ctx.fillRect(0, 0, width, height)
+      ctx.restore()
+    }
+
+    const resumeLoop = () => {
+      if (isPaused) return
+      if (animationFrameId === null) {
+        lastTime = performance.now()
+        animationFrameId = requestAnimationFrame(render)
+      }
+    }
+
+    const stopLoop = () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId)
+        animationFrameId = null
+      }
+    }
 
     // 1. Initial palette and mode setup
     const updatePaletteAndMode = (initial = false) => {
@@ -243,14 +275,34 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
 
     // 2. MutationObserver for [data-mode] and .light class on <html>
     const observer = new MutationObserver(() => {
-      updatePaletteAndMode(false)
+      const enableFx = usePerformanceStore.getState().enableBackgroundFx
+      if (!enableFx) {
+        updatePaletteAndMode(true)
+        paintStaticBackdrop()
+      } else {
+        updatePaletteAndMode(false)
+      }
     })
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-mode', 'class'],
     })
 
-    // 3. Media query bindings
+    // 3. Performance store subscription for background FX toggle
+    const unsubPerformance = usePerformanceStore.subscribe((state, prevState) => {
+      if (state.enableBackgroundFx !== prevState?.enableBackgroundFx) {
+        if (state.enableBackgroundFx) {
+          resumeLoop()
+        } else {
+          stopLoop()
+          mixRef.current = targetMixRef.current
+          paletteRef.current = targetPaletteRef.current
+          paintStaticBackdrop()
+        }
+      }
+    })
+
+    // 4. Media query bindings
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
     const coarseQuery = window.matchMedia('(pointer: coarse)')
     reducedMotionRef.current = motionQuery.matches
@@ -265,11 +317,7 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
     motionQuery.addEventListener('change', onMotionChange)
     coarseQuery.addEventListener('change', onCoarseChange)
 
-    // 4. Viewport sizing and lattice geometry
-    let width = window.innerWidth
-    let height = window.innerHeight
-    let dpr = Math.min(window.devicePixelRatio || 1, 1.5)
-
+    // 5. Viewport sizing and lattice geometry
     const handleResize = () => {
       if (!canvasRef.current) return
       width = window.innerWidth
@@ -304,6 +352,10 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
         if (mote.x > width) mote.x = Math.random() * width
         if (mote.y > height) mote.y = Math.random() * height
       })
+
+      if (!usePerformanceStore.getState().enableBackgroundFx) {
+        paintStaticBackdrop()
+      }
     }
 
     dustRef.current = []
@@ -347,15 +399,11 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
     const onVisibilityChange = () => {
       if (document.hidden) {
         isPaused = true
-        if (animationFrameId !== null) {
-          cancelAnimationFrame(animationFrameId)
-          animationFrameId = null
-        }
+        stopLoop()
       } else {
         isPaused = false
-        lastTime = performance.now()
-        if (animationFrameId === null) {
-          animationFrameId = requestAnimationFrame(render)
+        if (usePerformanceStore.getState().enableBackgroundFx) {
+          resumeLoop()
         }
       }
     }
@@ -363,24 +411,12 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
 
     // 7. Render loop
     const render = (now: number) => {
+      animationFrameId = null
       if (isPaused) return
 
       const enableFx = usePerformanceStore.getState().enableBackgroundFx
       if (!enableFx) {
-        // Clear full canvas buffer accounting for device pixel ratio
-        ctx.clearRect(0, 0, Math.round(width * dpr), Math.round(height * dpr))
-        // Render static void backdrop matching current mode & palette
-        ctx.save()
-        ctx.scale(dpr, dpr)
-        ctx.fillStyle = paletteRef.current.isLight
-          ? 'rgba(250, 250, 252, 0.35)'
-          : (mixRef.current > 0.5 ? '#06080e' : '#050409')
-        ctx.fillRect(0, 0, width, height)
-        ctx.restore()
-
-        // Keep lastTime current so resuming doesn't produce a delta-time spike
-        lastTime = now
-        animationFrameId = requestAnimationFrame(render)
+        paintStaticBackdrop()
         return
       }
 
@@ -512,19 +548,24 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
 
       ctx.restore()
 
-      animationFrameId = requestAnimationFrame(render)
+      if (!isPaused) {
+        animationFrameId = requestAnimationFrame(render)
+      }
     }
 
-    animationFrameId = requestAnimationFrame(render)
+    if (usePerformanceStore.getState().enableBackgroundFx) {
+      resumeLoop()
+    } else {
+      paintStaticBackdrop()
+    }
 
     // Cleanup
     return () => {
-      if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId)
-      }
+      stopLoop()
       if (resizeTimer) {
         clearTimeout(resizeTimer)
       }
+      unsubPerformance()
       observer.disconnect()
       motionQuery.removeEventListener('change', onMotionChange)
       coarseQuery.removeEventListener('change', onCoarseChange)
