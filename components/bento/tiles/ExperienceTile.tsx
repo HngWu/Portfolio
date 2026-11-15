@@ -10,8 +10,8 @@ import {
   BarChart3,
   Database as DbIcon,
   Layout,
-  ChevronUp,
-  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Code,
   Terminal,
 } from "lucide-react"
@@ -154,19 +154,10 @@ export function ExperienceTile({
     const offsetThreshold = 35
     const velocityThreshold = 220
 
-    // Support both vertical swipe (matching ChevronUp/Down) and horizontal swipe
-    if (Math.abs(info.offset.y) >= Math.abs(info.offset.x)) {
-      if (info.offset.y < -offsetThreshold || info.velocity.y < -velocityThreshold) {
-        goToNext()
-      } else if (info.offset.y > offsetThreshold || info.velocity.y > velocityThreshold) {
-        goToPrev()
-      }
-    } else {
-      if (info.offset.x < -offsetThreshold || info.velocity.x < -velocityThreshold) {
-        goToNext()
-      } else if (info.offset.x > offsetThreshold || info.velocity.x > velocityThreshold) {
-        goToPrev()
-      }
+    if (info.offset.x < -offsetThreshold || info.velocity.x < -velocityThreshold) {
+      goToNext()
+    } else if (info.offset.x > offsetThreshold || info.velocity.x > velocityThreshold) {
+      goToPrev()
     }
 
     // Keep interaction flag active briefly to swallow trailing click event from drag gesture
@@ -177,11 +168,11 @@ export function ExperienceTile({
 
   // Keyboard navigation when focused
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown" || e.key === "PageDown") {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown") {
       e.preventDefault()
       e.stopPropagation()
       goToNext()
-    } else if (e.key === "ArrowUp" || e.key === "PageUp") {
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") {
       e.preventDefault()
       e.stopPropagation()
       goToPrev()
@@ -280,10 +271,10 @@ export function ExperienceTile({
                   goToPrev()
                 }}
                 aria-label="Previous role"
-                title="Previous role (Swipe Down / Up Arrow)"
+                title="Previous role (Swipe Right / Left Arrow)"
                 className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
               >
-                <ChevronUp className="size-3.5" />
+                <ChevronLeft className="size-3.5" />
               </button>
               <div className="w-[1px] h-3 bg-white/10" />
               <button
@@ -293,10 +284,10 @@ export function ExperienceTile({
                   goToNext()
                 }}
                 aria-label="Next role"
-                title="Next role (Swipe Up / Down Arrow)"
+                title="Next role (Swipe Left / Right Arrow)"
                 className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
               >
-                <ChevronDown className="size-3.5" />
+                <ChevronRight className="size-3.5" />
               </button>
             </div>
           </div>
@@ -328,38 +319,6 @@ export function ExperienceTile({
             />
           )}
 
-          {/* Side Vertical Indicator Rail (Desktop sm+) */}
-          <div
-            className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 flex-col items-center gap-1.5 z-30"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {items.map((item, idx) => {
-              const isCurrent = idx === safeIndex
-              return (
-                <button
-                  key={item.id || idx}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    goToIndex(idx)
-                  }}
-                  aria-label={`Go to ${item.company}`}
-                  title={`${item.role} · ${item.company} (${item.date})`}
-                  className="p-1 flex items-center justify-center min-w-[20px] min-h-[20px]"
-                >
-                  <span
-                    className={cn(
-                      "transition-all duration-300 rounded-full",
-                      isCurrent
-                        ? "w-1.5 h-3.5 bg-lume-primary shadow-[0_0_8px_rgba(74,255,180,0.7)]"
-                        : "w-1.5 h-1.5 bg-white/20 hover:bg-white/50 hover:scale-125"
-                    )}
-                  />
-                </button>
-              )
-            })}
-          </div>
-
           {/* Active Card Surface with Framer Motion Drag & Transitions */}
           <AnimatePresence custom={direction} mode="popLayout">
             <motion.div
@@ -367,22 +326,22 @@ export function ExperienceTile({
               custom={direction}
               variants={{
                 enter: (dir: number) => ({
-                  y: dir >= 0 ? 20 : -20,
+                  x: dir >= 0 ? 30 : -30,
                   opacity: 0,
                   scale: 0.96,
                 }),
                 center: {
-                  y: 0,
+                  x: 0,
                   opacity: 1,
                   scale: 1,
                   transition: {
-                    y: { type: "spring", stiffness: 350, damping: 28 },
+                    x: { type: "spring", stiffness: 350, damping: 28 },
                     opacity: { duration: 0.25 },
                     scale: { duration: 0.25 },
                   },
                 },
                 exit: (dir: number) => ({
-                  y: dir >= 0 ? -20 : 20,
+                  x: dir >= 0 ? -30 : 30,
                   opacity: 0,
                   scale: 0.96,
                   transition: {
@@ -393,9 +352,9 @@ export function ExperienceTile({
               initial="enter"
               animate="center"
               exit="exit"
-              drag="y"
+              drag="x"
               dragDirectionLock={true}
-              dragConstraints={{ top: 0, bottom: 0 }}
+              dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.2}
               onDragStart={handleDragStart}
               onDrag={handleDrag}
@@ -408,7 +367,7 @@ export function ExperienceTile({
               }}
               className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y"
             >
-              <div className="pr-0 sm:pr-5 select-none flex-1 flex flex-col justify-between">
+              <div className="pr-0 select-none flex-1 flex flex-col justify-between">
                 <div>
                   {roleHeading}
                   <p className={companyDateClass}>
@@ -433,8 +392,8 @@ export function ExperienceTile({
                   </div>
                 </div>
 
-                {/* Mobile Role Indicator Dots */}
-                <div className="sm:hidden mt-3 pt-2.5 flex items-center justify-center border-t border-white/5 select-none shrink-0">
+                {/* Role Indicator Dots */}
+                <div className="mt-3 pt-2.5 flex items-center justify-center border-t border-white/5 select-none shrink-0">
                   <div
                     className="flex items-center gap-2"
                     onClick={(e) => e.stopPropagation()}

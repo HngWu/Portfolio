@@ -4,7 +4,7 @@ import * as React from "react"
 import { BentoTile } from "../BentoTile"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
-import { GraduationCap, ChevronUp, ChevronDown } from "lucide-react"
+import { GraduationCap, ChevronLeft, ChevronRight } from "lucide-react"
 import { parseTileDeepDive, type EducationContent, type EducationItem } from "@/lib/tiles/schemas"
 import type { Json } from "@/types/supabase"
 import { motion, AnimatePresence, type PanInfo } from "framer-motion"
@@ -149,28 +149,20 @@ export function EducationTile({
     const offsetThreshold = 40
     const velocityThreshold = 250
 
-    if (isMobileEffective) {
-      if (info.offset.x < -offsetThreshold || info.velocity.x < -velocityThreshold) {
-        goToNext()
-      } else if (info.offset.x > offsetThreshold || info.velocity.x > velocityThreshold) {
-        goToPrev()
-      }
-    } else {
-      if (info.offset.y < -offsetThreshold || info.velocity.y < -velocityThreshold) {
-        goToNext()
-      } else if (info.offset.y > offsetThreshold || info.velocity.y > velocityThreshold) {
-        goToPrev()
-      }
+    if (info.offset.x < -offsetThreshold || info.velocity.x < -velocityThreshold) {
+      goToNext()
+    } else if (info.offset.x > offsetThreshold || info.velocity.x > velocityThreshold) {
+      goToPrev()
     }
   }
 
   // Keyboard navigation when focused
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown" || e.key === "PageDown") {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown") {
       e.preventDefault()
       e.stopPropagation()
       goToNext()
-    } else if (e.key === "ArrowUp" || e.key === "PageUp") {
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") {
       e.preventDefault()
       e.stopPropagation()
       goToPrev()
@@ -188,8 +180,8 @@ export function EducationTile({
       ? "font-mono text-[9px] px-2 py-0.5 rounded-full bg-mode-accent/10 border border-mode-accent/20 text-mode-accent-bright font-semibold uppercase tracking-wider"
       : "font-mono text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider"
     const activeDotClass = isDeep
-      ? "w-1.5 h-3.5 bg-mode-accent-bright shadow-[0_0_8px_rgba(106,255,255,0.7)]"
-      : "w-1.5 h-3.5 bg-[#4A8FFF] shadow-[0_0_8px_rgba(74,143,255,0.7)]"
+      ? "w-4 h-1.5 bg-mode-accent-bright shadow-[0_0_8px_rgba(106,255,255,0.7)]"
+      : "w-4 h-1.5 bg-[#4A8FFF] shadow-[0_0_8px_rgba(74,143,255,0.7)]"
     const headingClass = isDeep
       ? "font-mono tracking-tight font-bold text-xl sm:text-xl md:text-2xl text-white/90 mb-1 line-clamp-2 leading-tight"
       : "font-display text-xl sm:text-xl md:text-2xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight"
@@ -227,10 +219,10 @@ export function EducationTile({
                   goToPrev()
                 }}
                 aria-label="Previous education level"
-                title="Previous level (Swipe Down / Up Arrow)"
-                className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                title="Previous level (Swipe Right / Left Arrow)"
+                className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
               >
-                <ChevronUp className="size-3.5" aria-hidden="true" />
+                <ChevronLeft className="size-3.5" aria-hidden="true" />
               </button>
               <div className="w-[1px] h-3 bg-white/10" />
               <button
@@ -240,10 +232,10 @@ export function EducationTile({
                   goToNext()
                 }}
                 aria-label="Next education level"
-                title="Next level (Swipe Up / Down Arrow)"
-                className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                title="Next level (Swipe Left / Right Arrow)"
+                className="p-1.5 hover:bg-white/10 hover:text-mode-accent-bright text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
               >
-                <ChevronDown className="size-3.5" aria-hidden="true" />
+                <ChevronRight className="size-3.5" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -275,39 +267,6 @@ export function EducationTile({
             />
           )}
 
-          {/* Side Vertical Indicator Rail */}
-          <div
-            className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 z-30"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {items.map((item, idx) => {
-              const isCurrent = idx === safeIndex
-              return (
-                <button
-                  key={item.id || idx}
-                  type="button"
-                  aria-current={isCurrent ? "true" : undefined}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    goToIndex(idx)
-                  }}
-                  aria-label={`Go to ${item.institution}`}
-                  title={`${item.levelLabel || item.institution} (${item.date})`}
-                  className="p-1 flex items-center justify-center min-w-[20px] min-h-[20px]"
-                >
-                  <span
-                    className={cn(
-                      "transition-all duration-300 rounded-full",
-                      isCurrent
-                        ? activeDotClass
-                        : "w-1.5 h-1.5 bg-white/20 hover:bg-white/50 hover:scale-125"
-                    )}
-                  />
-                </button>
-              )
-            })}
-          </div>
-
           {/* Active Card Surface with Framer Motion Drag & Transitions */}
           <AnimatePresence custom={direction} mode="popLayout">
             <motion.div
@@ -315,26 +274,22 @@ export function EducationTile({
               custom={direction}
               variants={{
                 enter: (dir: number) => ({
-                  x: isMobileEffective ? (dir >= 0 ? 30 : -30) : 0,
-                  y: !isMobileEffective ? (dir >= 0 ? 20 : -20) : 0,
+                  x: dir >= 0 ? 30 : -30,
                   opacity: 0,
                   scale: 0.96,
                 }),
                 center: {
                   x: 0,
-                  y: 0,
                   opacity: 1,
                   scale: 1,
                   transition: {
                     x: { type: "spring", stiffness: 350, damping: 28 },
-                    y: { type: "spring", stiffness: 350, damping: 28 },
                     opacity: { duration: 0.25 },
                     scale: { duration: 0.25 },
                   },
                 },
                 exit: (dir: number) => ({
-                  x: isMobileEffective ? (dir >= 0 ? -30 : 30) : 0,
-                  y: !isMobileEffective ? (dir >= 0 ? -20 : 20) : 0,
+                  x: dir >= 0 ? -30 : 30,
                   opacity: 0,
                   scale: 0.96,
                   transition: {
@@ -345,14 +300,14 @@ export function EducationTile({
               initial="enter"
               animate="center"
               exit="exit"
-              drag={isMobileEffective ? "x" : "y"}
+              drag="x"
               dragDirectionLock={true}
-              dragConstraints={isMobileEffective ? { left: 0, right: 0 } : { top: 0, bottom: 0 }}
+              dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.2}
               onDragEnd={handleDragEnd}
               className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y min-h-0"
             >
-              <div className="pr-5 select-none">
+              <div className="select-none">
                 <h3 className={headingClass}>
                   {activeItem.institution}
                 </h3>
@@ -361,8 +316,41 @@ export function EducationTile({
                 </p>
               </div>
 
-              <div className="mt-auto pt-2.5 flex items-center justify-between border-t border-white/5 pr-5 select-none shrink-0">
+              <div className="mt-auto pt-2.5 flex items-center justify-between border-t border-white/5 select-none shrink-0">
                 <span className={cn(currentTypo.meta, "text-white/60 font-mono text-xs sm:text-[13px]")}>{activeItem.date}</span>
+
+                {/* Horizontal Level Indicator Pills */}
+                <div
+                  className="flex items-center gap-1.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {items.map((item, idx) => {
+                    const isCurrent = idx === safeIndex
+                    return (
+                      <button
+                        key={item.id || idx}
+                        type="button"
+                        aria-current={isCurrent ? "true" : undefined}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          goToIndex(idx)
+                        }}
+                        aria-label={`Go to ${item.institution}`}
+                        title={`${item.levelLabel || item.institution} (${item.date})`}
+                        className="p-1 flex items-center justify-center min-w-[20px] min-h-[20px] cursor-pointer"
+                      >
+                        <span
+                          className={cn(
+                            "transition-all duration-300 rounded-full",
+                            isCurrent
+                              ? activeDotClass
+                              : "w-1.5 h-1.5 bg-white/20 hover:bg-white/50 hover:scale-125"
+                          )}
+                        />
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </motion.div>
           </AnimatePresence>

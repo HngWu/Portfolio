@@ -4,7 +4,7 @@ import * as React from "react"
 import { BentoTile } from "../BentoTile"
 import { Badge } from "@/components/ui/Badge"
 import { useViewModeStore } from "@/store/useViewModeStore"
-import { FolderGit2, ChevronUp, ChevronDown, ExternalLink, Github } from "lucide-react"
+import { FolderGit2, ChevronLeft, ChevronRight, ExternalLink, Github } from "lucide-react"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
 import { parseTileDeepDive, type ProjectContent, type ProjectItem } from "@/lib/tiles/schemas"
@@ -144,28 +144,20 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
     const offsetThreshold = 40
     const velocityThreshold = 250
 
-    if (isMobileEffective) {
-      if (info.offset.x < -offsetThreshold || info.velocity.x < -velocityThreshold) {
-        goToNext()
-      } else if (info.offset.x > offsetThreshold || info.velocity.x > velocityThreshold) {
-        goToPrev()
-      }
-    } else {
-      if (info.offset.y < -offsetThreshold || info.velocity.y < -velocityThreshold) {
-        goToNext()
-      } else if (info.offset.y > offsetThreshold || info.velocity.y > velocityThreshold) {
-        goToPrev()
-      }
+    if (info.offset.x < -offsetThreshold || info.velocity.x < -velocityThreshold) {
+      goToNext()
+    } else if (info.offset.x > offsetThreshold || info.velocity.x > velocityThreshold) {
+      goToPrev()
     }
   }
 
   // Keyboard navigation when focused
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown" || e.key === "PageDown") {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown") {
       e.preventDefault()
       e.stopPropagation()
       goToNext()
-    } else if (e.key === "ArrowUp" || e.key === "PageUp") {
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") {
       e.preventDefault()
       e.stopPropagation()
       goToPrev()
@@ -227,9 +219,10 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                     goToPrev()
                   }}
                   aria-label="Previous project"
-                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                  title="Previous project (Swipe Right / Left Arrow)"
+                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
                 >
-                  <ChevronUp className="size-3.5" />
+                  <ChevronLeft className="size-3.5" />
                 </button>
                 <div className="w-[1px] h-3 bg-white/10" />
                 <button
@@ -239,9 +232,10 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                     goToNext()
                   }}
                   aria-label="Next project"
-                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                  title="Next project (Swipe Left / Right Arrow)"
+                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
                 >
-                  <ChevronDown className="size-3.5" />
+                  <ChevronRight className="size-3.5" />
                 </button>
               </div>
             </div>
@@ -338,10 +332,10 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                   goToPrev()
                 }}
                 aria-label="Previous project"
-                title="Previous project (Swipe Down / Up Arrow)"
-                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                title="Previous project (Swipe Right / Left Arrow)"
+                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
               >
-                <ChevronUp className="size-3.5" />
+                <ChevronLeft className="size-3.5" />
               </button>
               <div className="w-[1px] h-3 bg-white/10" />
               <button
@@ -351,10 +345,10 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                   goToNext()
                 }}
                 aria-label="Next project"
-                title="Next project (Swipe Up / Down Arrow)"
-                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                title="Next project (Swipe Left / Right Arrow)"
+                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
               >
-                <ChevronDown className="size-3.5" />
+                <ChevronRight className="size-3.5" />
               </button>
             </div>
           </div>
@@ -386,38 +380,6 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
             />
           )}
 
-          {/* Side Vertical Indicator Rail */}
-          <div
-            className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 z-30"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {items.map((item, idx) => {
-              const isCurrent = idx === safeIndex
-              return (
-                <button
-                  key={item.id || idx}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    goToIndex(idx)
-                  }}
-                  aria-label={`Go to ${item.name}`}
-                  title={item.category ? `${item.name} · ${item.category}` : item.name}
-                  className="p-1 flex items-center justify-center min-w-[20px] min-h-[20px]"
-                >
-                  <span
-                    className={cn(
-                      "transition-all duration-300 rounded-full",
-                      isCurrent
-                        ? "w-1.5 h-3.5 bg-[#4A8FFF] shadow-[0_0_8px_rgba(74,143,255,0.7)]"
-                        : "w-1.5 h-1.5 bg-white/20 hover:bg-white/50 hover:scale-125"
-                    )}
-                  />
-                </button>
-              )
-            })}
-          </div>
-
           {/* Active Card Surface with Framer Motion Drag & Transitions */}
           <AnimatePresence custom={direction} mode="popLayout">
             <motion.div
@@ -425,26 +387,22 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
               custom={direction}
               variants={{
                 enter: (dir: number) => ({
-                  x: isMobileEffective ? (dir >= 0 ? 30 : -30) : 0,
-                  y: !isMobileEffective ? (dir >= 0 ? 20 : -20) : 0,
+                  x: dir >= 0 ? 30 : -30,
                   opacity: 0,
                   scale: 0.96,
                 }),
                 center: {
                   x: 0,
-                  y: 0,
                   opacity: 1,
                   scale: 1,
                   transition: {
                     x: { type: "spring", stiffness: 350, damping: 28 },
-                    y: { type: "spring", stiffness: 350, damping: 28 },
                     opacity: { duration: 0.25 },
                     scale: { duration: 0.25 },
                   },
                 },
                 exit: (dir: number) => ({
-                  x: isMobileEffective ? (dir >= 0 ? -30 : 30) : 0,
-                  y: !isMobileEffective ? (dir >= 0 ? -20 : 20) : 0,
+                  x: dir >= 0 ? -30 : 30,
                   opacity: 0,
                   scale: 0.96,
                   transition: {
@@ -455,15 +413,15 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
               initial="enter"
               animate="center"
               exit="exit"
-              drag={isMobileEffective ? "x" : "y"}
+              drag="x"
               dragDirectionLock={true}
-              dragConstraints={isMobileEffective ? { left: 0, right: 0 } : { top: 0, bottom: 0 }}
+              dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.2}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y min-h-0"
             >
-              <div className="pr-5 select-none">
+              <div className="select-none">
                 <h3 className="font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-1 leading-tight">
                   {activeItem.name}
                 </h3>
@@ -483,6 +441,43 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                       +{activeItem.techStack.length - 3}
                     </Badge>
                   )}
+                </div>
+              </div>
+
+              {/* Bottom Horizontal Project Indicator Pills */}
+              <div className="mt-auto pt-2.5 flex items-center justify-between border-t border-white/5 select-none shrink-0">
+                <span className={cn(typo.meta, "text-white/60 font-mono text-xs sm:text-[13px]")}>
+                  {activeItem.year || "2025"}
+                </span>
+                <div
+                  className="flex items-center gap-1.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {items.map((item, idx) => {
+                    const isCurrent = idx === safeIndex
+                    return (
+                      <button
+                        key={item.id || idx}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          goToIndex(idx)
+                        }}
+                        aria-label={`Go to ${item.name}`}
+                        title={item.category ? `${item.name} · ${item.category}` : item.name}
+                        className="p-1 flex items-center justify-center min-w-[20px] min-h-[20px] cursor-pointer"
+                      >
+                        <span
+                          className={cn(
+                            "transition-all duration-300 rounded-full",
+                            isCurrent
+                              ? "w-4 h-1.5 bg-[#4A8FFF] shadow-[0_0_8px_rgba(74,143,255,0.7)]"
+                              : "w-1.5 h-1.5 bg-white/20 hover:bg-white/50 hover:scale-125"
+                          )}
+                        />
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </motion.div>

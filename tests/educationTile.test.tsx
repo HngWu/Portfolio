@@ -144,13 +144,25 @@ describe("EducationTile", () => {
 
     let defaultPrevented = false
     let propagationStopped = false
-    const fakeEvent = {
-      key: "ArrowDown",
+    const fakeEventRight = {
+      key: "ArrowRight",
       preventDefault: () => { defaultPrevented = true },
       stopPropagation: () => { propagationStopped = true }
     }
 
-    qpContent.props.onKeyDown(fakeEvent as any)
+    qpContent.props.onKeyDown(fakeEventRight as any)
+    expect(defaultPrevented).toBe(true)
+    expect(propagationStopped).toBe(true)
+
+    defaultPrevented = false
+    propagationStopped = false
+    const fakeEventLeft = {
+      key: "ArrowLeft",
+      preventDefault: () => { defaultPrevented = true },
+      stopPropagation: () => { propagationStopped = true }
+    }
+
+    qpContent.props.onKeyDown(fakeEventLeft as any)
     expect(defaultPrevented).toBe(true)
     expect(propagationStopped).toBe(true)
   })
