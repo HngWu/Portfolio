@@ -59,14 +59,14 @@ describe("ContactTile", () => {
     const [topSection, socialSection] = React.Children.toArray(deepContent.props.children) as React.ReactElement<any>[]
     expect(topSection.props.className).toContain("flex-1")
 
-    const [headerDiv, emailDiv] = React.Children.toArray(topSection.props.children) as React.ReactElement<any>[]
+    const [headerDiv, emailWrapper] = React.Children.toArray(topSection.props.children) as React.ReactElement<any>[]
+    const emailDiv = emailWrapper.props.children as React.ReactElement<any>
     
     // Header
-    const [heading, mailIcon] = React.Children.toArray(headerDiv.props.children) as React.ReactElement<any>[]
-    expect(heading.props.children).toBe("Contact")
-    expect(heading.props.className).toContain("font-mono tracking-tight font-bold")
-    expect(heading.props.className).toContain("text-white/90")
-    expect(mailIcon.props.className).toContain("text-white/20")
+    const [headerInner] = React.Children.toArray(headerDiv.props.children) as React.ReactElement<any>[]
+    const [mailIcon, headerSpan] = React.Children.toArray(headerInner.props.children) as React.ReactElement<any>[]
+    expect(headerSpan.props.children).toContain("Contact")
+    expect(mailIcon.props["aria-hidden"]).toBe("true")
 
     // Email container
     expect(typeof emailDiv.props.onClick).toBe("function")
@@ -108,8 +108,8 @@ describe("ContactTile", () => {
       })
     )
 
-    const children = React.Children.toArray(lastBentoTileProps.children) as React.ReactElement<any>[]
-    const [, socialSection] = children
+    const qpContent = lastBentoTileProps.children as React.ReactElement<any>
+    const [, socialSection] = React.Children.toArray(qpContent.props.children) as React.ReactElement<any>[]
 
     const capsules = React.Children.toArray(socialSection.props.children) as React.ReactElement<any>[]
     expect(capsules).toHaveLength(3)
@@ -142,7 +142,8 @@ describe("ContactTile", () => {
     const deepCapsules = React.Children.toArray(deepSocialSection.props.children) as React.ReactElement<any>[]
     expect(deepCapsules).toHaveLength(2) // Only LinkedIn and GitHub
 
-    const [, qpSocialSection] = React.Children.toArray(lastBentoTileProps.children) as React.ReactElement<any>[]
+    const qpContent = lastBentoTileProps.children as React.ReactElement<any>
+    const [, qpSocialSection] = React.Children.toArray(qpContent.props.children) as React.ReactElement<any>[]
     const qpCapsules = React.Children.toArray(qpSocialSection.props.children) as React.ReactElement<any>[]
     expect(qpCapsules).toHaveLength(2)
   })

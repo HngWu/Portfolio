@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { motion } from "framer-motion"
-import { Sparkles, ChevronRight, Terminal, BookOpen } from "lucide-react"
+import { Sparkles, ChevronRight, Terminal } from "lucide-react"
 
 export interface HalfTitlePageProps {
   onTurnPage: () => void
@@ -73,24 +73,24 @@ export function HalfTitlePage({
       </div>
 
       {/* 6. Page Content */}
-      <div className="relative z-10 p-5 sm:p-7 md:p-9 flex flex-col justify-between h-full font-mono pl-7 sm:pl-10">
+      <div className="relative z-10 p-3.5 sm:p-7 md:p-9 flex flex-col justify-between h-full font-mono pl-4 sm:pl-10">
         {/* Top Runic Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-2.5 text-[11px] tracking-widest">
+        <div className="flex items-center justify-between border-b border-white/10 pb-2.5 text-[11px] tracking-widest shrink-0">
           <span className="flex items-center gap-2">
             <span className="size-1.5 rounded-full bg-[var(--lume-primary,#4affb4)] shadow-[0_0_6px_var(--lume-primary)]" />
-            <span className="font-serif tracking-[0.28em] text-[var(--lume-primary,#4affb4)]/80 text-[12px] font-semibold drop-shadow-[0_0_8px_rgba(74,255,180,0.3)]">
+            <span className="font-serif tracking-[0.2em] sm:tracking-[0.28em] text-[var(--lume-primary,#4affb4)]/80 text-[11px] sm:text-[12px] font-semibold drop-shadow-[0_0_8px_rgba(74,255,180,0.3)]">
               ᚛ ᛟ ᚱ ᛞ ᛖ ᚱ ᛫ ᛋ ᛈ ᛖ ᛚ ᛚ ᛒ ᛟ ᛟ ᚲ ᚜
             </span>
           </span>
-          <span className="text-[10px] tracking-[0.3em] text-[#ffd700] font-mono font-bold drop-shadow-[0_0_6px_rgba(255,215,0,0.4)]">
-            ᛫ ᛏ ᚺ ᚹ ᛫ PROLOGUE ᛫
+          <span className="text-[9px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em] text-[#ffd700] font-mono font-bold drop-shadow-[0_0_6px_rgba(255,215,0,0.4)]">
+            ᛫ PROLOGUE ᛫
           </span>
         </div>
 
         {/* Centerpiece: Title, Crest & Prompt */}
-        <div className="relative my-auto flex flex-col items-center justify-center text-center py-4">
+        <div className="relative my-auto flex flex-col items-center justify-center text-center py-2 sm:py-4">
           {/* Rotating Geometric Crest */}
-          <div className="relative size-24 sm:size-28 flex items-center justify-center mb-5">
+          <div className="relative size-20 sm:size-28 flex items-center justify-center mb-3 sm:mb-5">
             {/* Outer Radiant Astrolabe Ring */}
             <motion.div
               className="absolute inset-0 rounded-full border-2 border-dashed border-[#ffd700]/50 shadow-[0_0_20px_rgba(255,215,0,0.15)]"
@@ -99,37 +99,37 @@ export function HalfTitlePage({
             />
             {/* Inner Emerald Diamond */}
             <motion.div
-              className="absolute inset-3 border-2 border-dotted border-[var(--lume-primary,#4affb4)]/60 shadow-[0_0_15px_rgba(74,255,180,0.2)]"
+              className="absolute inset-2.5 sm:inset-3 border-2 border-dotted border-[var(--lume-primary,#4affb4)]/60 shadow-[0_0_15px_rgba(74,255,180,0.2)]"
               animate={{ rotate: -360 }}
               transition={{ duration: 32, repeat: Infinity, ease: "linear" }}
             />
             {/* Central Monogram Badge */}
-            <div className="relative z-10 flex flex-col items-center justify-center size-14 rounded-2xl bg-white/[0.04] border border-white/20 shadow-[0_0_25px_rgba(74,255,180,0.2)] group-hover/titlepage:scale-105 transition-transform duration-300">
-              <span className="font-mono font-bold text-lg sm:text-xl text-white tracking-tight">
+            <div className="relative z-10 flex flex-col items-center justify-center size-12 sm:size-14 rounded-2xl bg-white/[0.04] border border-white/20 shadow-[0_0_25px_rgba(74,255,180,0.2)] group-hover/titlepage:scale-105 transition-transform duration-300">
+              <span className="font-mono font-bold text-base sm:text-xl text-white tracking-tight">
                 HW
               </span>
-              <span className="text-[7px] font-mono tracking-widest text-[var(--lume-primary,#4affb4)] uppercase font-semibold">
+              <span className="text-[6.5px] sm:text-[7px] font-mono tracking-widest text-[var(--lume-primary,#4affb4)] uppercase font-semibold">
                 Systems
               </span>
             </div>
           </div>
 
-          <span className="text-[10px] sm:text-xs font-mono tracking-[0.3em] text-[#ffd700] uppercase mb-1 font-semibold flex items-center gap-1.5">
+          <span className="text-[9.5px] sm:text-xs font-mono tracking-[0.2em] sm:tracking-[0.3em] text-[#ffd700] uppercase mb-1 font-semibold flex items-center gap-1.5">
             <Terminal className="size-3 text-[var(--lume-primary,#4affb4)]" />
             Curriculum Vitae Arcana
           </span>
 
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-white tracking-tight leading-tight max-w-sm">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-serif font-bold text-white tracking-tight leading-tight max-w-sm">
             CHRONICLES OF SYSTEMS & ARCHITECTURE
           </h1>
 
-          <p className="text-xs sm:text-sm font-mono text-white/60 mt-2 tracking-wide max-w-xs sm:max-w-sm">
+          <p className="text-[11px] sm:text-sm font-mono text-white/60 mt-1.5 sm:mt-2 tracking-wide max-w-xs sm:max-w-sm">
             Tan Hng Wu · Enterprise Engineering, Production Migrations & Application Support
           </p>
 
           {/* Interactive Turn to Chapter 1 Prompt with Auto-Timer Progress */}
-          <div className="mt-6 flex flex-col items-center gap-2">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.05] border border-white/15 group-hover/titlepage:bg-[var(--lume-primary,#4affb4)]/15 group-hover/titlepage:border-[var(--lume-primary)]/50 group-hover/titlepage:text-white transition-all shadow-md active:scale-95">
+          <div className="mt-3.5 sm:mt-6 flex flex-col items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-2 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-white/[0.05] border border-white/15 group-hover/titlepage:bg-[var(--lume-primary,#4affb4)]/15 group-hover/titlepage:border-[var(--lume-primary)]/50 group-hover/titlepage:text-white transition-all shadow-md active:scale-95">
               <Sparkles className="size-3.5 text-[var(--lume-primary,#4affb4)] animate-pulse" />
               <span className="text-xs font-mono text-white/90 group-hover/titlepage:text-white font-medium">
                 Turn to Chapter 1
@@ -138,14 +138,14 @@ export function HalfTitlePage({
             </div>
 
             {/* Subtle Progress Bar */}
-            <div className="w-32 h-1 bg-white/10 rounded-full overflow-hidden">
+            <div className="w-28 sm:w-32 h-1 bg-white/10 rounded-full overflow-hidden">
               <div
                 className="h-full bg-[var(--lume-primary,#4affb4)] transition-all duration-75 ease-linear shadow-[0_0_6px_var(--lume-primary)]"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-[9px] font-mono text-white/35">
-              Click or auto-turning in {Math.max(0, Math.ceil((autoFlipDurationMs * (1 - progress / 100)) / 1000))}s
+            <span className="text-[8.5px] sm:text-[9px] font-mono text-white/35">
+              Tap or auto-turning in {Math.max(0, Math.ceil((autoFlipDurationMs * (1 - progress / 100)) / 1000))}s
             </span>
           </div>
         </div>

@@ -27,7 +27,6 @@ export function ContactTile({
   const { email, github, linkedin, telegram } = content
   const forceMobile = React.useContext(ForceMobileContext)
   const typo = getTypographyClasses(size, false, forceMobile)
-  const deepTypo = getTypographyClasses(size, true, forceMobile)
 
   const [copied, setCopied] = React.useState(false)
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -91,13 +90,14 @@ export function ContactTile({
   )
 
   const renderSocialCapsules = () => (
-    <div className="flex flex-wrap gap-2 mt-8 select-none">
+    <div className="flex flex-wrap gap-2 mt-auto pt-3 border-t border-white/5 select-none shrink-0">
       <a 
         href={linkedinUrl} 
         target="_blank" 
         rel="noopener noreferrer"
         aria-label="LinkedIn profile (opens in new tab)"
         onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         className="group/link inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-mode-accent/30 transition-all font-mono text-[10px] text-white/40 hover:text-mode-accent-bright shadow-sm cursor-pointer"
       >
         <Linkedin className="size-3.5 group-hover/link:scale-105 transition-transform" aria-hidden="true" />
@@ -111,6 +111,7 @@ export function ContactTile({
           rel="noopener noreferrer"
           aria-label="Telegram profile (opens in new tab)"
           onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
           className="group/link inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-mode-accent/30 transition-all font-mono text-[10px] text-white/40 hover:text-mode-accent-bright shadow-sm cursor-pointer"
         >
           <svg 
@@ -130,11 +131,33 @@ export function ContactTile({
         rel="noopener noreferrer"
         aria-label="GitHub profile (opens in new tab)"
         onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         className="group/link inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-mode-accent/30 transition-all font-mono text-[10px] text-white/40 hover:text-mode-accent-bright shadow-sm cursor-pointer"
       >
         <Github className="size-3.5 group-hover/link:scale-105 transition-transform" aria-hidden="true" />
         <span>GitHub</span>
       </a>
+    </div>
+  )
+
+  const renderContent = () => (
+    <div className="flex flex-col h-full w-full justify-between select-none">
+      <div className="flex-1 min-h-0 flex flex-col justify-start">
+        <div className="flex items-center justify-between mb-3.5 shrink-0 select-none">
+          <div className="flex items-center gap-1.5">
+            <Mail className="size-3.5 text-white/40" aria-hidden="true" />
+            <span className={cn(typo.meta, "text-white/40 uppercase tracking-[0.15em] font-mono text-[10px]")}>
+              Contact Me
+            </span>
+          </div>
+        </div>
+
+        <div className="my-auto py-1">
+          {renderEmailContainer()}
+        </div>
+      </div>
+
+      {renderSocialCapsules()}
     </div>
   )
 
@@ -148,31 +171,9 @@ export function ContactTile({
       canDeepDive={true}
       canMorph={false}
       canExpand={false}
-      deepContent={
-        <div className="flex flex-col h-full w-full justify-between">
-          <div className="flex-1 select-none">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className={cn(deepTypo.heading, "text-white/90")}>Contact</h3>
-              <Mail className={cn(deepTypo.icon, "text-white/20")} aria-hidden="true" />
-            </div>
-
-            {renderEmailContainer()}
-          </div>
-
-          {renderSocialCapsules()}
-        </div>
-      }
+      deepContent={renderContent()}
     >
-      <div className="flex-1 select-none">
-        <div className="flex items-center justify-between mb-5">
-          <div className={cn(typo.meta, "text-white/30 uppercase tracking-[0.15em] font-mono")}>Contact</div>
-          <Mail className={cn(typo.icon, "text-white/20")} aria-hidden="true" />
-        </div>
-        
-        {renderEmailContainer()}
-      </div>
-
-      {renderSocialCapsules()}
+      {renderContent()}
     </BentoTile>
   )
 }

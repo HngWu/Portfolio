@@ -26,12 +26,12 @@ export function SearchButton() {
     <button
       type="button"
       onClick={handleClick}
-      className="inline-flex items-center justify-center h-8 rounded-full cursor-pointer select-none gap-2 px-3.5 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 bg-white/[0.03] border border-white/10 text-white/50 hover:bg-[#4AFFB4]/10 hover:border-[#4AFFB4]/30 hover:text-[#4AFFB4]"
+      className="inline-flex items-center justify-center h-8 rounded-full cursor-pointer select-none gap-2 px-3.5 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 bg-white/[0.03] border border-white/10 text-white/50 hover:bg-lume-primary/10 hover:border-lume-primary/30 hover:text-lume-primary group"
       title="Open Command Palette"
     >
       <Search className="size-3.5" />
       <span className="text-xs font-bold uppercase tracking-widest hidden sm:inline">Search</span>
-      <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-bold bg-white/[0.05] border border-white/10 rounded text-white/30 group-hover/button:text-[#4AFFB4] group-hover/button:border-[#4AFFB4]/30 transition-all duration-300">
+      <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-bold bg-white/[0.05] border border-white/10 rounded text-white/30 group-hover:text-lume-primary group-hover:border-lume-primary/30 transition-all duration-300">
         {shortcut}
       </kbd>
     </button>

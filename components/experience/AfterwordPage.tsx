@@ -1,8 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
-import { ArrowLeft, ExternalLink, Github, Linkedin, Mail, Send, Terminal, Layers } from "lucide-react"
+import { ArrowLeft, Github, Linkedin, Mail, Send, Layers } from "lucide-react"
 
 export interface AfterwordPageProps {
   onReturnHome: () => void
@@ -63,61 +62,61 @@ export function AfterwordPage({
       </div>
 
       {/* 6. Page Content */}
-      <div className="relative z-10 p-5 sm:p-7 md:p-9 flex flex-col justify-between h-full font-mono pl-7 sm:pl-10">
+      <div className="relative z-10 pt-12 sm:pt-7 p-3.5 sm:p-7 md:p-9 flex flex-col justify-between h-full font-mono pl-4 sm:pl-10">
         {/* Top Runic Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-2.5 text-[11px] tracking-widest">
+        <div className="flex items-center justify-between border-b border-white/10 pb-2 sm:pb-2.5 text-[11px] tracking-widest shrink-0">
           <span className="flex items-center gap-2">
             <span className="size-1.5 rounded-full bg-[var(--lume-primary,#4affb4)] shadow-[0_0_6px_var(--lume-primary)]" />
-            <span className="font-serif tracking-[0.28em] text-[var(--lume-primary,#4affb4)]/80 text-[12px] font-semibold drop-shadow-[0_0_8px_rgba(74,255,180,0.3)]">
+            <span className="font-serif tracking-[0.2em] sm:tracking-[0.28em] text-[var(--lume-primary,#4affb4)]/80 text-[11px] sm:text-[12px] font-semibold drop-shadow-[0_0_8px_rgba(74,255,180,0.3)]">
               ᚛ ᚲ ᛟ ᛚ ᛟ ᛈ ᚺ ᛟ ᚾ ᚜
             </span>
           </span>
-          <span className="text-[10px] tracking-[0.3em] text-[#ffd700] font-mono font-bold drop-shadow-[0_0_6px_rgba(255,215,0,0.4)]">
+          <span className="text-[9px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em] text-[#ffd700] font-mono font-bold drop-shadow-[0_0_6px_rgba(255,215,0,0.4)]">
             ᛫ AFTERWORD ᛫
           </span>
         </div>
 
-        {/* Center Content: Colophon & Coordinates */}
-        <div className="relative my-auto flex flex-col justify-center py-2">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Layers className="size-4 text-[var(--lume-primary,#4affb4)]" />
-            <span className="text-xs font-mono tracking-widest text-[var(--lume-primary,#4affb4)] uppercase font-semibold">
+        {/* Center Content: Colophon & Coordinates with scroll container */}
+        <div className="relative my-auto flex flex-col justify-start sm:justify-center py-2 overflow-y-auto custom-scrollbar touch-pan-y pr-1">
+          <div className="flex items-center gap-2 mb-1.5 shrink-0">
+            <Layers className="size-3.5 sm:size-4 text-[var(--lume-primary,#4affb4)]" />
+            <span className="text-[10.5px] sm:text-xs font-mono tracking-widest text-[var(--lume-primary,#4affb4)] uppercase font-semibold">
               Colophon & System Registry
             </span>
           </div>
 
-          <h2 className="text-lg sm:text-xl font-serif font-bold text-white tracking-tight leading-tight mb-2.5">
+          <h2 className="text-base sm:text-xl font-serif font-bold text-white tracking-tight leading-tight mb-2 shrink-0">
             Craftsmanship & Stack
           </h2>
 
           {/* Colophon Stack Specs */}
-          <div className="grid grid-cols-2 gap-2 text-[11px] font-mono mb-3.5">
-            <div className="p-2 rounded-lg bg-white/[0.03] border border-white/10">
-              <span className="text-white/40 block text-[9px] uppercase">Engine</span>
-              <span className="text-white/90 font-medium">Next.js 16 App Router</span>
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono mb-2.5 sm:mb-3.5 shrink-0">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-white/[0.03] border border-white/10">
+              <span className="text-white/40 block text-[8.5px] sm:text-[9px] uppercase">Engine</span>
+              <span className="text-white/90 font-medium truncate block">Next.js 16 App Router</span>
             </div>
-            <div className="p-2 rounded-lg bg-white/[0.03] border border-white/10">
-              <span className="text-white/40 block text-[9px] uppercase">Physics & 3D</span>
-              <span className="text-white/90 font-medium">Framer Motion & R3F</span>
+            <div className="p-1.5 sm:p-2 rounded-lg bg-white/[0.03] border border-white/10">
+              <span className="text-white/40 block text-[8.5px] sm:text-[9px] uppercase">Physics & 3D</span>
+              <span className="text-white/90 font-medium truncate block">Framer Motion & R3F</span>
             </div>
-            <div className="p-2 rounded-lg bg-white/[0.03] border border-white/10">
-              <span className="text-white/40 block text-[9px] uppercase">Styling</span>
-              <span className="text-white/90 font-medium">Tailwind CSS v4</span>
+            <div className="p-1.5 sm:p-2 rounded-lg bg-white/[0.03] border border-white/10">
+              <span className="text-white/40 block text-[8.5px] sm:text-[9px] uppercase">Styling</span>
+              <span className="text-white/90 font-medium truncate block">Tailwind CSS v4</span>
             </div>
-            <div className="p-2 rounded-lg bg-white/[0.03] border border-white/10">
-              <span className="text-white/40 block text-[9px] uppercase">Audio</span>
-              <span className="text-white/90 font-medium">Web Audio Foley API</span>
+            <div className="p-1.5 sm:p-2 rounded-lg bg-white/[0.03] border border-white/10">
+              <span className="text-white/40 block text-[8.5px] sm:text-[9px] uppercase">Audio</span>
+              <span className="text-white/90 font-medium truncate block">Web Audio Foley API</span>
             </div>
           </div>
 
           {/* Social Coordinates Strip */}
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-2.5 sm:mb-4 shrink-0">
             <a
               href="https://github.com/HngWu"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub Profile"
-              className="p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-[var(--lume-primary,#4affb4)]/50 hover:bg-white/10 text-white/70 hover:text-white transition-all"
+              className="p-1.5 sm:p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-[var(--lume-primary,#4affb4)]/50 hover:bg-white/10 text-white/70 hover:text-white transition-all"
             >
               <Github className="size-3.5" />
             </a>
@@ -126,7 +125,7 @@ export function AfterwordPage({
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn Profile"
-              className="p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-[var(--lume-primary,#4affb4)]/50 hover:bg-white/10 text-white/70 hover:text-white transition-all"
+              className="p-1.5 sm:p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-[var(--lume-primary,#4affb4)]/50 hover:bg-white/10 text-white/70 hover:text-white transition-all"
             >
               <Linkedin className="size-3.5" />
             </a>
@@ -135,52 +134,52 @@ export function AfterwordPage({
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Telegram"
-              className="p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-[var(--lume-primary,#4affb4)]/50 hover:bg-white/10 text-white/70 hover:text-white transition-all"
+              className="p-1.5 sm:p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-[var(--lume-primary,#4affb4)]/50 hover:bg-white/10 text-white/70 hover:text-white transition-all"
             >
               <Send className="size-3.5" />
             </a>
             <a
               href="mailto:hngwudev@gmail.com"
               aria-label="Email"
-              className="p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-[var(--lume-primary,#4affb4)]/50 hover:bg-white/10 text-white/70 hover:text-white transition-all"
+              className="p-1.5 sm:p-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-[var(--lume-primary,#4affb4)]/50 hover:bg-white/10 text-white/70 hover:text-white transition-all"
             >
               <Mail className="size-3.5" />
             </a>
-            <span className="text-[10px] font-mono text-white/40 ml-1">
+            <span className="text-[9.5px] sm:text-[10px] font-mono text-white/40 ml-1 truncate">
               hngwudev@gmail.com
             </span>
           </div>
 
           {/* Return Home Action Button with Countdown Line */}
-          <div className="flex flex-col items-start gap-1.5 pt-1">
+          <div className="flex flex-col items-start gap-1.5 pt-1 shrink-0">
             <button
               type="button"
               onClick={onReturnHome}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--lume-primary,#4affb4)] text-black font-semibold text-xs transition-transform hover:scale-105 active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(74,255,180,0.3)]"
+              className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-[var(--lume-primary,#4affb4)] text-black font-semibold text-xs transition-transform hover:scale-105 active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(74,255,180,0.3)]"
             >
               <ArrowLeft className="size-3.5" />
               <span>Return to Portfolio</span>
             </button>
 
             {/* Countdown line */}
-            <div className="w-40 h-1 bg-white/10 rounded-full overflow-hidden mt-1">
+            <div className="w-36 sm:w-40 h-1 bg-white/10 rounded-full overflow-hidden mt-1">
               <div
                 className="h-full bg-[var(--lume-primary,#4affb4)] transition-all duration-75 ease-linear shadow-[0_0_6px_var(--lume-primary)]"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-[9px] font-mono text-white/35">
-              Auto-returning in {Math.max(0, Math.ceil((autoReturnDurationMs * (1 - progress / 100)) / 1000))}s · Click to return now
+            <span className="text-[8.5px] sm:text-[9px] font-mono text-white/35">
+              Auto-returning in {Math.max(0, Math.ceil((autoReturnDurationMs * (1 - progress / 100)) / 1000))}s · Tap to return now
             </span>
           </div>
         </div>
 
         {/* Bottom Colophon Footer */}
-        <div className="flex items-center justify-between border-t border-white/10 pt-2.5 text-[10px] tracking-widest">
-          <span className="font-mono text-[#ffd700]/80 tracking-[0.22em] font-semibold drop-shadow-[0_0_6px_rgba(255,215,0,0.3)]">
+        <div className="flex items-center justify-between border-t border-white/10 pt-2 sm:pt-2.5 text-[10px] tracking-widest shrink-0">
+          <span className="font-mono text-[#ffd700]/80 tracking-[0.18em] sm:tracking-[0.22em] font-semibold drop-shadow-[0_0_6px_rgba(255,215,0,0.3)]">
             FOLIO // 04 ᛫ AFTERWORD
           </span>
-          <span className="font-serif text-[var(--lume-primary,#4affb4)]/80 tracking-[0.28em] font-semibold drop-shadow-[0_0_8px_rgba(74,255,180,0.3)]">
+          <span className="font-serif text-[var(--lume-primary,#4affb4)]/80 tracking-[0.2em] sm:tracking-[0.28em] font-semibold drop-shadow-[0_0_8px_rgba(74,255,180,0.3)]">
             ᚛ ᚨ ᚱ ᚲ ᚐ ᚾ ᛖ ᚜
           </span>
         </div>

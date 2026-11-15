@@ -1,6 +1,13 @@
 export type SkillStatus = "mastered" | "in-progress" | "locked";
 
-export type SkillCategory = "core" | "specialization" | "elective" | "certification";
+export type CelestialHouse = "transmutation" | "thaumaturgy" | "alchemy" | "divination";
+
+export type SkillCategory =
+  | CelestialHouse
+  | "core"
+  | "specialization"
+  | "elective"
+  | "certification";
 
 export interface LinkedProject {
   title: string;
@@ -14,7 +21,11 @@ export interface SkillNode {
   id: string;
   label: string;
   tier: number;
-  category: SkillCategory;
+  category: CelestialHouse | SkillCategory;
+  magnitude?: 1 | 2 | 3;
+  masteryPercentage?: number;
+  prerequisites?: string[];
+  unlocks?: string[];
   status: SkillStatus;
   icon: string;
   description: string;
@@ -27,14 +38,22 @@ export interface SkillEdge {
   to: string;
 }
 
+export interface CelestialHouseDef {
+  id: CelestialHouse;
+  label: string;
+  color: string;
+  element: string;
+}
+
 export interface SkillCategoryDef {
   id: SkillCategory;
   label: string;
   color: string;
+  element?: string;
 }
 
 export interface SkillTreeData {
-  categories: SkillCategoryDef[];
+  categories: (CelestialHouseDef | SkillCategoryDef)[];
   nodes: SkillNode[];
   edges: SkillEdge[];
 }
@@ -44,6 +63,7 @@ export interface PositionedSkillNode extends SkillNode {
   y: number;
   tierIndex: number;
   totalInTier: number;
+  radius?: number;
 }
 
 export interface PositionedSkillEdge {

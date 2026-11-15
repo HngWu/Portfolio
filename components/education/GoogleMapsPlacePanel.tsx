@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Image from "next/image";
-import type { EducationLocation } from "@/types/education-map";
+import { motion, type PanInfo } from "framer-motion";
+import type { EducationLocation, SheetSnapState } from "@/types/education-map";
 import { TYPE_CONFIGS } from "./EducationPinSvg";
 import { cn } from "@/lib/utils";
 import {
@@ -17,16 +18,20 @@ import {
   Compass,
 } from "lucide-react";
 
-interface GoogleMapsPlacePanelProps {
+export interface GoogleMapsPlacePanelProps {
   location: EducationLocation | null;
   currentIndex: number;
   totalCount: number;
   onPrev: () => void;
   onNext: () => void;
   onRecenter: () => void;
-  isOpen: boolean;
-  onToggleOpen: () => void;
+  // Support both new tri-state sheetSnap and legacy boolean isOpen
+  sheetSnap?: SheetSnapState;
+  onSnapChange?: (snap: SheetSnapState) => void;
+  isOpen?: boolean;
+  onToggleOpen?: () => void;
   className?: string;
+  isMobileSheet?: boolean;
 }
 
 export function GoogleMapsPlacePanel({
@@ -36,9 +41,12 @@ export function GoogleMapsPlacePanel({
   onPrev,
   onNext,
   onRecenter,
-  isOpen,
+  sheetSnap = "half",
+  onSnapChange,
+  isOpen = true,
   onToggleOpen,
   className,
+  isMobileSheet = false,
 }: GoogleMapsPlacePanelProps) {
   if (!location) return null;
 
@@ -61,7 +69,334 @@ export function GoogleMapsPlacePanel({
 
   const dateText = formatDateRange(location.startDate, location.endDate);
 
-  // Minimized Compact Bar (Mobile Bottom Pill / Desktop Collapsed State)
+  // Gesture drag handler for mobile sheet
+  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const { offset, velocity } = info;
+    const isVertical = Math.abs(offset.y) > Math.abs(offset.x);
+
+    if (isVertical) {
+      if (sheetSnap === "peek") {
+        if (offset.y < -35 || velocity.y < -250) {
+          onSnapChange?.("half");
+        }
+      } else if (sheetSnap === "half") {
+        if (offset.y < -60 || velocity.y < -350) {
+          onSnapChange?.("full");
+        } else if (offset.y > 60 || velocity.y > 350) {
+          onSnapChange?.("peek");
+        }
+      } else if (sheetSnap === "full") {
+        if (offset.y > 70 || velocity.y > 350) {
+          onSnapChange?.("half");
+        }
+      }
+    } else {
+      // Horizontal swipe to navigate milestones
+      if (offset.x < -50 || velocity.x < -300) {
+        onNext();
+      } else if (offset.x > 50 || velocity.x > 300) {
+        onPrev();
+      }
+    }
+  };
+
+  // ==========================================
+  // MOBILE GOOGLE MAPS BOTTOM SHEET RENDERING
+  // ==========================================
+  if (isMobileSheet) {
+    if (sheetSnap === "peek") {
+      return (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={{ top: 0.2, bottom: 0.1 }}
+          onDragEnd={handleDragEnd}
+          className={cn(
+            "w-full pointer-events-auto flex flex-col rounded-t-3xl",
+            "bg-[#0a0a0a]/96 backdrop-blur-3xl border-t border-white/15",
+            "shadow-[0_-20px_50px_rgba(0,0,0,0.92)] select-none",
+            "pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]",
+            className
+          )}
+        >
+          {/* Drag Handle Bar */}
+          <div
+            className="w-full flex items-center justify-center pt-2.5 pb-1 cursor-grab active:cursor-grabbing"
+            onClick={() => onSnapChange?.("half")}
+            title="Swipe up for place details"
+          >
+            <div className="w-12 h-1.5 rounded-full bg-white/40" />
+          </div>
+
+          <div className="flex items-center justify-between px-4 py-2 min-w-0">
+            {/* Left Info Column */}
+            <div
+              className="flex items-center gap-3 min-w-0 flex-1 pr-2 cursor-pointer"
+              onClick={() => onSnapChange?.("half")}
+            >
+              <span
+                className="size-9 rounded-full flex items-center justify-center text-xs font-mono font-bold shrink-0"
+                style={{
+                  backgroundColor: config.pinColor,
+                  color: "#000000",
+                  boxShadow: `0 0 14px ${config.glow}`,
+                }}
+              >
+                {currentIndex + 1}
+              </span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-semibold text-white truncate">
+                  {location.name}
+                </span>
+                <span className="text-xs text-white/50 truncate">
+                  {location.program}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Actions Cluster */}
+            <div className="flex items-center gap-1.5 shrink-0 border-l border-white/10 pl-2.5">
+              <button
+                type="button"
+                onClick={onPrev}
+                disabled={totalCount <= 1}
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white/80 transition-colors disabled:opacity-30 active:scale-95 min-h-[40px] min-w-[40px] flex items-center justify-center"
+                title="Previous milestone"
+                aria-label="Previous milestone"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={onNext}
+                disabled={totalCount <= 1}
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white/80 transition-colors disabled:opacity-30 active:scale-95 min-h-[40px] min-w-[40px] flex items-center justify-center"
+                title="Next milestone"
+                aria-label="Next milestone"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onSnapChange?.("half")}
+                className="p-2 rounded-xl bg-lume-primary/10 hover:bg-lume-primary/20 text-lume-primary transition-colors border border-lume-primary/20 ml-1 active:scale-95 min-h-[40px] min-w-[40px] flex items-center justify-center"
+                title="Expand place details"
+                aria-label="Expand place details"
+              >
+                <ChevronUp className="size-4" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    // HALF OR FULL SNAP STATE
+    const isFull = sheetSnap === "full";
+
+    return (
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className={cn(
+          "w-full pointer-events-auto flex flex-col",
+          isFull ? "h-[88dvh]" : "h-[48dvh]",
+          "bg-[#0a0a0a]/96 backdrop-blur-3xl rounded-t-3xl border-t border-white/15",
+          "shadow-[0_-20px_60px_rgba(0,0,0,0.95)] overflow-hidden transition-[height] duration-300 ease-out",
+          "pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]",
+          className
+        )}
+      >
+        {/* Top Pull Handle Header - Draggable Area */}
+        <motion.div
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={{ top: 0.15, bottom: 0.15 }}
+          onDragEnd={handleDragEnd}
+          className="w-full flex flex-col items-center pt-2.5 pb-1 shrink-0 cursor-grab active:cursor-grabbing select-none"
+        >
+          <div className="w-12 h-1.5 rounded-full bg-white/40 mb-1" />
+        </motion.div>
+
+        {/* Cover Photo & Header Section */}
+        <div className={cn(
+          "relative w-full bg-neutral-900 overflow-hidden shrink-0 transition-all duration-300",
+          isFull ? "h-44 sm:h-52" : "h-32 sm:h-36"
+        )}>
+          {location.thumbnail ? (
+            <Image
+              src={location.thumbnail}
+              alt={location.name}
+              fill
+              sizes="100vw"
+              className="object-cover"
+              priority={currentIndex === 0}
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-neutral-900 via-neutral-800 to-black flex items-center justify-center">
+              <GraduationCap className="size-16 text-white/20" />
+            </div>
+          )}
+
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
+
+          {/* Top Panel Actions: Milestone Badge, Recenter, Snap Toggle */}
+          <div className="absolute top-2.5 left-3 right-3 flex items-center justify-between pointer-events-auto">
+            <span
+              className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-md border shadow-lg"
+              style={{
+                borderColor: config.border,
+                color: config.text,
+              }}
+            >
+              {config.label.toLowerCase() === "degree" ? "Milestone" : config.label} • {currentIndex + 1}/{totalCount}
+            </span>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={onRecenter}
+                className="p-1.5 rounded-full bg-black/80 hover:bg-black text-white/80 transition-all backdrop-blur-md border border-white/10 active:scale-95 min-h-[34px] min-w-[34px] flex items-center justify-center"
+                title="Focus on Campus"
+                aria-label="Focus on Campus"
+              >
+                <Compass className="size-3.5 text-lume-primary" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onSnapChange?.(isFull ? "half" : "peek")}
+                className="p-1.5 rounded-full bg-black/80 hover:bg-black text-white/80 transition-all backdrop-blur-md border border-white/10 active:scale-95 min-h-[34px] min-w-[34px] flex items-center justify-center"
+                title={isFull ? "Collapse to half view" : "Minimize to peek bar"}
+                aria-label={isFull ? "Collapse to half view" : "Minimize to peek bar"}
+              >
+                <ChevronDown className="size-3.5" />
+              </button>
+
+              {!isFull && (
+                <button
+                  type="button"
+                  onClick={() => onSnapChange?.("full")}
+                  className="p-1.5 rounded-full bg-black/80 hover:bg-black text-white/80 transition-all backdrop-blur-md border border-white/10 active:scale-95 min-h-[34px] min-w-[34px] flex items-center justify-center"
+                  title="Expand to full screen"
+                  aria-label="Expand to full screen"
+                >
+                  <ChevronUp className="size-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Bottom Title on Header Photo */}
+          <div className="absolute bottom-2.5 left-3.5 right-3.5 space-y-0.5">
+            <h2 className="text-base sm:text-xl font-display font-medium text-white leading-tight drop-shadow-md line-clamp-1">
+              {location.name}
+            </h2>
+            <p className="text-xs text-white/85 font-medium leading-tight drop-shadow-sm line-clamp-1">
+              {location.program}
+            </p>
+          </div>
+        </div>
+
+        {/* Scrollable Content Body */}
+        <div className="p-3.5 sm:p-4 space-y-3 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+          {/* Quick Metrics Bar */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {location.gpa && location.gpa !== "-" && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-lume-primary/10 border border-lume-primary/30 text-lume-primary text-xs font-mono font-semibold">
+                <GraduationCap className="size-3.5" />
+                <span>GPA / Score: {location.gpa}</span>
+              </div>
+            )}
+
+            {dateText && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-white/80 text-xs font-mono">
+                <Calendar className="size-3 text-white/40" />
+                <span>{dateText}</span>
+              </div>
+            )}
+
+            {(location.city || location.country) && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-white/70 text-xs">
+                <MapPin className="size-3 text-white/40" />
+                <span>
+                  {location.city ? `${location.city}, ` : ""}
+                  {location.country || "Singapore"}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Academic Honours Highlight Card */}
+          {location.honours && location.honours !== "-" && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1 shadow-[0_0_20px_rgba(245,158,11,0.08)]">
+              <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold">
+                <Award className="size-3.5" />
+                <span>Honours & Recognition</span>
+              </div>
+              <p className="text-xs sm:text-sm leading-relaxed text-amber-200 font-medium">
+                {location.honours}
+              </p>
+            </div>
+          )}
+
+          {/* Milestone Overview Narrative */}
+          {location.caption && (
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase font-mono tracking-widest text-white/45 block">
+                Milestone Overview
+              </span>
+              <p className="text-xs sm:text-sm text-white/80 leading-relaxed bg-white/[0.02] p-3 rounded-xl border border-white/5 font-sans">
+                {location.caption}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Navigation Bar (Previous & Next Milestone) */}
+        <div className="p-3 bg-black/80 border-t border-white/10 flex items-center justify-between gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={onPrev}
+            disabled={totalCount <= 1}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl font-mono text-xs font-medium transition-all duration-200",
+              "bg-white/5 hover:bg-white/15 text-white/80 hover:text-white border border-white/10 active:scale-[0.98]",
+              "disabled:opacity-30 disabled:pointer-events-none min-h-[42px]"
+            )}
+            aria-label="Previous milestone"
+          >
+            <ChevronLeft className="size-3.5" />
+            <span>Previous</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={totalCount <= 1}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl font-mono text-xs font-semibold transition-all duration-200",
+              "bg-lume-primary text-black hover:bg-lume-primary/90 shadow-[0_0_20px_rgba(74,255,180,0.25)] active:scale-[0.98]",
+              "disabled:opacity-30 disabled:pointer-events-none min-h-[42px]"
+            )}
+            aria-label="Next milestone"
+          >
+            <span>Next Milestone</span>
+            <ChevronRight className="size-3.5" />
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ==========================================
+  // DESKTOP & TABLET SIDEBAR PANEL RENDERING
+  // ==========================================
   if (!isOpen) {
     return (
       <div
@@ -141,22 +476,11 @@ export function GoogleMapsPlacePanel({
         className={cn(
           "relative w-full overflow-hidden flex flex-col flex-1 min-h-0",
           "bg-[#0a0a0a]/95 backdrop-blur-3xl",
-          // Mobile bottom-sheet styling
-          "max-h-[60dvh] rounded-t-3xl border-t border-white/15 shadow-[0_-20px_60px_rgba(0,0,0,0.95)]",
-          // Desktop sidebar integration styling
-          "sm:max-h-none sm:rounded-2xl sm:border sm:border-white/10 sm:shadow-[0_24px_60px_rgba(0,0,0,0.92)]"
+          "rounded-2xl border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.92)]"
         )}
       >
-        {/* Mobile Pull Handle */}
-        <div
-          className="w-full flex items-center justify-center pt-2.5 pb-1 sm:hidden shrink-0 cursor-pointer"
-          onClick={onToggleOpen}
-        >
-          <div className="w-12 h-1.5 rounded-full bg-white/30" />
-        </div>
-
         {/* Header Cover Photo */}
-        <div className="relative w-full h-40 sm:h-52 md:h-56 lg:h-64 bg-neutral-900 overflow-hidden shrink-0">
+        <div className="relative w-full h-44 sm:h-52 md:h-56 lg:h-64 bg-neutral-900 overflow-hidden shrink-0">
           {location.thumbnail ? (
             <Image
               src={location.thumbnail}
@@ -205,8 +529,7 @@ export function GoogleMapsPlacePanel({
                 title="Minimize Place Details"
                 aria-label="Minimize place details"
               >
-                <ChevronDown className="size-4 sm:hidden" />
-                <ChevronUp className="size-4 hidden sm:block" />
+                <ChevronUp className="size-4" />
               </button>
             </div>
           </div>

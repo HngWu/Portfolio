@@ -191,8 +191,8 @@ export function EducationTile({
       ? "w-1.5 h-3.5 bg-mode-accent-bright shadow-[0_0_8px_rgba(106,255,255,0.7)]"
       : "w-1.5 h-3.5 bg-[#4A8FFF] shadow-[0_0_8px_rgba(74,143,255,0.7)]"
     const headingClass = isDeep
-      ? "font-mono tracking-tight font-bold text-lg sm:text-xl text-white/90 mb-1 line-clamp-2 leading-tight"
-      : "font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight"
+      ? "font-mono tracking-tight font-bold text-xl sm:text-xl md:text-2xl text-white/90 mb-1 line-clamp-2 leading-tight"
+      : "font-display text-xl sm:text-xl md:text-2xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight"
 
     return (
       <div
@@ -356,13 +356,13 @@ export function EducationTile({
                 <h3 className={headingClass}>
                   {activeItem.institution}
                 </h3>
-                <p className={cn(currentTypo.body, "text-white/70 text-xs sm:text-sm font-normal line-clamp-2 leading-snug")}>
+                <p className={cn(currentTypo.body, "text-white/75 text-sm xs:text-[15px] sm:text-sm font-normal line-clamp-2 leading-snug mt-1")}>
                   {activeItem.degree}
                 </p>
               </div>
 
               <div className="mt-auto pt-2.5 flex items-center justify-between border-t border-white/5 pr-5 select-none shrink-0">
-                <span className={cn(currentTypo.meta, "text-white/60 font-mono text-xs")}>{activeItem.date}</span>
+                <span className={cn(currentTypo.meta, "text-white/60 font-mono text-xs sm:text-[13px]")}>{activeItem.date}</span>
               </div>
             </motion.div>
           </AnimatePresence>

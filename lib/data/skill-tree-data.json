@@ -1,24 +1,28 @@
 {
   "categories": [
     {
-      "id": "core",
-      "label": "Core Curriculum",
-      "color": "#4AFFB4"
+      "id": "transmutation",
+      "label": "House of Transmutation (Core)",
+      "color": "#4AFFB4",
+      "element": "Aether"
     },
     {
-      "id": "specialization",
-      "label": "Specialization",
-      "color": "#4A8FFF"
+      "id": "thaumaturgy",
+      "label": "House of Thaumaturgy (Web & UI)",
+      "color": "#4A8FFF",
+      "element": "Astral Light"
     },
     {
-      "id": "elective",
-      "label": "Electives & Innovation",
-      "color": "#C9A227"
+      "id": "alchemy",
+      "label": "House of Alchemy (Enterprise & Cloud)",
+      "color": "#FFD95A",
+      "element": "Quintessence"
     },
     {
-      "id": "certification",
-      "label": "Certifications",
-      "color": "#FF4A8F"
+      "id": "divination",
+      "label": "House of Divination (AI & Distributed)",
+      "color": "#FF4A8F",
+      "element": "Void"
     }
   ],
   "nodes": [
@@ -26,7 +30,9 @@
       "id": "core-cs",
       "label": "Core CS & Algorithms",
       "tier": 1,
-      "category": "core",
+      "category": "transmutation",
+      "magnitude": 1,
+      "masteryPercentage": 95,
       "status": "mastered",
       "icon": "terminal",
       "description": "Foundational computer science, algorithmic complexity, data structures, and low-level computational principles.",
@@ -42,7 +48,9 @@
       "id": "web-architecture",
       "label": "Modern Web Architecture",
       "tier": 2,
-      "category": "specialization",
+      "category": "thaumaturgy",
+      "magnitude": 1,
+      "masteryPercentage": 95,
       "status": "mastered",
       "icon": "layers",
       "description": "Production web application architecture, Next.js App Router, SSR/ISR pipelines, and cinematic glassmorphism UI.",
@@ -58,7 +66,9 @@
       "id": "enterprise-backend",
       "label": "Enterprise Backend Systems",
       "tier": 2,
-      "category": "core",
+      "category": "alchemy",
+      "magnitude": 1,
+      "masteryPercentage": 90,
       "status": "mastered",
       "icon": "server",
       "description": "Robust enterprise microservices, relational database design, connection pooling, and high-throughput REST APIs.",
@@ -68,7 +78,9 @@
       "id": "cloud-devops",
       "label": "Cloud & DevOps Infrastructure",
       "tier": 3,
-      "category": "certification",
+      "category": "alchemy",
+      "magnitude": 2,
+      "masteryPercentage": 88,
       "status": "mastered",
       "icon": "cloud",
       "description": "Container orchestration, automated CI/CD deployment pipelines, OpenShift infrastructure, and cloud telemetry.",
@@ -78,7 +90,9 @@
       "id": "creative-tech",
       "label": "Creative Tech & 3D WebGL",
       "tier": 3,
-      "category": "elective",
+      "category": "thaumaturgy",
+      "magnitude": 2,
+      "masteryPercentage": 85,
       "status": "mastered",
       "icon": "sparkles",
       "description": "Real-time 3D graphics, procedural shader development, volumetric rendering, and physics simulations.",
@@ -94,7 +108,9 @@
       "id": "distributed-systems",
       "label": "Distributed Systems & DB Engines",
       "tier": 4,
-      "category": "specialization",
+      "category": "divination",
+      "magnitude": 1,
+      "masteryPercentage": 80,
       "status": "in-progress",
       "icon": "cpu",
       "description": "Consensus protocols, Raft state machines, LSM-tree storage engines, and partition tolerance in distributed nodes.",
@@ -110,7 +126,9 @@
       "id": "ai-agentic-systems",
       "label": "AI & Agentic Architectures",
       "tier": 4,
-      "category": "elective",
+      "category": "divination",
+      "magnitude": 2,
+      "masteryPercentage": 75,
       "status": "in-progress",
       "icon": "brain",
       "description": "Autonomous multi-agent swarms, tool-calling pipelines, structured cognitive loops, and embedding-backed vector search.",
@@ -120,7 +138,9 @@
       "id": "quantum-security",
       "label": "Post-Quantum Cryptography",
       "tier": 5,
-      "category": "specialization",
+      "category": "divination",
+      "magnitude": 3,
+      "masteryPercentage": 40,
       "status": "locked",
       "icon": "lock",
       "description": "Lattice-based cryptography algorithms (Kyber / Dilithium), quantum resistance protocols, and zero-knowledge verification.",

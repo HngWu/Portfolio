@@ -4,6 +4,8 @@ import React, { useMemo, useRef } from "react"
 import { useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 import { useDeityControls } from "@/store/useDeityControls"
+import { CelestialClaymore3D } from "./CelestialClaymore3D"
+import { ShoulderOrdnance3D } from "./ShoulderOrdnance3D"
 
 interface MechArmProps {
   side: "left" | "right"
@@ -178,6 +180,16 @@ export function MechArm({
             <cylinderGeometry args={[0.048, 0.048, 0.02, 16]} />
           </mesh>
         </group>
+
+        {/* Heavy Angled Shoulder Missile Battery Pod */}
+        <ShoulderOrdnance3D
+          side={side}
+          titaniumMaterial={titaniumMaterial}
+          crownGoldMaterial={crownGoldMaterial}
+          chromeMaterial={chromeMaterial}
+          visorGlowMaterial={visorGlowMaterial}
+          isOverdrive={isOverdrive}
+        />
       </group>
 
       {/* ────────────────────────────────────────────────────────── */}
@@ -306,6 +318,19 @@ export function MechArm({
                   </mesh>
                 </group>
               ))}
+
+              {/* Colossal Celestial Claymore Greatsword (Held in Right Hand) */}
+              {!isLeft && (
+                <group position={[0, -0.38, 0.22]} rotation={[1.1, -0.35, 0.4]}>
+                  <CelestialClaymore3D
+                    titaniumMaterial={titaniumMaterial}
+                    crownGoldMaterial={crownGoldMaterial}
+                    chromeMaterial={chromeMaterial}
+                    visorGlowMaterial={visorGlowMaterial}
+                    isOverdrive={isOverdrive}
+                  />
+                </group>
+              )}
             </group>
           </group>
         </group>

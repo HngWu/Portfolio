@@ -1,7 +1,8 @@
 "use client"
 
-import React, { useEffect } from "react"
+import React, { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
+import { MechanicalDeityCenterpiece } from "@/components/deity/MechanicalDeityCenterpiece"
 
 const MechanicalDeityScene = dynamic(
   () => import("@/components/three/MechanicalDeityScene").then((m) => m.MechanicalDeityScene),
@@ -39,6 +40,7 @@ export default function AboutPage() {
   const mode = useViewModeStore((s) => s.mode)
   const isDeepDive = mode === "deep"
   const reportPageLoaded = useNavigationStore((s) => s.reportPageLoaded)
+  const [heroMode, setHeroMode] = useState<"3d" | "parallax">("3d")
 
   useEffect(() => {
     reportPageLoaded("/about")
@@ -54,13 +56,19 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen w-full bg-[#06070A] text-white relative overflow-x-hidden selection:bg-lume-primary/30">
       {/* ──────────────────────────────────────────────────────────── */}
-      {/* SECTION 1: 100vh Full-Bleed 3D Mechanical Deity Hero         */}
+      {/* SECTION 1: 100vh Full-Bleed Mechanical Deity Hero            */}
       {/* ──────────────────────────────────────────────────────────── */}
       <section className="relative w-full h-[100dvh] flex flex-col justify-between overflow-hidden">
-        {/* Full-Bleed R3F 3D Scene */}
-        <div className="absolute inset-0 z-0">
-          <MechanicalDeityScene />
-        </div>
+        {/* Dynamic Presentation Switch: 2.5D Colossus Parallax vs 3D Mesh */}
+        {heroMode === "parallax" ? (
+          <div className="absolute inset-0 z-0 flex items-center justify-center p-4 pt-28 pb-20">
+            <MechanicalDeityCenterpiece className="max-h-[82vh] h-full" />
+          </div>
+        ) : (
+          <div className="absolute inset-0 z-0">
+            <MechanicalDeityScene />
+          </div>
+        )}
 
         {/* Ambient Vignette & Telemetry Grid Lines */}
         <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(6,7,10,0.8)_85%,#06070A_100%)]" />
@@ -90,10 +98,38 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="hidden md:flex flex-col items-end text-right font-mono text-xs text-white/50 space-y-1">
-            <span>COORDINATES: 1.3521° N, 103.8198° E (SGP)</span>
-            <span>SYSTEM CHASSIS: LUME-GLASS V4.2</span>
-            <span>STATUS: SINGULARITY NOMINAL</span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            {/* View Mode Switcher */}
+            <div className="inline-flex items-center p-1 rounded-full bg-black/60 border border-white/15 backdrop-blur-md font-mono text-[10px] pointer-events-auto">
+              <button
+                type="button"
+                onClick={() => setHeroMode("parallax")}
+                className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                  heroMode === "parallax"
+                    ? "bg-lume-primary/20 text-lume-primary border border-lume-primary/40 shadow-[0_0_12px_rgba(74,255,180,0.2)]"
+                    : "text-white/50 hover:text-white"
+                }`}
+              >
+                2.5D PARALLAX
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeroMode("3d")}
+                className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                  heroMode === "3d"
+                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_12px_rgba(0,240,255,0.2)]"
+                    : "text-white/50 hover:text-white"
+                }`}
+              >
+                3D MESH
+              </button>
+            </div>
+
+            <div className="hidden md:flex flex-col items-end text-right font-mono text-xs text-white/50 space-y-1">
+              <span>COORDINATES: 1.3521° N, 103.8198° E (SGP)</span>
+              <span>SYSTEM CHASSIS: LUME-GLASS V4.2</span>
+              <span>STATUS: SINGULARITY NOMINAL</span>
+            </div>
           </div>
         </motion.div>
 
@@ -111,8 +147,8 @@ export default function AboutPage() {
           </button>
         </div>
 
-        {/* Floating Interactive HUD Controls Bar */}
-        <DeityHudOverlay />
+        {/* Floating Interactive HUD Controls Bar (Active in 3D Mode) */}
+        {heroMode === "3d" && <DeityHudOverlay />}
       </section>
 
       {/* ──────────────────────────────────────────────────────────── */}

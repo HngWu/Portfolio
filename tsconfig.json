@@ -19,8 +19,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      "three": ["./lib/three-wrapper.d.ts"]
+      "@/*": ["./*"]
     }
   },
   "include": [

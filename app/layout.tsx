@@ -40,7 +40,8 @@ const playfair = Playfair_Display({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 5,
+  maximumScale: 1,
+  userScalable: false,
   themeColor: "#050505",
   colorScheme: "dark",
 };
@@ -63,9 +64,9 @@ export default async function RootLayout({
   const transitionRules = await getPageTransitions();
 
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark overflow-x-hidden" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased bg-[#050505]`}
+        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased bg-[#050505] overflow-x-hidden w-full max-w-full min-h-screen relative`}
       >
         <InitialLoaderOverlay />
         <ThemeApplier />

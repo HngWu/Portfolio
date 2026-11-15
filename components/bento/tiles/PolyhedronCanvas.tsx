@@ -1491,7 +1491,7 @@ function PolyhedronScene({
         camera.updateProjectionMatrix()
       }
     }
-    const baseZ = isEffectiveMobile ? 14.2 : 12.0
+    const baseZ = isEffectiveMobile ? 16.5 : 12.0
     const targetZ = aspect < 1.0 ? Math.max(baseZ, (baseZ * 0.95) / Math.max(aspect, 0.62)) : baseZ
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.1)
 
@@ -2181,7 +2181,7 @@ function CameraController({ isEffectiveMobile }: { isEffectiveMobile: boolean })
       const aspect = size.width / (size.height || 1)
       // eslint-disable-next-line react-hooks/immutability
       camera.aspect = aspect
-      const baseZ = isEffectiveMobile ? 14.2 : 12.0
+      const baseZ = isEffectiveMobile ? 16.5 : 12.0
       // eslint-disable-next-line react-hooks/immutability
       camera.position.z = aspect < 1.0 ? Math.max(baseZ, (baseZ * 0.95) / Math.max(aspect, 0.62)) : baseZ
       camera.updateProjectionMatrix()
@@ -2434,7 +2434,7 @@ export default function PolyhedronCanvas({
   return (
     <div ref={containerRef} className="w-full h-full relative overflow-hidden">
       <Canvas 
-        camera={{ position: [0, 0, isEffectiveMobile ? 14.2 : 12], fov: 35 }}
+        camera={{ position: [0, 0, isEffectiveMobile ? 16.5 : 12], fov: 35 }}
         dpr={[1, 1.5]}
         gl={{ alpha: true, powerPreference: "high-performance" }}
         resize={{ offsetSize: true, scroll: false }}

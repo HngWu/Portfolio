@@ -27,6 +27,8 @@ mock.module("@/components/bento/BentoTile", () => {
 import { StatTile, renderOdometerDigits } from "@/components/bento/tiles/StatTile"
 import { ContactTile } from "@/components/bento/tiles/ContactTile"
 import { EducationTile } from "@/components/bento/tiles/EducationTile"
+import { SkillsTile } from "@/components/bento/tiles/SkillsTile"
+import { ExperienceTile } from "@/components/bento/tiles/ExperienceTile"
 
 describe("Tile Deep Dive Parity Suite", () => {
   beforeEach(() => {
@@ -244,12 +246,13 @@ describe("Tile Deep Dive Parity Suite", () => {
 
       // Section breakdown
       const [topSection, socialSection] = React.Children.toArray(deepContent.props.children) as React.ReactElement<any>[]
-      const [headerDiv, emailDiv] = React.Children.toArray(topSection.props.children) as React.ReactElement<any>[]
+      const [headerDiv, emailWrapper] = React.Children.toArray(topSection.props.children) as React.ReactElement<any>[]
+      const emailDiv = emailWrapper.props.children as React.ReactElement<any>
 
       // 1. Header: "Contact" + Mail icon
-      const [heading, mailIcon] = React.Children.toArray(headerDiv.props.children) as React.ReactElement<any>[]
-      expect(heading.props.children).toBe("Contact")
-      expect(heading.props.className).toContain("font-mono tracking-tight font-bold")
+      const [headerInner] = React.Children.toArray(headerDiv.props.children) as React.ReactElement<any>[]
+      const [mailIcon, headerSpan] = React.Children.toArray(headerInner.props.children) as React.ReactElement<any>[]
+      expect(headerSpan.props.children).toContain("Contact")
       expect(mailIcon.props["aria-hidden"]).toBe("true")
 
       // 2. Copiable email box with full keyboard accessibility
@@ -337,7 +340,8 @@ describe("Tile Deep Dive Parity Suite", () => {
       const deepCapsules = React.Children.toArray(deepSocialSection.props.children) as React.ReactElement<any>[]
       expect(deepCapsules).toHaveLength(2)
 
-      const [, qpSocialSection] = React.Children.toArray(lastBentoTileProps.children) as React.ReactElement<any>[]
+      const qpContent = lastBentoTileProps.children as React.ReactElement<any>
+      const [, qpSocialSection] = React.Children.toArray(qpContent.props.children) as React.ReactElement<any>[]
       const qpCapsules = React.Children.toArray(qpSocialSection.props.children) as React.ReactElement<any>[]
       expect(qpCapsules).toHaveLength(2)
     })
@@ -353,7 +357,8 @@ describe("Tile Deep Dive Parity Suite", () => {
 
       const deepContent = lastBentoTileProps.deepContent as React.ReactElement<any>
       const [topSection] = React.Children.toArray(deepContent.props.children) as React.ReactElement<any>[]
-      const [, emailDiv] = React.Children.toArray(topSection.props.children) as React.ReactElement<any>[]
+      const [, emailWrapper] = React.Children.toArray(topSection.props.children) as React.ReactElement<any>[]
+      const emailDiv = emailWrapper.props.children as React.ReactElement<any>
 
       let enterPrevented = false
       emailDiv.props.onKeyDown({
@@ -448,7 +453,7 @@ describe("Tile Deep Dive Parity Suite", () => {
       expect(typeof nextBtn.props.onClick).toBe("function")
 
       // 2. Active Card Body: Institution (font-mono tracking-tight font-bold), Degree, and Date
-      expect(html).toContain("font-mono tracking-tight font-bold text-lg sm:text-xl text-white/90 mb-1 line-clamp-2 leading-tight")
+      expect(html).toContain("font-mono tracking-tight font-bold text-xl sm:text-xl md:text-2xl text-white/90 mb-1 line-clamp-2 leading-tight")
       expect(html).toContain("National University of Singapore")
       expect(html).toContain("Bachelor of Computing in Computer Science")
       expect(html).toContain("Aug 2028 - Aug 2032")
@@ -515,6 +520,72 @@ describe("Tile Deep Dive Parity Suite", () => {
 
       expect(upDefaultPrevented).toBe(true)
       expect(upPropagationStopped).toBe(true)
+    })
+  })
+
+  // =========================================================================
+  // 4. SkillsTile Deep Dive Parity & Static Grid Sizing
+  // =========================================================================
+  describe("SkillsTile", () => {
+    it("passes canMorph=false, canExpand=false, and canDeepDive=true to BentoTile", () => {
+      renderToStaticMarkup(
+        React.createElement(SkillsTile, {
+          id: "skills-parity-test",
+          size: "4x4",
+          content: {
+            tags: ["Java", "Spring Boot", "Next.js 16", "TypeScript", "Three.js", "Docker", "Go"],
+          },
+        })
+      )
+
+      expect(lastBentoTileProps).not.toBeNull()
+      expect(lastBentoTileProps.canMorph).toBe(false)
+      expect(lastBentoTileProps.canExpand).toBe(false)
+      expect(lastBentoTileProps.canDeepDive).toBe(true)
+    })
+  })
+
+  // =========================================================================
+  // 5. ExperienceTile Deep Dive Parity
+  // =========================================================================
+  describe("ExperienceTile", () => {
+    it("passes canDeepDive=true to BentoTile and unifies 3D stack layout across both faces", () => {
+      const html = renderToStaticMarkup(
+        React.createElement(ExperienceTile, {
+          id: "exp-parity-test",
+          size: "4x5",
+          content: {
+            role: "Software Engineer Intern",
+            company: "DBS Bank",
+            highlights: ["Led full-stack system migrations and automated pipeline deployments"],
+          },
+        })
+      )
+
+      expect(lastBentoTileProps).not.toBeNull()
+      expect(lastBentoTileProps.canDeepDive).toBe(true)
+      expect(lastBentoTileProps.deepContent).not.toBeNull()
+      expect(html).toContain("Experience")
+      expect(html).toContain("DBS Bank")
+    })
+
+    it("ensures ExperienceTile mobile view deep dive mode uses standard sizing without enlargement", () => {
+      const html = renderToStaticMarkup(
+        React.createElement(ExperienceTile, {
+          id: "exp-parity-test-2",
+          size: "4x5",
+          content: {
+            role: "Software Engineer Intern",
+            company: "DBS Bank",
+            highlights: ["Led full-stack system migrations and automated pipeline deployments"],
+          },
+        })
+      )
+
+      // Ensure no enlarged mobile classes like xs:text-2xl or xs:text-sm exist
+      expect(html).not.toContain("xs:text-2xl")
+      expect(html).not.toContain("xs:text-sm")
+      expect(html).not.toContain("space-y-3 sm:space-y-3.5")
     })
   })
 })

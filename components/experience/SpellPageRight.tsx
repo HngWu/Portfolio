@@ -22,7 +22,7 @@ export function SpellPageRight({
 }: SpellPageRightProps) {
   return (
     <motion.div
-      className="relative flex flex-col justify-between h-full w-full p-4 sm:p-5 md:p-6 lg:p-8 select-none overflow-hidden group/rightpage"
+      className="relative flex flex-col justify-between h-full w-full pt-3.5 sm:pt-5 md:pt-6 lg:pt-8 p-3.5 sm:p-5 md:p-6 lg:p-8 select-none overflow-hidden group/rightpage"
       initial={isRevealing ? { opacity: 0, y: 8 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.42, delay: isRevealing ? 0.48 : 0, ease: "easeOut" }}
@@ -37,13 +37,13 @@ export function SpellPageRight({
           onClick={onNextPage}
           title="Turn to Next Role"
           aria-label="Turn to Next Role"
-          className="absolute top-0 right-0 w-14 h-14 flex items-start justify-end p-2 cursor-pointer z-30 group/dogear"
+          className="absolute top-0 right-0 w-12 sm:w-14 h-12 sm:h-14 flex items-start justify-end p-2 cursor-pointer z-30 group/dogear"
         >
-          <div className="relative w-7 h-7">
+          <div className="relative w-6 sm:w-7 h-6 sm:h-7">
             {/* Folded triangular flap */}
-            <div className="absolute top-0 right-0 w-0 h-0 border-t-[26px] border-t-white/15 border-l-[26px] border-l-transparent group-hover/dogear:border-t-[var(--lume-primary,#4affb4)]/70 group-hover/dogear:scale-125 transition-all duration-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]" />
+            <div className="absolute top-0 right-0 w-0 h-0 border-t-[22px] sm:border-t-[26px] border-t-white/15 border-l-[22px] sm:border-l-[26px] border-l-transparent group-hover/dogear:border-t-[var(--lume-primary,#4affb4)]/70 group-hover/dogear:scale-125 transition-all duration-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]" />
             {/* Flap shadow underneath */}
-            <div className="absolute top-0 right-0 w-0 h-0 border-b-[26px] border-b-black/60 border-r-[26px] border-r-transparent pointer-events-none" />
+            <div className="absolute top-0 right-0 w-0 h-0 border-b-[22px] sm:border-b-[26px] border-b-black/60 border-r-[22px] sm:border-r-[26px] border-r-transparent pointer-events-none" />
             <span className="absolute -bottom-5 -left-10 opacity-0 group-hover/dogear:opacity-100 transition-opacity bg-black/90 text-[8px] font-mono text-[var(--lume-primary,#4affb4)] px-1.5 py-0.5 rounded border border-[var(--lume-primary)]/30 pointer-events-none whitespace-nowrap shadow-md">
               Next ↷
             </span>
@@ -52,7 +52,7 @@ export function SpellPageRight({
       )}
 
       {/* Folio Running Top Header */}
-      <div className="relative z-10 border-b border-white/10 pb-2.5 flex items-center justify-between shrink-0">
+      <div className="relative z-10 border-b border-white/10 pb-2 sm:pb-2.5 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <Terminal className="size-3.5 text-[var(--lume-primary,#4affb4)]" />
           <h3 className="font-mono text-xs uppercase tracking-wider text-white/90 font-semibold">
@@ -64,23 +64,23 @@ export function SpellPageRight({
         </span>
       </div>
 
-      {/* Middle Body: Fits 100% vertically without scroll */}
-      <div className="relative z-10 flex-1 flex flex-col justify-around py-2 min-h-0">
+      {/* Middle Body: Scrollable container for responsibilities and impact metrics */}
+      <div className="relative z-10 flex-1 flex flex-col justify-start sm:justify-around py-2 min-h-0 overflow-y-auto custom-scrollbar touch-pan-y pr-1">
         {/* Action Points / Milestones */}
-        <div className="space-y-2">
+        <div className="space-y-1.5 sm:space-y-2">
           {spell.incantation.map((inc, i) => (
             <div
               key={i}
-              className="flex items-start gap-2.5 group/item transition-colors hover:bg-white/[0.02] p-1 rounded-lg"
+              className="flex items-start gap-2 sm:gap-2.5 group/item transition-colors hover:bg-white/[0.02] p-1 rounded-lg"
             >
               {/* Sequential Numbered Badge */}
-              <span className="shrink-0 size-5 mt-0.5 rounded bg-[#0a0d18] border border-white/15 text-[10px] font-mono font-bold text-[var(--lume-primary,#4affb4)] flex items-center justify-center group-hover/item:border-[var(--lume-primary,#4affb4)]/60 transition-all shadow-sm">
+              <span className="shrink-0 size-4.5 sm:size-5 mt-0.5 rounded bg-[#0a0d18] border border-white/15 text-[9px] sm:text-[10px] font-mono font-bold text-[var(--lume-primary,#4affb4)] flex items-center justify-center group-hover/item:border-[var(--lume-primary,#4affb4)]/60 transition-all shadow-sm">
                 {String(i + 1).padStart(2, "0")}
               </span>
 
               {/* Complete, Unsliced Lead and Description Text */}
               <div className="min-w-0 flex-1 text-[11px] sm:text-xs leading-relaxed">
-                <span className="font-semibold font-mono text-[11px] text-[var(--lume-primary,#4affb4)] mr-1.5 inline">
+                <span className="font-semibold font-mono text-[10.5px] sm:text-[11px] text-[var(--lume-primary,#4affb4)] mr-1.5 inline">
                   {inc.lead}
                 </span>
                 <span className="text-white/80 group-hover/item:text-white transition-colors">
@@ -92,11 +92,11 @@ export function SpellPageRight({
         </div>
 
         {/* Outcomes & Impact Section */}
-        <div className="border-t border-white/10 pt-2 space-y-1.5">
+        <div className="border-t border-white/10 pt-2 mt-2 sm:mt-0 space-y-1.5 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="size-3 text-[var(--mode-accent-bright,#6affff)]" />
-              <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--mode-accent-bright,#6affff)] font-semibold">
+              <span className="font-mono text-[9.5px] sm:text-[10px] uppercase tracking-wider text-[var(--mode-accent-bright,#6affff)] font-semibold">
                 Delivered Impact & Verified Metrics
               </span>
             </div>
@@ -106,19 +106,19 @@ export function SpellPageRight({
             {spell.effects.map((eff, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-white/[0.025] border border-white/10 hover:border-[var(--mode-accent-bright,#6affff)]/40 hover:bg-white/[0.05] transition-all shadow-sm group/outcome"
+                className="flex items-start sm:items-center justify-between gap-2 px-2 sm:px-2.5 py-1.5 rounded-lg bg-white/[0.025] border border-white/10 hover:border-[var(--mode-accent-bright,#6affff)]/40 hover:bg-white/[0.05] transition-all shadow-sm group/outcome"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="shrink-0 size-4 rounded bg-[var(--lume-primary,#4affb4)]/10 border border-[var(--lume-primary)]/25 flex items-center justify-center text-[10px] text-[var(--lume-primary)] font-bold">
+                <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                  <span className="shrink-0 size-3.5 sm:size-4 mt-0.5 sm:mt-0 rounded bg-[var(--lume-primary,#4affb4)]/10 border border-[var(--lume-primary)]/25 flex items-center justify-center text-[9px] sm:text-[10px] text-[var(--lume-primary)] font-bold">
                     {eff.rune || "✓"}
                   </span>
-                  <span className="text-[11px] text-white/85 leading-snug truncate group-hover/outcome:text-white transition-colors">
+                  <span className="text-[10.5px] sm:text-[11px] text-white/85 leading-snug line-clamp-3 sm:line-clamp-none group-hover/outcome:text-white transition-colors">
                     {eff.outcome}
                   </span>
                 </div>
 
                 {eff.metric && (
-                  <span className="shrink-0 font-mono text-[9px] px-2 py-0.5 rounded bg-[var(--lume-primary,#4affb4)]/15 border border-[var(--lume-primary,#4affb4)]/30 text-[var(--lume-primary,#4affb4)] font-semibold whitespace-nowrap shadow-sm flex items-center gap-1">
+                  <span className="shrink-0 self-start sm:self-center font-mono text-[8.5px] sm:text-[9px] px-1.5 sm:px-2 py-0.5 rounded bg-[var(--lume-primary,#4affb4)]/15 border border-[var(--lume-primary,#4affb4)]/30 text-[var(--lume-primary,#4affb4)] font-semibold whitespace-nowrap shadow-sm flex items-center gap-1">
                     <Zap className="size-2.5 text-[var(--lume-primary)]" />
                     {eff.metric}
                   </span>
@@ -130,7 +130,7 @@ export function SpellPageRight({
       </div>
 
       {/* Folio Bottom Footer */}
-      <div className="relative z-10 border-t border-white/10 pt-2 flex items-center justify-between text-[10px] font-mono text-white/40 shrink-0">
+      <div className="relative z-10 border-t border-white/10 pt-1.5 sm:pt-2 flex items-center justify-between text-[10px] font-mono text-white/40 shrink-0">
         <span className="flex items-center gap-1">
           <Award className="size-3 text-[var(--lume-primary,#4affb4)]" />
           Page {pageNumber * 2}

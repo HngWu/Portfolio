@@ -184,7 +184,7 @@ export function BentoTile({
         {/* Front Face (Quick Pitch) */}
         <div
           className={cn(
-            "absolute inset-0 h-full w-full backface-hidden transition-all duration-300",
+            "absolute inset-0 h-full w-full backface-hidden preserve-3d transition-all duration-300",
             isDeepDive ? "pointer-events-none z-0 opacity-0" : "pointer-events-auto z-10 opacity-100"
           )}
         >
@@ -195,6 +195,14 @@ export function BentoTile({
             onMouseLeave={onMouseLeave}
             glowColor={glowColor}
             onClick={handleClick}
+            onKeyDown={(e) => {
+              if (isClickable && !isDeepDive && (e.key === "Enter" || e.key === " ")) {
+                e.preventDefault()
+                handleClick(e as unknown as React.MouseEvent<HTMLDivElement>)
+              }
+            }}
+            tabIndex={isClickable && !isDeepDive ? 0 : undefined}
+            role={isClickable ? "link" : undefined}
             interactive={!isDragging && !isDeepDive}
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
@@ -216,17 +224,25 @@ export function BentoTile({
         {/* Back Face (Deep Dive) */}
         <div
           className={cn(
-            "absolute inset-0 h-full w-full backface-hidden rotate-y-180 transition-all duration-300",
+            "absolute inset-0 h-full w-full backface-hidden rotate-y-180 preserve-3d transition-all duration-300",
             isDeepDive ? "pointer-events-auto z-10 opacity-100" : "pointer-events-none z-0 opacity-0"
           )}
         >
           <GlassCard
             glowColor={glowColor}
             onClick={handleClick}
+            onKeyDown={(e) => {
+              if (isClickable && isDeepDive && (e.key === "Enter" || e.key === " ")) {
+                e.preventDefault()
+                handleClick(e as unknown as React.MouseEvent<HTMLDivElement>)
+              }
+            }}
+            tabIndex={isClickable && isDeepDive ? 0 : undefined}
+            role={isClickable ? "link" : undefined}
             interactive={!isDragging && isDeepDive}
             className={cn(
               noPadding ? "p-0" : "p-4 md:p-6",
-              "flex flex-col h-full",
+              "flex flex-col w-full h-full",
               isClickable && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lume-primary",
               className
             )}

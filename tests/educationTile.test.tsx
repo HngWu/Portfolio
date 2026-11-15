@@ -90,7 +90,7 @@ describe("EducationTile", () => {
     expect(typeof nextBtn.props.onClick).toBe("function")
 
     // Deep Dive active card typography in HTML
-    expect(html).toContain("font-mono tracking-tight font-bold text-lg sm:text-xl text-white/90 mb-1 line-clamp-2 leading-tight")
+    expect(html).toContain("font-mono tracking-tight font-bold text-xl sm:text-xl md:text-2xl text-white/90 mb-1 line-clamp-2 leading-tight")
     expect(html).toContain("National University of Singapore")
     expect(html).toContain("Bachelor of Computing in Computer Science")
     expect(html).toContain("Aug 2028 - Aug 2032")
@@ -126,7 +126,7 @@ describe("EducationTile", () => {
     expect(badgeSpan.props.className).toContain("bg-blue-500/10")
 
     // Quick Pitch heading typography
-    expect(html).toContain("font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight")
+    expect(html).toContain("font-display text-xl sm:text-xl md:text-2xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-tight")
   })
 
   it("handles keyboard events and chevron click triggers", () => {

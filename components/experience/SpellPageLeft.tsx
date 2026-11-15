@@ -53,7 +53,7 @@ function CompanyLogoEmblem({
   if (isTtp) {
     return (
       <div
-        title="To The Point (TTP)"
+        title="To The Point"
         className="relative shrink-0 h-9 sm:h-10 px-2.5 rounded-xl bg-[#333399] border border-[#333399] flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.4)] group-hover/leftpage:border-[var(--lume-primary,#4affb4)]/70 group-hover/leftpage:shadow-[0_0_20px_rgba(51,51,153,0.6)] transition-all duration-300"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -105,7 +105,7 @@ export function SpellPageLeft({ spell, pageNumber, totalSpells, isRevealing = fa
 
   return (
     <motion.div
-      className="relative flex flex-col justify-between h-full w-full p-4 sm:p-5 md:p-6 lg:p-8 select-none overflow-hidden group/leftpage"
+      className="relative flex flex-col justify-between h-full w-full pt-3.5 sm:pt-5 md:pt-6 lg:pt-8 p-3.5 sm:p-5 md:p-6 lg:p-8 select-none overflow-hidden group/leftpage"
       initial={isRevealing ? { opacity: 0, y: 8 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.42, delay: isRevealing ? 0.42 : 0, ease: "easeOut" }}
@@ -119,7 +119,7 @@ export function SpellPageLeft({ spell, pageNumber, totalSpells, isRevealing = fa
       </div>
 
       {/* Folio Top Header */}
-      <div className="relative z-10 space-y-2.5 border-b border-white/10 pb-3.5 shrink-0">
+      <div className="relative z-10 space-y-2 sm:space-y-2.5 border-b border-white/10 pb-2.5 sm:pb-3.5 shrink-0">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-[10px] text-[var(--lume-primary,#4affb4)] uppercase tracking-wider flex items-center gap-1.5 font-medium">
             <span className="size-1.5 rounded-full bg-[var(--lume-primary,#4affb4)] animate-pulse" />
@@ -144,19 +144,19 @@ export function SpellPageLeft({ spell, pageNumber, totalSpells, isRevealing = fa
           </div>
 
           {/* Role Headline */}
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold tracking-tight text-white leading-tight">
+          <h2 className="text-lg sm:text-2xl lg:text-3xl font-serif font-bold tracking-tight text-white leading-tight">
             {spell.spellName}
           </h2>
 
           {/* Company / Realm Badge with Integrated Illuminated Logo Emblem */}
-          <div className="mt-2.5 flex items-center gap-3">
+          <div className="mt-2 sm:mt-2.5 flex items-center gap-2.5 sm:gap-3">
             <CompanyLogoEmblem
               logoType={spell.logoType}
               realm={spell.realm}
               logoUrl={spell.logoUrl}
             />
             <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-xs font-mono text-white font-medium shadow-sm w-fit">
+              <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-xs font-mono text-white font-medium shadow-sm w-fit">
                 {companyIcon}
                 <span className="truncate">{spell.realm}</span>
               </div>
@@ -165,9 +165,9 @@ export function SpellPageLeft({ spell, pageNumber, totalSpells, isRevealing = fa
         </div>
       </div>
 
-      {/* Middle: Skills & Technologies Section */}
-      <div className="relative z-10 flex-1 flex flex-col justify-around py-2.5 min-h-0">
-        <div className="flex items-center justify-between mb-1.5">
+      {/* Middle: Skills & Technologies Section with mobile internal scrolling */}
+      <div className="relative z-10 flex-1 flex flex-col justify-start sm:justify-around py-2 min-h-0 overflow-y-auto custom-scrollbar touch-pan-y pr-1">
+        <div className="flex items-center justify-between mb-1.5 shrink-0">
           <div className="flex items-center gap-1.5">
             <Cpu className="size-3.5 text-[var(--lume-primary,#4affb4)]" />
             <h3 className="font-mono text-xs uppercase tracking-wider text-white/90 font-semibold">
@@ -179,17 +179,17 @@ export function SpellPageLeft({ spell, pageNumber, totalSpells, isRevealing = fa
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
           {spell.ingredients.map((ing, idx) => (
             <div
               key={idx}
-              className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/[0.025] border border-white/10 hover:border-[var(--lume-primary)]/50 hover:bg-white/[0.05] transition-all group/skill cursor-default"
+              className="flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl bg-white/[0.025] border border-white/10 hover:border-[var(--lume-primary)]/50 hover:bg-white/[0.05] transition-all group/skill cursor-default"
             >
-              <span className="shrink-0 size-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs group-hover/skill:scale-110 transition-transform">
+              <span className="shrink-0 size-5.5 sm:size-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs group-hover/skill:scale-110 transition-transform">
                 {ing.symbol || "⚡"}
               </span>
               <div className="min-w-0 flex-1">
-                <span className="text-xs font-medium text-white/90 truncate block group-hover/skill:text-white transition-colors">
+                <span className="text-[11px] sm:text-xs font-medium text-white/90 truncate block group-hover/skill:text-white transition-colors">
                   {ing.name}
                 </span>
                 <span className="text-[9px] font-mono text-white/40 uppercase block tracking-tight">
@@ -202,7 +202,7 @@ export function SpellPageLeft({ spell, pageNumber, totalSpells, isRevealing = fa
       </div>
 
       {/* Folio Bottom Footer */}
-      <div className="relative z-10 border-t border-white/10 pt-2 flex items-center justify-between text-[10px] font-mono text-white/40 shrink-0">
+      <div className="relative z-10 border-t border-white/10 pt-1.5 sm:pt-2 flex items-center justify-between text-[10px] font-mono text-white/40 shrink-0">
         <span className="flex items-center gap-1">
           <Sparkles className="size-3 text-[var(--lume-primary,#4affb4)]" />
           Page {pageNumber * 2 - 1}

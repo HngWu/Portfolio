@@ -23,7 +23,7 @@ export function ExperienceBackBtn({ onBack }: ExperienceBackBtnProps) {
     <button
       type="button"
       onClick={handleClick}
-      className="absolute top-5 left-5 md:top-6 md:left-8 z-50 p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.12] border border-white/10 text-white/70 hover:text-white transition-all group flex items-center justify-center active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl cursor-pointer"
+      className="absolute top-[max(0.875rem,env(safe-area-inset-top))] left-[max(0.875rem,env(safe-area-inset-left))] md:top-6 md:left-8 z-50 p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.12] border border-white/10 text-white/70 hover:text-white transition-all group flex items-center justify-center active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl cursor-pointer min-w-[42px] min-h-[42px]"
       title="Return to Home"
       aria-label="Return to portfolio home"
     >

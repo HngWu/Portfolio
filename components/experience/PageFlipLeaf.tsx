@@ -19,6 +19,8 @@ export interface PageFlipLeafProps {
   targetPageNumber?: number
   totalSpells: number
   onFlipComplete?: () => void
+  isMobile?: boolean
+  mobileActiveTab?: "left" | "right"
 }
 
 export function PageFlipLeaf({
@@ -30,6 +32,8 @@ export function PageFlipLeaf({
   targetPageNumber = 1,
   totalSpells,
   onFlipComplete,
+  isMobile = false,
+  mobileActiveTab = "left",
 }: PageFlipLeafProps) {
   const isOpeningPrologue = flipType === "opening-prologue"
   const isClosingEpilogue = flipType === "closing-epilogue"
@@ -39,24 +43,48 @@ export function PageFlipLeaf({
 
   let initialRotateY = 0
   let targetRotateY = -180
-  // Luxuriously smooth, slower 1.2s tactile page turn
-  const animDuration = 1.2
+  // Slower, smooth tactile page turn (slightly snappier on mobile for responsiveness)
+  const animDuration = isMobile ? 0.95 : 1.2
   // Physical S-curve easing: subtle initial resistance -> smooth 90deg crest -> cushioned air-damped settle
   const animEase: readonly number[] = [0.32, 0.04, 0.22, 1]
 
   if (!isOpeningPrologue && !isClosingEpilogue && direction === -1) {
-    // Prev: left page flips right (+180deg) around center spine (right center)
+    // Prev: flips right (+180deg)
     initialRotateY = 0
     targetRotateY = 180
   }
 
   const activeDestinationSpell = targetSpell ?? currentSpell
 
+  const leafContainerClasses = isMobile
+    ? "inset-0"
+    : isRightHalfLeaf
+    ? "left-1/2 right-0"
+    : "left-0 right-1/2"
+
+  const leafTransformOrigin = isMobile
+    ? direction === 1
+      ? "left center"
+      : "right center"
+    : isRightHalfLeaf
+    ? "left center"
+    : "right center"
+
+  const frontFaceBorders = isMobile
+    ? "rounded-3xl border border-white/20"
+    : isRightHalfLeaf
+    ? "rounded-r-3xl border-r border-white/20"
+    : "rounded-l-3xl border-l border-white/20"
+
+  const backFaceBorders = isMobile
+    ? "rounded-3xl border border-white/20"
+    : isRightHalfLeaf
+    ? "rounded-l-3xl border-l border-white/20"
+    : "rounded-r-3xl border-r border-white/20"
+
   return (
     <div
-      className={`absolute top-0 bottom-0 z-30 pointer-events-none ${
-        isRightHalfLeaf ? "left-1/2 right-0" : "left-0 right-1/2"
-      }`}
+      className={`absolute top-0 bottom-0 z-30 pointer-events-none ${leafContainerClasses}`}
       style={{
         perspective: "2600px",
         transformStyle: "preserve-3d",
@@ -65,7 +93,7 @@ export function PageFlipLeaf({
       <motion.div
         className="relative w-full h-full"
         style={{
-          transformOrigin: isRightHalfLeaf ? "left center" : "right center",
+          transformOrigin: leafTransformOrigin,
           transformStyle: "preserve-3d",
           willChange: "transform",
         }}
@@ -95,11 +123,7 @@ export function PageFlipLeaf({
       >
         {/* FRONT FACE OF TURNING LEAF */}
         <div
-          className={`absolute inset-0 w-full h-full overflow-hidden bg-[#070912] ${
-            isRightHalfLeaf
-              ? "rounded-r-3xl border-r border-white/20"
-              : "rounded-l-3xl border-l border-white/20"
-          }`}
+          className={`absolute inset-0 w-full h-full overflow-hidden bg-[#070912] ${frontFaceBorders}`}
           style={{
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
@@ -116,6 +140,21 @@ export function PageFlipLeaf({
               isLastPage={currentPageNumber === totalSpells}
               onNextPage={() => {}}
             />
+          ) : isMobile ? (
+            mobileActiveTab === "left" ? (
+              <SpellPageLeft
+                spell={currentSpell}
+                pageNumber={currentPageNumber}
+                totalSpells={totalSpells}
+              />
+            ) : (
+              <SpellPageRight
+                spell={currentSpell}
+                pageNumber={currentPageNumber}
+                isLastPage={false}
+                onNextPage={() => {}}
+              />
+            )
           ) : isRightHalfLeaf ? (
             <SpellPageRight
               spell={currentSpell}
@@ -162,11 +201,7 @@ export function PageFlipLeaf({
 
         {/* BACK FACE OF TURNING LEAF */}
         <div
-          className={`absolute inset-0 w-full h-full overflow-hidden bg-[#070912] ${
-            isRightHalfLeaf
-              ? "rounded-l-3xl border-l border-white/20"
-              : "rounded-r-3xl border-r border-white/20"
-          }`}
+          className={`absolute inset-0 w-full h-full overflow-hidden bg-[#070912] ${backFaceBorders}`}
           style={{
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
@@ -183,6 +218,12 @@ export function PageFlipLeaf({
             />
           ) : isClosingEpilogue ? (
             <EpiloguePage />
+          ) : isMobile ? (
+            <SpellPageLeft
+              spell={activeDestinationSpell}
+              pageNumber={targetPageNumber}
+              totalSpells={totalSpells}
+            />
           ) : isRightHalfLeaf ? (
             <SpellPageLeft
               spell={activeDestinationSpell}

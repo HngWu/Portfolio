@@ -63,19 +63,9 @@ export function SpellPageSpread({
   onFlipComplete,
   spells,
   onSelectRole,
-  audioEnabled = false,
 }: SpellPageSpreadProps) {
   const isFirstPage = currentIndex === 0
   const isLastPage = currentIndex === totalSpells - 1
-
-  // Mobile folio tab switcher (Overview vs Responsibilities for screens < lg)
-  const [mobileFolioTab, setMobileFolioTab] = React.useState<"left" | "right">("left")
-
-  // Reset to left tab whenever chapter changes
-  React.useEffect(() => {
-    setMobileFolioTab("left")
-  }, [currentIndex])
-
   const isIdle = lifecycle === "idle" || lifecycle === "turning-page"
 
   // Base folio spell display logic during interactive chapter flips
@@ -87,7 +77,7 @@ export function SpellPageSpread({
 
   return (
     <div
-      className="relative w-full max-w-[1160px] mx-auto h-[74vh] max-h-[740px] min-h-[520px] flex items-center justify-center p-1 md:p-2 select-none"
+      className="relative w-full max-w-[1160px] mx-auto h-[74vh] max-h-[740px] min-h-[520px] flex items-center justify-center p-0.5 sm:p-1 md:p-2 select-none"
       style={{
         perspective: "2600px",
         transformStyle: "preserve-3d",
@@ -97,7 +87,7 @@ export function SpellPageSpread({
       <div className="absolute -bottom-6 inset-x-6 sm:inset-x-10 h-14 bg-black/90 blur-2xl rounded-full pointer-events-none z-0" />
       <div className="absolute -bottom-8 inset-x-12 sm:inset-x-16 h-16 bg-[var(--lume-primary,#4affb4)]/10 blur-3xl rounded-full pointer-events-none z-0" />
 
-      {/* Indexed Thumb Tabs along the right outer edge (Desktop xl+) */}
+      {/* Indexed Thumb Tabs along the right outer edge */}
       {isIdle && (
         <BookThumbTabs
           spells={spells}
@@ -128,7 +118,7 @@ export function SpellPageSpread({
           <div className="absolute bottom-2.5 right-2.5 size-4 border-b-2 border-r-2 border-[var(--lume-primary,#4affb4)]/60 rounded-br pointer-events-none z-40" />
 
           {/* Central 3D Spine Gutter Channel */}
-          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-7 -translate-x-1/2 z-20 pointer-events-none">
+          <div className="absolute left-1/2 top-0 bottom-0 w-7 -translate-x-1/2 z-20 pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-white/[0.07] to-black/90 shadow-[inset_0_0_10px_rgba(0,0,0,0.95)]" />
             <div className="absolute left-1/2 top-0 bottom-0 w-[1.5px] -translate-x-1/2 bg-white/25 shadow-[0_0_6px_rgba(0,0,0,1)]" />
             <div className="absolute top-6 left-1/2 -translate-x-1/2 size-1.5 rounded-full bg-[var(--lume-primary,#4affb4)]/70 shadow-[0_0_6px_var(--lume-primary)]" />
@@ -151,68 +141,13 @@ export function SpellPageSpread({
             />
           )}
 
-          {/* Mobile Folio Tab Switcher (< lg screens only) */}
-          {isIdle && (
-            <div className="lg:hidden absolute top-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center p-1 rounded-xl bg-black/80 border border-white/15 backdrop-blur-lg shadow-lg">
-              <button
-                type="button"
-                onClick={() => setMobileFolioTab("left")}
-                className={`px-3 py-1 rounded-lg text-[11px] font-mono font-medium transition-all ${
-                  mobileFolioTab === "left"
-                    ? "bg-[var(--lume-primary,#4affb4)]/20 border border-[var(--lume-primary)]/50 text-white shadow-sm"
-                    : "text-white/50 hover:text-white"
-                }`}
-              >
-                1. Overview & Stack
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileFolioTab("right")}
-                className={`px-3 py-1 rounded-lg text-[11px] font-mono font-medium transition-all ${
-                  mobileFolioTab === "right"
-                    ? "bg-[var(--lume-primary,#4affb4)]/20 border border-[var(--lume-primary)]/50 text-white shadow-sm"
-                    : "text-white/50 hover:text-white"
-                }`}
-              >
-                2. Responsibilities
-              </button>
-            </div>
-          )}
-
-          {lifecycle === "epilogue" && (
-            <div className="lg:hidden absolute top-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center p-1 rounded-xl bg-black/80 border border-white/15 backdrop-blur-lg shadow-lg">
-              <button
-                type="button"
-                onClick={() => setMobileFolioTab("left")}
-                className={`px-3 py-1 rounded-lg text-[11px] font-mono font-medium transition-all ${
-                  mobileFolioTab === "left"
-                    ? "bg-[var(--lume-primary,#4affb4)]/20 border border-[var(--lume-primary)]/50 text-white shadow-sm"
-                    : "text-white/50 hover:text-white"
-                }`}
-              >
-                Epilogue
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileFolioTab("right")}
-                className={`px-3 py-1 rounded-lg text-[11px] font-mono font-medium transition-all ${
-                  mobileFolioTab === "right"
-                    ? "bg-[var(--lume-primary,#4affb4)]/20 border border-[var(--lume-primary)]/50 text-white shadow-sm"
-                    : "text-white/50 hover:text-white"
-                }`}
-              >
-                Afterword
-              </button>
-            </div>
-          )}
-
           {/* Margin Navigation Zones (Hover arrows) */}
           {isIdle && !isFirstPage && !isTurning && (
             <button
               type="button"
               onClick={onPrevPage}
               aria-label="Previous Page"
-              className="hidden sm:flex absolute left-0 top-0 bottom-0 w-16 z-20 items-center justify-start pl-3 opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-w-resize group/leftedge"
+              className="flex absolute left-0 top-0 bottom-0 w-16 z-20 items-center justify-start pl-3 opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-w-resize group/leftedge"
             >
               <div className="size-9 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-white/80 group-hover/leftedge:text-[var(--lume-primary,#4affb4)] group-hover/leftedge:scale-110 transition-all shadow-lg">
                 <ChevronLeft className="size-5" />
@@ -226,7 +161,7 @@ export function SpellPageSpread({
               type="button"
               onClick={onNextPage}
               aria-label="Next Page"
-              className="hidden sm:flex absolute right-0 top-0 bottom-0 w-16 z-20 items-center justify-end pr-3 opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-e-resize group/rightedge"
+              className="flex absolute right-0 top-0 bottom-0 w-16 z-20 items-center justify-end pr-3 opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-e-resize group/rightedge"
             >
               <div className="size-9 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-white/80 group-hover/rightedge:text-[var(--lume-primary,#4affb4)] group-hover/rightedge:scale-110 transition-all shadow-lg">
                 <ChevronRight className="size-5" />
@@ -235,21 +170,9 @@ export function SpellPageSpread({
           )}
 
           {/* STATIONARY BASE SPREAD LAYER */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full">
+          <div className="grid grid-cols-2 w-full h-full">
             {/* Left Folio Base */}
-            <div
-              className={`relative border-b lg:border-b-0 lg:border-r border-white/10 bg-white/[0.01] h-full overflow-hidden ${
-                lifecycle === "prologue"
-                  ? "hidden lg:block"
-                  : lifecycle === "epilogue"
-                  ? mobileFolioTab === "left"
-                    ? "block"
-                    : "hidden lg:block"
-                  : mobileFolioTab === "left"
-                  ? "block"
-                  : "hidden lg:block"
-              }`}
-            >
+            <div className="relative border-r border-white/10 bg-white/[0.01] h-full overflow-hidden block">
               {lifecycle === "prologue" || lifecycle === "opening-flip" ? (
                 <BlankRunicPage side="left" variant={1} />
               ) : lifecycle === "epilogue" ? (
@@ -275,19 +198,7 @@ export function SpellPageSpread({
             </div>
 
             {/* Right Folio Base */}
-            <div
-              className={`relative bg-white/[0.01] h-full overflow-hidden ${
-                lifecycle === "prologue"
-                  ? "block"
-                  : lifecycle === "epilogue"
-                  ? mobileFolioTab === "right"
-                    ? "block"
-                    : "hidden lg:block"
-                  : mobileFolioTab === "right"
-                  ? "block"
-                  : "hidden lg:block"
-              }`}
-            >
+            <div className="relative bg-white/[0.01] h-full overflow-hidden block">
               {lifecycle === "prologue" ? (
                 <HalfTitlePage onTurnPage={onOpeningFlip} />
               ) : lifecycle === "opening-flip" ? (

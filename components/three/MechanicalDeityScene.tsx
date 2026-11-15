@@ -12,7 +12,11 @@ import { DeityArmorBust } from "./deity/DeityArmorBust"
 import { SeraphicWings } from "./deity/SeraphicWings"
 import { AstrolabeHalos } from "./deity/AstrolabeHalos"
 import { NaniteSwarm } from "./deity/NaniteSwarm"
+import { DeityLightningArcs3D } from "./deity/DeityLightningArcs3D"
+import { DeityAsteroids3D } from "./deity/DeityAsteroids3D"
+import { DeityHotspots3D } from "./deity/DeityHotspots3D"
 import { MechanicalDeityBlueprintFallback } from "./deity/MechanicalDeityBlueprintFallback"
+import { OrbitControls } from "@react-three/drei"
 
 function CameraAndAssemblyController({
   isMobile,
@@ -119,6 +123,8 @@ function DeityAssembly({ isVisibleRef }: { isVisibleRef: React.RefObject<boolean
       <SeraphicWings />
       <SingularityCore />
       <DeityArmorBust />
+      <DeityLightningArcs3D isOverdrive={isOverdrive} />
+      <DeityHotspots3D />
       <NaniteSwarm />
     </group>
   )
@@ -321,7 +327,17 @@ export function MechanicalDeityScene() {
         >
           <Suspense fallback={null}>
             <CameraAndAssemblyController isMobile={isMobile} isVisibleRef={isVisibleRef} />
+            <OrbitControls
+              enableDamping
+              dampingFactor={0.06}
+              maxDistance={26}
+              minDistance={6}
+              maxPolarAngle={Math.PI / 1.7}
+              minPolarAngle={Math.PI / 3.4}
+              enablePan={false}
+            />
             <SceneLighting isVisibleRef={isVisibleRef} />
+            <DeityAsteroids3D />
             <ClickInteractionPlane />
             <DeityAssembly isVisibleRef={isVisibleRef} />
             <PostprocessingEffects />

@@ -4,7 +4,7 @@ import * as React from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./education-map.css";
-import type { EducationLocation } from "@/types/education-map";
+import type { EducationLocation, SheetSnapState } from "@/types/education-map";
 import { TYPE_CONFIGS, createMarkerHtml } from "./EducationPinSvg";
 
 interface EducationMapLeafletProps {
@@ -14,6 +14,8 @@ interface EducationMapLeafletProps {
   theme?: "light" | "dark" | "auto";
   mapStyle?: "high-res" | "minimal";
   isPanelOpen?: boolean;
+  sheetSnap?: SheetSnapState;
+  onMapClick?: () => void;
   zoomInTrigger?: number;
   zoomOutTrigger?: number;
   recenterTrigger?: number;
@@ -26,6 +28,8 @@ export default function EducationMapLeaflet({
   theme = "dark",
   mapStyle = "minimal",
   isPanelOpen = true,
+  sheetSnap = "half",
+  onMapClick,
   zoomInTrigger = 0,
   zoomOutTrigger = 0,
   recenterTrigger = 0,
@@ -35,6 +39,11 @@ export default function EducationMapLeaflet({
   const markersRef = React.useRef<Map<string, L.Marker>>(new Map());
   const tileLayerRef = React.useRef<L.TileLayer | null>(null);
   const hasAnimatedEntry = React.useRef<boolean>(false);
+  const onMapClickRef = React.useRef(onMapClick);
+
+  React.useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   // Basemap configuration: Default Minimalist Gray Canvas vs High-Resolution Street Map
   const getTileConfig = React.useCallback(
@@ -120,6 +129,15 @@ export default function EducationMapLeaflet({
       minZoom: 2,
       maxZoom: 20,
       worldCopyJump: true,
+      bounceAtZoomLimits: true,
+    });
+
+    // Map background tap listener (collapses mobile bottom sheet to peek)
+    map.on("click", (e) => {
+      const originalEvent = (e as any).originalEvent;
+      const target = originalEvent?.target as HTMLElement | null;
+      if (target?.closest(".education-custom-marker")) return;
+      onMapClickRef.current?.();
     });
 
     // Add Initial Basemap TileLayer with native zoom, subdomains, and retina support
@@ -211,14 +229,24 @@ export default function EducationMapLeaflet({
       const zoom = 12;
       const targetPoint = map.project([1.3521, 103.8198], zoom);
       const pixelOffsetX = isDesktop ? -240 : 0;
-      const offsetLatLng = map.unproject(targetPoint.add([pixelOffsetX, 0]), zoom);
+      let pixelOffsetY = 0;
+      if (!isDesktop) {
+        const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+        if (sheetSnap === "half") {
+          pixelOffsetY = Math.round(vh * 0.22);
+        } else if (sheetSnap === "peek") {
+          pixelOffsetY = 35;
+        }
+      }
+
+      const offsetLatLng = map.unproject(targetPoint.add([pixelOffsetX, pixelOffsetY]), zoom);
 
       map.flyTo(offsetLatLng, zoom, {
         duration: 1.2,
         easeLinearity: 0.25,
       });
     }
-  }, [recenterTrigger]);
+  }, [recenterTrigger, sheetSnap]);
 
   // 6. Render & Manage Markers (permanently visible across all layer styles and themes)
   React.useEffect(() => {
@@ -292,11 +320,22 @@ export default function EducationMapLeaflet({
 
     // Smart Camera Pan: Zoom-invariant pixel projection offset
     // On desktop: offset camera left by 240px so landmark is centered in open right canvas
-    // On mobile: offset camera down by 110px if place panel is open so landmark is centered above bottom sheet
+    // On mobile: offset camera down dynamically based on bottom sheet snap point
     const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
     const targetZoom = Math.max(map.getZoom(), 14);
     const pixelOffsetX = isDesktop ? -240 : 0;
-    const pixelOffsetY = !isDesktop && isPanelOpen ? 110 : 0;
+    
+    let pixelOffsetY = 0;
+    if (!isDesktop) {
+      const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+      if (sheetSnap === "half") {
+        pixelOffsetY = Math.round(vh * 0.22);
+      } else if (sheetSnap === "peek") {
+        pixelOffsetY = 35;
+      } else if (sheetSnap === "full") {
+        pixelOffsetY = 0;
+      }
+    }
 
     const targetPoint = map.project([activeLoc.lat, activeLoc.lng], targetZoom);
     const offsetPoint = targetPoint.add([pixelOffsetX, pixelOffsetY]);
@@ -306,7 +345,7 @@ export default function EducationMapLeaflet({
       duration: 1.2,
       easeLinearity: 0.25,
     });
-  }, [activeId, locations, isPanelOpen, theme]);
+  }, [activeId, locations, sheetSnap, theme]);
 
   const containerClasses = [
     "education-map-container",

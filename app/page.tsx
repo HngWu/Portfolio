@@ -33,7 +33,7 @@ export default async function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col justify-center items-center py-20 px-4 md:px-8 relative z-10">
+    <main className="min-h-screen flex flex-col justify-center items-center py-16 sm:py-20 px-3 sm:px-4 md:px-8 relative z-10 w-full max-w-full overflow-x-hidden">
       <div className="w-full max-w-[1400px]">
         <ClientBentoGrid initialTiles={visibleTiles} showEasterEgg={showEasterEgg} />
       </div>

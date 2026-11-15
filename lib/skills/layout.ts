@@ -1,9 +1,18 @@
 import type {
   SkillTreeData,
   PositionedSkillNode,
+  PositionedSkillEdge,
   ComputedSkillTreeLayout,
   SkillStatus,
 } from "@/types/skill-tree";
+
+export type {
+  SkillTreeData,
+  PositionedSkillNode,
+  PositionedSkillEdge,
+  ComputedSkillTreeLayout,
+  SkillStatus,
+};
 
 export interface SkillTreeLayoutOptions {
   width?: number;
@@ -15,9 +24,36 @@ export interface SkillTreeLayoutOptions {
 const DEFAULT_OPTIONS: Required<SkillTreeLayoutOptions> = {
   width: 1000,
   tierSpacingY: 160,
-  paddingTop: 90,
-  paddingBottom: 90,
+  paddingTop: 100,
+  paddingBottom: 100,
 };
+
+/**
+ * Deterministic Y coordinates for celestial astrolabe tiers
+ */
+export const DETERMINISTIC_TIER_Y: Record<number, number> = {
+  1: 100,
+  2: 260,
+  3: 420,
+  4: 580,
+  5: 740,
+};
+
+/**
+ * Calculates radial star radius based on astrolabe node magnitude
+ */
+export function getNodeRadius(magnitude?: 1 | 2 | 3): number {
+  switch (magnitude) {
+    case 1:
+      return 44; // Anchor star (Core CS, Major Pillars)
+    case 2:
+      return 36; // Major star
+    case 3:
+      return 28; // Satellite star
+    default:
+      return 36;
+  }
+}
 
 /**
  * Computes deterministic 2D layout coordinates and SVG cubic bezier edge paths
@@ -39,12 +75,11 @@ export function computeSkillTreeLayout(
   }
 
   const tiers = Array.from(tierMap.keys()).sort((a, b) => a - b);
-  const minTier = tiers.length > 0 ? tiers[0] : 1;
-  const maxTier = tiers.length > 0 ? tiers[tiers.length - 1] : 1;
+  const maxTier = tiers.length > 0 ? Math.max(...tiers, 5) : 5;
 
   const height =
     tiers.length > 0
-      ? paddingTop + (maxTier - minTier) * tierSpacingY + paddingBottom
+      ? paddingTop + (maxTier - 1) * tierSpacingY + paddingBottom
       : paddingTop + paddingBottom;
 
   // Calculate positions per node
@@ -58,7 +93,13 @@ export function computeSkillTreeLayout(
     nodesInTier.forEach((node, tierIndex) => {
       // Balanced horizontal distribution centered on canvas width
       const x = Math.round((width / (totalInTier + 1)) * (tierIndex + 1));
-      const y = Math.round(paddingTop + (tier - minTier) * tierSpacingY);
+      const defaultY = DETERMINISTIC_TIER_Y[tier] ?? (paddingTop + (tier - 1) * tierSpacingY);
+      const y =
+        options?.paddingTop !== undefined || options?.tierSpacingY !== undefined
+          ? Math.round(paddingTop + (tier - 1) * tierSpacingY)
+          : defaultY;
+
+      const radius = getNodeRadius(node.magnitude);
 
       const positionedNode: PositionedSkillNode = {
         ...node,
@@ -66,6 +107,7 @@ export function computeSkillTreeLayout(
         y,
         tierIndex,
         totalInTier,
+        radius,
       };
 
       positionedNodes.push(positionedNode);
@@ -97,12 +139,13 @@ export function computeSkillTreeLayout(
     parentsMap.get(edge.to)?.push(edge.from);
     childrenMap.get(edge.from)?.push(edge.to);
 
-    // Compute cubic bezier path
+    // Compute cubic bezier path with star radius offsets
+    const startRadius = getNodeRadius(fromNode.magnitude);
+    const endRadius = getNodeRadius(toNode.magnitude);
     const startX = fromNode.x;
-    const startY = fromNode.y;
+    const startY = fromNode.y + startRadius * 0.75;
     const endX = toNode.x;
-    const endY = toNode.y;
-
+    const endY = toNode.y - endRadius * 0.75;
     const deltaY = endY - startY;
     const cp1Y = Math.round(startY + deltaY * 0.5);
     const cp2Y = Math.round(endY - deltaY * 0.5);

@@ -23,7 +23,14 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
 
   const mode = useViewModeStore((state) => state.mode)
   
-  const chars = "!<>-_\\/[]{}—=+*^?#________"
+  const formattedMark = React.useMemo(() => {
+    if (!mark) return ""
+    if (mark.includes("\n")) return mark
+    if (mark.includes("· ")) return mark.replace("· ", "·\n")
+    return mark
+  }, [mark])
+
+  const chars = "!<>_[]{}~=+*^?#________"
 
   const [mounted, setMounted] = React.useState(false)
   const [isMac, setIsMac] = React.useState(false)
@@ -95,7 +102,7 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
       element.innerText = text
           .split("")
           .map((letter, index) => {
-            if (letter === " ") return " "
+            if (letter === " " || letter === "\n") return letter
             if (index < iteration) {
               return text[index]
             }
@@ -115,24 +122,24 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
   React.useEffect(() => {
     // When mode switches, trigger scramble on the visible elements safely
     if (mode === "quick") {
-      if (markRef.current) scramble("mark", markRef.current, mark, chars.split(""))
+      if (markRef.current) scramble("mark", markRef.current, formattedMark, chars.split(""))
     } else {
-      if (deepMarkRef.current) scramble("deepMark", deepMarkRef.current, mark, chars.split(""))
+      if (deepMarkRef.current) scramble("deepMark", deepMarkRef.current, formattedMark, chars.split(""))
     }
-  }, [mode, mark])
+  }, [mode, formattedMark])
 
   React.useEffect(() => {
     // Periodic scramble on the active face's mark together safely
     const timer = setInterval(() => {
       if (mode === "quick") {
-        if (markRef.current) scramble("mark", markRef.current, mark, chars.split(""))
+        if (markRef.current) scramble("mark", markRef.current, formattedMark, chars.split(""))
       } else {
-        if (deepMarkRef.current) scramble("deepMark", deepMarkRef.current, mark, chars.split(""))
+        if (deepMarkRef.current) scramble("deepMark", deepMarkRef.current, formattedMark, chars.split(""))
       }
     }, 5000)
 
     return () => clearInterval(timer)
-  }, [mode, mark])
+  }, [mode, formattedMark])
 
   React.useEffect(() => {
     // Cleanup on unmount
@@ -156,11 +163,12 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
           <div>
             <h1 
               ref={deepMarkRef}
-              className="relative z-10 text-xl sm:text-2xl md:text-3xl font-mono tracking-tight font-bold leading-tight sm:leading-tight text-white/90 min-h-[1.3em] break-words"
+              title={mark}
+              className="relative z-10 text-[21px] xs:text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-mono tracking-tight font-bold leading-[1.2] text-white/90 min-h-[2.4em] whitespace-pre-line select-none"
             >
-              {mark}
+              {formattedMark}
             </h1>
-            <p className="relative z-10 text-xs sm:text-sm md:text-base mt-2.5 sm:mt-4 md:mt-6 text-white/60 w-full leading-relaxed">
+            <p className="relative z-10 text-[13px] xs:text-[13.5px] sm:text-sm md:text-base mt-2.5 sm:mt-4 md:mt-6 text-white/60 w-full leading-relaxed">
               {description}
             </p>
           </div>
@@ -232,11 +240,12 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
         <div>
           <h1 
             ref={markRef}
-            className="relative z-10 text-xl sm:text-2xl md:text-3xl font-display leading-tight sm:leading-tight text-white/90 min-h-[1.3em] font-bold tracking-tight break-words"
+            title={mark}
+            className="relative z-10 text-2xl xs:text-[26px] sm:text-3xl md:text-3xl lg:text-4xl font-display leading-[1.2] text-white/90 min-h-[2.4em] font-bold tracking-tight whitespace-pre-line select-none"
           >
-            {mark}
+            {formattedMark}
           </h1>
-          <p className="relative z-10 text-xs sm:text-sm md:text-base mt-2.5 sm:mt-4 md:mt-6 text-white/60 w-full leading-relaxed">
+          <p className="relative z-10 text-[13px] xs:text-[13.5px] sm:text-sm md:text-base mt-2.5 sm:mt-4 md:mt-6 text-white/60 w-full leading-relaxed">
             {description}
           </p>
         </div>

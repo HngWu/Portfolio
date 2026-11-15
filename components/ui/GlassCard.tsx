@@ -125,7 +125,6 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
           "relative group bg-[var(--glass-fill,rgba(255,255,255,0.03))] backdrop-blur-xl rounded-2xl border border-[var(--glass-border,rgba(255,255,255,0.08))] overflow-hidden",
           "shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]",
           "transition-all duration-500",
-          "transform-gpu backface-hidden",
           glowClasses[glowColor],
           className
         )}

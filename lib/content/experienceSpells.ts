@@ -85,8 +85,8 @@ export const HANDCRAFTED_SPELLS: Record<string, Partial<SpellData>> = {
     ]
   },
   "ttp": {
-    spellName: "Junior IT Application Support Engineer",
-    realm: "To The Point Pte Ltd (TTP)",
+    spellName: "IT Application Support Engineer",
+    realm: "To The Point Pte Ltd",
     era: "Sep 2024 - Present",
     school: "IT Systems Support",
     tier: "Quality Assurance & Debugging",

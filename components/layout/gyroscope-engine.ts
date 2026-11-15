@@ -1,13 +1,29 @@
 /**
  * Gyroscope Engine — High-Performance 2D Canvas Physics & Render Pipeline
  * 
- * Drives the Arcane Gyroscope & Supernova Singularity initial preloader:
+ * Drives the Arcane Gyroscope & Singularity Preloader:
  * - Counter-rotating runic celestial rings
  * - 3D-angled trigonometric gimbal simulation
+ * - Pure Dual-Mode Palette:
+ *   • Quick-Pitch: Solar Gold (#FFD95A, #C9A227), Amber (#FFB44A), Amethyst (#8E44AD)
+ *   • Deep-Dive: Electric Blueprint Blue (#2563EB, #4A8FFF), Hextech Cyan (#6AFFFF), Laser Orange (#F97316)
+ * - HexCore isometric Rubik pyramid geometry resonance
  * - Inward spiral particle gravity vortex
  * - Dynamic singularity diamond flare & radial overcharge
- * - Supernova shockwave expansion & ejection particles
+ * - High-velocity directed energy beam handoff to 3D Hero tile
  */
+
+export interface GyroPalette {
+  mode: "quick" | "deep"
+  primary: string
+  primaryRgb: string
+  accent: string
+  accentRgb: string
+  accentBright: string
+  secondary: string
+  tertiary: string
+  glowRgb: string
+}
 
 export interface GyroParticle {
   distance: number
@@ -16,7 +32,7 @@ export interface GyroParticle {
   spiralSpeed: number
   size: number
   alpha: number
-  hue: "mint" | "gold" | "blue" | "white"
+  hue: "primary" | "accent" | "secondary" | "white"
 }
 
 export interface ShockwaveParticle {
@@ -56,12 +72,24 @@ const RUNES = [
   "ᛏ", "ᛒ", "ᛖ", "ᛗ", "ᛚ", "ᛜ", "ᛞ", "ᛟ"
 ]
 
-const PARTICLE_COUNT = 55
+const PARTICLE_COUNT = 60
 const BASE_RADIUS = 130
+
+export const DEFAULT_GYRO_PALETTE: GyroPalette = {
+  mode: "quick",
+  primary: "#FFE875",
+  primaryRgb: "255, 232, 117",
+  accent: "#C9A227",
+  accentRgb: "201, 162, 39",
+  accentBright: "#FFD95A",
+  secondary: "#8E44AD",
+  tertiary: "#FFB44A",
+  glowRgb: "201, 162, 39",
+}
 
 export function initGyroscope(width: number, height: number): GyroscopeState {
   const particles: GyroParticle[] = []
-  const hues: Array<GyroParticle["hue"]> = ["mint", "gold", "blue", "white"]
+  const hues: Array<GyroParticle["hue"]> = ["primary", "accent", "secondary", "white"]
 
   for (let i = 0; i < PARTICLE_COUNT; i++) {
     particles.push({
@@ -71,7 +99,7 @@ export function initGyroscope(width: number, height: number): GyroscopeState {
       spiralSpeed: (Math.random() > 0.5 ? 1 : -1) * (0.8 + Math.random() * 1.2),
       size: 1 + Math.random() * 2.2,
       alpha: 0.2 + Math.random() * 0.7,
-      hue: hues[Math.floor(Math.random() * hues.length)]
+      hue: hues[Math.floor(Math.random() * hues.length)],
     })
   }
 
@@ -93,7 +121,7 @@ export function initGyroscope(width: number, height: number): GyroscopeState {
     beamActive: false,
     beamProgress: 0,
     impactCoronaProgress: 0,
-    lastTime: null
+    lastTime: null,
   }
 }
 
@@ -107,13 +135,18 @@ export function triggerImplosion(state: GyroscopeState, targetX: number, targetY
   state.impactCoronaProgress = 0
 }
 
-export function triggerShockwave(state: GyroscopeState, centerX: number, centerY: number): void {
+export function triggerShockwave(
+  state: GyroscopeState,
+  centerX: number,
+  centerY: number,
+  palette: GyroPalette = DEFAULT_GYRO_PALETTE
+): void {
   state.shockwaveActive = true
   state.shockwaveProgress = 0
   state.shockwaveParticles = []
 
-  const sparkCount = 40
-  const colors = ["#4AFFB4", "#FFE875", "#4A8FFF", "#FFFFFF"]
+  const sparkCount = 44
+  const colors = [palette.primary, palette.accentBright, palette.accent, palette.tertiary, "#FFFFFF"]
   for (let i = 0; i < sparkCount; i++) {
     const angle = Math.random() * Math.PI * 2
     const speed = 250 + Math.random() * 600
@@ -124,7 +157,7 @@ export function triggerShockwave(state: GyroscopeState, centerX: number, centerY
       vy: Math.sin(angle) * speed,
       size: 1.5 + Math.random() * 2.5,
       alpha: 1,
-      color: colors[Math.floor(Math.random() * colors.length)]
+      color: colors[Math.floor(Math.random() * colors.length)],
     })
   }
 }
@@ -137,7 +170,8 @@ export function drawGyroscope(
   isOvercharging: boolean,
   now: number,
   width: number,
-  height: number
+  height: number,
+  palette: GyroPalette = DEFAULT_GYRO_PALETTE
 ): boolean {
   if (state.lastTime === null) {
     state.lastTime = now
@@ -146,9 +180,9 @@ export function drawGyroscope(
   state.lastTime = now
 
   const cx = width / 2
-  const cy = height / 2 - 40 // slight vertical offset to center with HUD
+  const cy = height / 2 - 35 // center vertically with bottom HUD offset
 
-  // Responsive scale factor (bounds to safe dimensions on mobile vs desktop)
+  // Responsive scale factor (safe bounds across mobile & desktop)
   const minDim = Math.min(width, height)
   const scale = Math.max(0.75, Math.min(1.15, minDim / 650))
 
@@ -164,7 +198,7 @@ export function drawGyroscope(
     const p = Math.min(1, state.implosionProgress)
     implosionScale = Math.max(0.01, 1 - Math.pow(p, 2.2))
     implosionAlpha = Math.max(0, 1 - p * 1.05)
-    speedMultiplier *= (1 + p * 6.0) // Hyper-spin acceleration on collapse
+    speedMultiplier *= 1 + p * 6.0 // hyper-spin acceleration on collapse
   }
 
   const effectiveScale = scale * implosionScale
@@ -185,12 +219,21 @@ export function drawGyroscope(
   // 1. Ambient Center Glow
   if (implosionAlpha > 0.01) {
     const ambientGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, BASE_RADIUS * 1.8 * effectiveScale)
-    const mintAlpha = (0.08 + progressRatio * 0.08 + state.overchargeIntensity * 0.25) * implosionAlpha
-    const goldAlpha = (0.04 + progressRatio * 0.06 + state.overchargeIntensity * 0.20) * implosionAlpha
-    ambientGlow.addColorStop(0, `rgba(255, 232, 117, ${goldAlpha})`)
-    ambientGlow.addColorStop(0.4, `rgba(74, 255, 180, ${mintAlpha})`)
-    ambientGlow.addColorStop(0.8, `rgba(74, 143, 255, ${mintAlpha * 0.5})`)
-    ambientGlow.addColorStop(1, "rgba(5, 5, 5, 0)")
+    const primaryAlpha = (0.08 + progressRatio * 0.08 + state.overchargeIntensity * 0.25) * implosionAlpha
+    const accentAlpha = (0.04 + progressRatio * 0.06 + state.overchargeIntensity * 0.20) * implosionAlpha
+
+    if (palette.mode === "quick") {
+      ambientGlow.addColorStop(0, `rgba(255, 217, 90, ${accentAlpha * 1.5})`)
+      ambientGlow.addColorStop(0.35, `rgba(201, 162, 39, ${primaryAlpha})`)
+      ambientGlow.addColorStop(0.7, `rgba(142, 68, 173, ${primaryAlpha * 0.35})`)
+      ambientGlow.addColorStop(1, "rgba(5, 5, 5, 0)")
+    } else {
+      ambientGlow.addColorStop(0, `rgba(106, 255, 255, ${accentAlpha * 1.5})`)
+      ambientGlow.addColorStop(0.35, `rgba(74, 143, 255, ${primaryAlpha})`)
+      ambientGlow.addColorStop(0.7, `rgba(37, 99, 235, ${primaryAlpha * 0.35})`)
+      ambientGlow.addColorStop(1, "rgba(5, 5, 5, 0)")
+    }
+
     ctx.fillStyle = ambientGlow
     ctx.fillRect(0, 0, width, height)
   }
@@ -205,7 +248,7 @@ export function drawGyroscope(
       p.angle += p.spiralSpeed * dt * speedMultiplier
       p.distance -= p.speed * dt * speedMultiplier
 
-      // Respawn when reaching center
+      // Respawn when reaching singularity center
       if (p.distance < 10 * effectiveScale) {
         p.distance = (BASE_RADIUS * 1.2 + Math.random() * (BASE_RADIUS * 0.6)) * effectiveScale
         p.angle = Math.random() * Math.PI * 2
@@ -216,27 +259,32 @@ export function drawGyroscope(
       const px = cx + Math.cos(p.angle) * pDist
       const py = cy + Math.sin(p.angle) * pDist
 
-      let colorStr = "rgba(74, 255, 180, "
-      if (p.hue === "gold") colorStr = "rgba(255, 232, 117, "
-      if (p.hue === "blue") colorStr = "rgba(74, 143, 255, "
+      let colorStr = `rgba(${palette.primaryRgb}, `
+      if (p.hue === "accent") colorStr = `rgba(${palette.accentRgb}, `
+      if (p.hue === "secondary") {
+        colorStr = palette.mode === "quick" ? "rgba(142, 68, 173, " : "rgba(249, 115, 22, "
+      }
       if (p.hue === "white") colorStr = "rgba(255, 255, 255, "
 
       // Inward acceleration trail
-      const trailLen = Math.min(18 * effectiveScale, (1 - pDist / (BASE_RADIUS * 1.8 * effectiveScale + 0.1)) * 25 * effectiveScale)
+      const trailLen = Math.min(
+        18 * effectiveScale,
+        (1 - pDist / (BASE_RADIUS * 1.8 * effectiveScale + 0.1)) * 25 * effectiveScale
+      )
       const prevX = px - Math.cos(p.angle + p.spiralSpeed * 0.2) * trailLen
       const prevY = py - Math.sin(p.angle + p.spiralSpeed * 0.2) * trailLen
 
       ctx.beginPath()
       ctx.moveTo(prevX, prevY)
       ctx.lineTo(px, py)
-      ctx.strokeStyle = colorStr + (p.alpha * 0.4 * implosionAlpha) + ")"
-      ctx.lineWidth = p.size * 0.6 * implosionScale
+      ctx.strokeStyle = colorStr + p.alpha * 0.45 * implosionAlpha + ")"
+      ctx.lineWidth = p.size * 0.65 * implosionScale
       ctx.stroke()
 
       // Particle spark head
       ctx.beginPath()
       ctx.arc(px, py, Math.max(0.5, p.size * effectiveScale), 0, Math.PI * 2)
-      ctx.fillStyle = colorStr + (p.alpha * implosionAlpha) + ")"
+      ctx.fillStyle = colorStr + p.alpha * implosionAlpha + ")"
       ctx.fill()
     }
     ctx.restore()
@@ -273,9 +321,11 @@ export function drawGyroscope(
       ctx.moveTo(x1, y1)
       ctx.lineTo(x2, y2)
       ctx.strokeStyle = isMajor
-        ? `rgba(255, 232, 117, ${0.75 * implosionAlpha})`
+        ? `rgba(${palette.accentRgb}, ${0.9 * implosionAlpha})`
         : isSemi
-        ? `rgba(74, 255, 180, ${0.5 * implosionAlpha})`
+        ? palette.mode === "quick"
+          ? `rgba(255, 180, 74, ${0.65 * implosionAlpha})`
+          : `rgba(74, 143, 255, ${0.65 * implosionAlpha})`
         : `rgba(255, 255, 255, ${0.18 * implosionAlpha})`
       ctx.lineWidth = isMajor ? 1.5 : 1
       ctx.stroke()
@@ -284,17 +334,19 @@ export function drawGyroscope(
     // Accent glowing orbital arcs
     ctx.beginPath()
     ctx.arc(0, 0, outerR, 0, Math.PI * 0.4)
-    ctx.strokeStyle = `rgba(74, 255, 180, ${0.85 * implosionAlpha})`
+    ctx.strokeStyle = `rgba(${palette.accentRgb}, ${0.85 * implosionAlpha})`
     ctx.lineWidth = 2 * implosionScale
-    ctx.shadowColor = "#4AFFB4"
+    ctx.shadowColor = palette.accent
     ctx.shadowBlur = 10 * implosionScale
     ctx.stroke()
 
     ctx.beginPath()
     ctx.arc(0, 0, outerR, Math.PI, Math.PI * 1.35)
-    ctx.strokeStyle = `rgba(255, 232, 117, ${0.8 * implosionAlpha})`
+    ctx.strokeStyle = palette.mode === "quick"
+      ? `rgba(255, 232, 117, ${0.9 * implosionAlpha})`
+      : `rgba(106, 255, 255, ${0.9 * implosionAlpha})`
     ctx.lineWidth = 2 * implosionScale
-    ctx.shadowColor = "#FFE875"
+    ctx.shadowColor = palette.accentBright
     ctx.shadowBlur = 10 * implosionScale
     ctx.stroke()
     ctx.restore()
@@ -310,7 +362,9 @@ export function drawGyroscope(
     // Subtle runic guide circle
     ctx.beginPath()
     ctx.arc(0, 0, runicR, 0, Math.PI * 2)
-    ctx.strokeStyle = `rgba(74, 143, 255, ${0.25 * implosionAlpha})`
+    ctx.strokeStyle = palette.mode === "quick"
+      ? `rgba(142, 68, 173, ${0.4 * implosionAlpha})`
+      : `rgba(74, 143, 255, ${0.4 * implosionAlpha})`
     ctx.lineWidth = 1
     ctx.setLineDash([4 * effectiveScale, 6 * effectiveScale])
     ctx.stroke()
@@ -335,8 +389,13 @@ export function drawGyroscope(
 
       const isActive = i <= activeRunesCount
       if (isActive || state.overchargeIntensity > 0) {
-        ctx.fillStyle = i % 2 === 0 ? "#FFE875" : "#4AFFB4"
-        ctx.shadowColor = i % 2 === 0 ? "#FFE875" : "#4AFFB4"
+        if (palette.mode === "quick") {
+          ctx.fillStyle = i % 2 === 0 ? palette.accentBright : palette.tertiary
+          ctx.shadowColor = i % 2 === 0 ? palette.accentBright : palette.accent
+        } else {
+          ctx.fillStyle = i % 2 === 0 ? palette.accentBright : palette.secondary
+          ctx.shadowColor = i % 2 === 0 ? palette.accentBright : palette.accent
+        }
         ctx.shadowBlur = (8 + state.overchargeIntensity * 12) * implosionAlpha
         ctx.globalAlpha = implosionAlpha
       } else {
@@ -355,7 +414,7 @@ export function drawGyroscope(
     ctx.save()
     ctx.translate(cx, cy)
 
-    // Outer Gimbal Ring (Gold/Mint)
+    // Outer Gimbal Ring (Accent Tone)
     const gimbalR1 = BASE_RADIUS * 0.75 * effectiveScale
     const pitchFactor1 = Math.cos(state.gimbalPitch)
     ctx.save()
@@ -363,14 +422,14 @@ export function drawGyroscope(
     ctx.scale(1, Math.max(0.15, Math.abs(pitchFactor1)))
     ctx.beginPath()
     ctx.arc(0, 0, gimbalR1, 0, Math.PI * 2)
-    ctx.strokeStyle = `rgba(201, 162, 39, ${0.65 * implosionAlpha})`
+    ctx.strokeStyle = `rgba(${palette.accentRgb}, ${0.8 * implosionAlpha})`
     ctx.lineWidth = 1.5 * implosionScale
-    ctx.shadowColor = "#C9A227"
+    ctx.shadowColor = palette.accent
     ctx.shadowBlur = 8 * implosionScale
     ctx.stroke()
     ctx.restore()
 
-    // Inner Orthogonal Gimbal Ring (Cyan/Blue)
+    // Inner Orthogonal Gimbal Ring
     const gimbalR2 = BASE_RADIUS * 0.52 * effectiveScale
     const yawFactor2 = Math.sin(state.gimbalYaw)
     ctx.save()
@@ -378,9 +437,11 @@ export function drawGyroscope(
     ctx.scale(Math.max(0.15, Math.abs(yawFactor2)), 1)
     ctx.beginPath()
     ctx.arc(0, 0, gimbalR2, 0, Math.PI * 2)
-    ctx.strokeStyle = `rgba(74, 255, 180, ${0.75 * implosionAlpha})`
+    ctx.strokeStyle = palette.mode === "quick"
+      ? `rgba(142, 68, 173, ${0.85 * implosionAlpha})`
+      : `rgba(106, 255, 255, ${0.85 * implosionAlpha})`
     ctx.lineWidth = 1.5 * implosionScale
-    ctx.shadowColor = "#4AFFB4"
+    ctx.shadowColor = palette.mode === "quick" ? palette.secondary : palette.accentBright
     ctx.shadowBlur = 8 * implosionScale
     ctx.stroke()
     ctx.restore()
@@ -388,7 +449,7 @@ export function drawGyroscope(
     ctx.restore()
   }
 
-  // 6. Central Singularity Core & Overcharge Diamond Flare
+  // 6. Central HexCore Singularity & Rubik's Pyramid Isometric Geometry
   ctx.save()
   ctx.translate(cx, cy)
 
@@ -408,9 +469,38 @@ export function drawGyroscope(
     ctx.beginPath()
     ctx.moveTo(0, 0)
     ctx.lineTo(bx, by)
-    ctx.strokeStyle = `rgba(255, 232, 117, ${0.15 + state.overchargeIntensity * 0.6})`
+    ctx.strokeStyle = `rgba(${palette.accentRgb}, ${0.15 + state.overchargeIntensity * 0.6})`
     ctx.lineWidth = (i % 2 === 0 ? 2 : 1) * scale
     ctx.stroke()
+  }
+
+  // HexCore Rubik Pyramid Wireframe Projection (Appears at 50%+ progress)
+  if (progressRatio > 0.45 && implosionAlpha > 0.05) {
+    const pyramidAlpha = Math.min(1, (progressRatio - 0.45) / 0.4) * implosionAlpha
+    const pySize = 24 * coreScale
+
+    ctx.save()
+    ctx.rotate(state.outerAngle * 0.25)
+    ctx.strokeStyle = `rgba(${palette.accentRgb}, ${pyramidAlpha * 0.6})`
+    ctx.lineWidth = 1 * scale
+
+    // Isometric diamond pyramid contour
+    ctx.beginPath()
+    ctx.moveTo(0, -pySize)
+    ctx.lineTo(pySize * 0.85, 0)
+    ctx.lineTo(0, pySize)
+    ctx.lineTo(-pySize * 0.85, 0)
+    ctx.closePath()
+    ctx.stroke()
+
+    // Internal cross-chambers evoking Rubik's pyramid facets
+    ctx.beginPath()
+    ctx.moveTo(0, -pySize)
+    ctx.lineTo(0, pySize)
+    ctx.moveTo(-pySize * 0.85, 0)
+    ctx.lineTo(pySize * 0.85, 0)
+    ctx.stroke()
+    ctx.restore()
   }
 
   // Core outer glowing diamond
@@ -419,10 +509,10 @@ export function drawGyroscope(
   ctx.rotate(Math.PI / 4 + state.outerAngle * 0.5)
   ctx.beginPath()
   ctx.rect(-coreSize / 2, -coreSize / 2, coreSize, coreSize)
-  ctx.fillStyle = "rgba(74, 255, 180, 0.4)"
-  ctx.strokeStyle = "#4AFFB4"
+  ctx.fillStyle = `rgba(${palette.accentRgb}, 0.35)`
+  ctx.strokeStyle = palette.accentBright
   ctx.lineWidth = 2
-  ctx.shadowColor = "#4AFFB4"
+  ctx.shadowColor = palette.accent
   ctx.shadowBlur = 20 + state.overchargeIntensity * 30
   ctx.fill()
   ctx.stroke()
@@ -434,15 +524,15 @@ export function drawGyroscope(
   ctx.rotate(Math.PI / 4 - state.runicAngle * 0.5)
   ctx.beginPath()
   ctx.rect(-innerSize / 2, -innerSize / 2, innerSize, innerSize)
-  ctx.fillStyle = state.overchargeIntensity > 0.5 ? "#FFFFFF" : "#FFE875"
-  ctx.shadowColor = "#FFE875"
+  ctx.fillStyle = state.overchargeIntensity > 0.5 ? "#FFFFFF" : palette.accentBright
+  ctx.shadowColor = palette.accentBright
   ctx.shadowBlur = 15 + state.overchargeIntensity * 25
   ctx.fill()
   ctx.restore()
 
   ctx.restore()
 
-  // 7. High-Velocity Directed Energy Beam (Concept 1 Handoff)
+  // 7. High-Velocity Directed Energy Beam (Handoff to 3D Hero Tile)
   if (state.implosionActive && state.targetAnchor) {
     if (state.implosionProgress >= 0.35) {
       state.beamActive = true
@@ -463,24 +553,24 @@ export function drawGyroscope(
       const headX = (1 - beamP) * (1 - beamP) * cx + 2 * (1 - beamP) * beamP * midX + beamP * beamP * targetX
       const headY = (1 - beamP) * (1 - beamP) * cy + 2 * (1 - beamP) * beamP * midY + beamP * beamP * targetY
 
-      // Cyan outer glow arc
+      // Primary outer glow arc
       ctx.save()
       ctx.beginPath()
       ctx.moveTo(cx, cy)
       ctx.quadraticCurveTo(midX, midY, headX, headY)
-      ctx.strokeStyle = `rgba(74, 255, 180, ${beamAlpha * 0.95})`
+      ctx.strokeStyle = `rgba(${palette.accentRgb}, ${beamAlpha * 0.95})`
       ctx.lineWidth = 6 * scale
-      ctx.shadowColor = "#4AFFB4"
+      ctx.shadowColor = palette.accent
       ctx.shadowBlur = 25
       ctx.stroke()
 
-      // Gold electrical core
+      // Accent electrical core
       ctx.beginPath()
       ctx.moveTo(cx, cy)
       ctx.quadraticCurveTo(midX, midY, headX, headY)
-      ctx.strokeStyle = `rgba(255, 232, 117, ${beamAlpha * 0.9})`
+      ctx.strokeStyle = `rgba(${palette.primaryRgb}, ${beamAlpha * 0.9})`
       ctx.lineWidth = 3 * scale
-      ctx.shadowColor = "#FFE875"
+      ctx.shadowColor = palette.accentBright
       ctx.shadowBlur = 18
       ctx.stroke()
 
@@ -495,8 +585,8 @@ export function drawGyroscope(
       // Impact spark head
       ctx.beginPath()
       ctx.arc(headX, headY, (12 + Math.sin(timeSec * 60) * 6) * scale, 0, Math.PI * 2)
-      ctx.fillStyle = "#FFE875"
-      ctx.shadowColor = "#FFE875"
+      ctx.fillStyle = palette.accentBright
+      ctx.shadowColor = palette.accentBright
       ctx.shadowBlur = 30
       ctx.fill()
       ctx.restore()
@@ -511,9 +601,9 @@ export function drawGyroscope(
         ctx.save()
         ctx.beginPath()
         ctx.arc(targetX, targetY, coronaR, 0, Math.PI * 2)
-        ctx.strokeStyle = `rgba(74, 255, 180, ${coronaAlpha * 0.85})`
+        ctx.strokeStyle = `rgba(${palette.accentRgb}, ${coronaAlpha * 0.85})`
         ctx.lineWidth = Math.max(1.5, (1 - coronaP) * 10 * scale)
-        ctx.shadowColor = "#4AFFB4"
+        ctx.shadowColor = palette.accent
         ctx.shadowBlur = 25
         ctx.stroke()
         ctx.restore()
@@ -533,13 +623,13 @@ export function drawGyroscope(
     ctx.arc(cx, cy, currentR, 0, Math.PI * 2)
     ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.9})`
     ctx.lineWidth = Math.max(2, (1 - state.shockwaveProgress) * 12 * scale)
-    ctx.shadowColor = "#4AFFB4"
+    ctx.shadowColor = palette.accent
     ctx.shadowBlur = 25
     ctx.stroke()
 
     ctx.beginPath()
     ctx.arc(cx, cy, Math.max(0, currentR - 15 * scale), 0, Math.PI * 2)
-    ctx.strokeStyle = `rgba(74, 255, 180, ${alpha * 0.6})`
+    ctx.strokeStyle = `rgba(${palette.accentRgb}, ${alpha * 0.6})`
     ctx.lineWidth = 3 * scale
     ctx.stroke()
 

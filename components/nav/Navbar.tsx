@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft } from "lucide-react"
 import { ViewModeToggle } from "./ViewModeToggle"
-import { SearchButton } from "./SearchButton"
 import { PerformanceToggle } from "./PerformanceToggle"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 import { usePageTransition } from "@/hooks/usePageTransition"
@@ -104,11 +103,10 @@ export function Navbar() {
         </Link>
       </div>
 
-      {/* Global Actions: Performance, Mode Toggle & Search */}
+      {/* Global Actions: Performance & Mode Toggle */}
       <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
         <PerformanceToggle />
         <ViewModeToggle />
-        <SearchButton />
       </div>
     </motion.header>
   )

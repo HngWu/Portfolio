@@ -2,8 +2,12 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import type { EducationLocation, EducationMapProps, EducationType } from "@/types/education-map";
-import type { ParsedEducation } from "@/lib/content/portfolio";
+import type {
+  EducationLocation,
+  EducationMapProps,
+  EducationType,
+  SheetSnapState,
+} from "@/types/education-map";
 import rawEducationLocations from "@/data/education-locations.json";
 import { GoogleMapsSearchBar } from "./GoogleMapsSearchBar";
 import { GoogleMapsPlacePanel } from "./GoogleMapsPlacePanel";
@@ -92,10 +96,12 @@ export function EducationMap({
   const [activeId, setActiveId] = React.useState<string | null>(
     initialActiveId || (allLocations.length > 0 ? allLocations[0].id : null)
   );
-  const [isPlacePanelOpen, setIsPlacePanelOpen] = React.useState(true);
-  const [mapTheme, setMapTheme] = React.useState<"light" | "dark" | "auto">(initialTheme);
   
-  // Default to previous minimalist map
+  // Tri-state Google Maps bottom sheet snap state (peek, half, full)
+  const [sheetSnap, setSheetSnap] = React.useState<SheetSnapState>("half");
+  const isPlacePanelOpen = sheetSnap !== "peek";
+
+  const [mapTheme, setMapTheme] = React.useState<"light" | "dark" | "auto">(initialTheme);
   const [mapStyle, setMapStyle] = React.useState<"high-res" | "minimal">("minimal");
 
   // Zoom and recenter triggers
@@ -103,7 +109,7 @@ export function EducationMap({
   const [zoomOutTrigger, setZoomOutTrigger] = React.useState(0);
   const [recenterTrigger, setRecenterTrigger] = React.useState(0);
 
-  // Robust Filtered locations matching name, program, caption, honours, and category
+  // Filtered locations matching name, program, caption, honours, and category
   const filteredLocations = React.useMemo(() => {
     return allLocations.filter((loc) => {
       const normProg = (loc.program || "").toLowerCase();
@@ -179,7 +185,7 @@ export function EducationMap({
   const handleSelectLocation = React.useCallback(
     (loc: EducationLocation) => {
       setActiveId(loc.id);
-      setIsPlacePanelOpen(true);
+      setSheetSnap("half");
       onSelectLocation?.(loc);
     },
     [onSelectLocation]
@@ -199,6 +205,11 @@ export function EducationMap({
     const nextIdx = activeIndex >= filteredLocations.length - 1 ? 0 : activeIndex + 1;
     handleSelectLocation(filteredLocations[nextIdx]);
   }, [activeIndex, filteredLocations, handleSelectLocation]);
+
+  // Map background click: collapses sheet to peek state so user can explore map freely
+  const handleMapClick = React.useCallback(() => {
+    setSheetSnap("peek");
+  }, []);
 
   // Keyboard navigation (Arrow keys for prev/next)
   React.useEffect(() => {
@@ -260,6 +271,8 @@ export function EducationMap({
           theme={mapTheme}
           mapStyle={mapStyle}
           isPanelOpen={isPlacePanelOpen}
+          sheetSnap={sheetSnap}
+          onMapClick={handleMapClick}
           zoomInTrigger={zoomInTrigger}
           zoomOutTrigger={zoomOutTrigger}
           recenterTrigger={recenterTrigger}
@@ -276,6 +289,8 @@ export function EducationMap({
           onSelectCategory={setSelectedCategory}
           locationsCount={filteredLocations.length}
           totalCount={allLocations.length}
+          locations={allLocations}
+          onSelectLocation={handleSelectLocation}
           className="w-full shrink-0"
         />
 
@@ -289,7 +304,8 @@ export function EducationMap({
             onNext={handleNext}
             onRecenter={handleRecenter}
             isOpen={isPlacePanelOpen}
-            onToggleOpen={() => setIsPlacePanelOpen((prev) => !prev)}
+            onToggleOpen={() => setSheetSnap((prev) => (prev === "peek" ? "half" : "peek"))}
+            isMobileSheet={false}
             className="w-full flex-1 min-h-0"
           />
         ) : (
@@ -301,8 +317,8 @@ export function EducationMap({
         )}
       </div>
 
-      {/* MOBILE MODE: Floating Top Search Bar */}
-      <div className="sm:hidden fixed top-3 left-3 right-3 z-[450] pointer-events-auto">
+      {/* MOBILE MODE: Floating Top Search Bar with Safe Area Inset */}
+      <div className="sm:hidden fixed top-0 left-0 right-0 z-[450] p-3 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] pointer-events-auto">
         <GoogleMapsSearchBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -310,11 +326,49 @@ export function EducationMap({
           onSelectCategory={setSelectedCategory}
           locationsCount={filteredLocations.length}
           totalCount={allLocations.length}
+          locations={allLocations}
+          onSelectLocation={handleSelectLocation}
           className="w-full"
         />
       </div>
 
-      {/* MOBILE MODE: Strictly Positioned at Bottom of Screen as Bottom Sheet */}
+      {/* TOP-RIGHT VIEW CONTROLS: Map Layer (High-Res vs Minimal) & Basemap Theme (Dark vs Light) */}
+      <div className="fixed top-[calc(7.75rem+env(safe-area-inset-top,0px))] right-3.5 sm:top-6 sm:right-6 z-[450] pointer-events-auto">
+        <GoogleMapsControls
+          mode="layers-only"
+          orientation="horizontal"
+          mapTheme={mapTheme}
+          onToggleTheme={() => setMapTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+          mapStyle={mapStyle}
+          onToggleMapStyle={handleToggleMapStyle}
+          onZoomIn={() => setZoomInTrigger((prev) => prev + 1)}
+          onZoomOut={() => setZoomOutTrigger((prev) => prev + 1)}
+          onRecenterSingapore={handleRecenter}
+        />
+      </div>
+
+      {/* MOBILE MODE: Floating Recenter FAB dynamically riding above the Bottom Sheet */}
+      <div
+        className={cn(
+          "sm:hidden fixed right-3.5 z-[450] pointer-events-auto transition-all duration-300 ease-out",
+          sheetSnap === "peek" && "bottom-[calc(88px+env(safe-area-inset-bottom,0px))]",
+          sheetSnap === "half" && "bottom-[calc(48dvh+1rem)]",
+          sheetSnap === "full" && "bottom-[calc(88dvh+1rem)] opacity-0 pointer-events-none"
+        )}
+      >
+        <GoogleMapsControls
+          mode="recenter-only"
+          mapTheme={mapTheme}
+          onToggleTheme={() => setMapTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+          mapStyle={mapStyle}
+          onToggleMapStyle={handleToggleMapStyle}
+          onZoomIn={() => setZoomInTrigger((prev) => prev + 1)}
+          onZoomOut={() => setZoomOutTrigger((prev) => prev + 1)}
+          onRecenterSingapore={handleRecenter}
+        />
+      </div>
+
+      {/* MOBILE MODE: Tri-State Google Maps Bottom Sheet */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 z-[450] pointer-events-auto">
         {activeLocation && (
           <GoogleMapsPlacePanel
@@ -324,16 +378,28 @@ export function EducationMap({
             onPrev={handlePrev}
             onNext={handleNext}
             onRecenter={handleRecenter}
-            isOpen={isPlacePanelOpen}
-            onToggleOpen={() => setIsPlacePanelOpen((prev) => !prev)}
+            sheetSnap={sheetSnap}
+            onSnapChange={setSheetSnap}
+            isMobileSheet={true}
             className="w-full"
           />
         )}
       </div>
 
-      {/* Floating Map Controls - on mobile positioned below search bar to avoid colliding with bottom sheet */}
-      <div className="fixed top-24 right-3 sm:top-auto sm:bottom-6 sm:right-6 z-[450] pointer-events-auto">
+      {/* DESKTOP & TABLET MODE: Floating Navigation Controls (Recenter & Zoom) */}
+      <div className="hidden sm:flex flex-col gap-3 fixed sm:bottom-6 sm:right-6 z-[450] pointer-events-auto">
         <GoogleMapsControls
+          mode="recenter-only"
+          mapTheme={mapTheme}
+          onToggleTheme={() => setMapTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+          mapStyle={mapStyle}
+          onToggleMapStyle={handleToggleMapStyle}
+          onZoomIn={() => setZoomInTrigger((prev) => prev + 1)}
+          onZoomOut={() => setZoomOutTrigger((prev) => prev + 1)}
+          onRecenterSingapore={handleRecenter}
+        />
+        <GoogleMapsControls
+          mode="zoom-only"
           mapTheme={mapTheme}
           onToggleTheme={() => setMapTheme((prev) => (prev === "dark" ? "light" : "dark"))}
           mapStyle={mapStyle}

@@ -1,18 +1,21 @@
 "use client";
 
 import * as React from "react";
-import type { EducationLocation, EducationType } from "@/types/education-map";
+import type { EducationLocation } from "@/types/education-map";
+import { TYPE_CONFIGS } from "./EducationPinSvg";
 import { usePageTransition } from "@/hooks/usePageTransition";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Search, X, MapPin, GraduationCap, School } from "lucide-react";
 
-interface GoogleMapsSearchBarProps {
+export interface GoogleMapsSearchBarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
   locationsCount: number;
   totalCount: number;
+  locations?: EducationLocation[];
+  onSelectLocation?: (loc: EducationLocation) => void;
   className?: string;
 }
 
@@ -31,13 +34,42 @@ export function GoogleMapsSearchBar({
   onSelectCategory,
   locationsCount,
   totalCount,
+  locations = [],
+  onSelectLocation,
   className,
 }: GoogleMapsSearchBarProps) {
   const { navigateWithTransition } = usePageTransition();
   const [isFocused, setIsFocused] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Filter matching suggestions when typing
+  const searchSuggestions = React.useMemo(() => {
+    if (!searchQuery.trim() || locations.length === 0) return [];
+    const q = searchQuery.toLowerCase().trim();
+    return locations.filter((loc) => {
+      const matchName = (loc.name || "").toLowerCase().includes(q);
+      const matchProg = (loc.program || "").toLowerCase().includes(q);
+      const matchCity = (loc.city || "").toLowerCase().includes(q);
+      return matchName || matchProg || matchCity;
+    }).slice(0, 5);
+  }, [searchQuery, locations]);
+
+  // Handle clicking outside to dismiss suggestions dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <div className={cn("flex flex-col gap-2.5 w-full pointer-events-auto", className)}>
+    <div
+      ref={containerRef}
+      className={cn("relative flex flex-col gap-2.5 w-full pointer-events-auto", className)}
+    >
       {/* Floating Main Search Box */}
       <div
         className={cn(
@@ -67,7 +99,6 @@ export function GoogleMapsSearchBar({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
           placeholder="Search milestones in Singapore..."
           className="w-full bg-transparent text-sm sm:text-base text-white placeholder:text-white/40 font-sans outline-none leading-none"
         />
@@ -76,7 +107,10 @@ export function GoogleMapsSearchBar({
         {searchQuery ? (
           <button
             type="button"
-            onClick={() => onSearchChange("")}
+            onClick={() => {
+              onSearchChange("");
+              setIsFocused(false);
+            }}
             className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors shrink-0 active:scale-90"
             title="Clear search"
           >
@@ -89,8 +123,48 @@ export function GoogleMapsSearchBar({
         )}
       </div>
 
+      {/* Mobile Instant Search Suggestions Dropdown */}
+      {isFocused && searchSuggestions.length > 0 && (
+        <div className="absolute top-[calc(100%-0.25rem)] left-0 right-0 z-50 rounded-2xl bg-[#0a0a0a]/96 backdrop-blur-3xl border border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.95)] overflow-hidden divide-y divide-white/5 p-1 animate-in fade-in slide-in-from-top-2 duration-200">
+          {searchSuggestions.map((loc, idx) => {
+            const config = TYPE_CONFIGS[loc.type] || TYPE_CONFIGS.degree;
+            return (
+              <button
+                key={loc.id}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onSelectLocation?.(loc);
+                  setIsFocused(false);
+                }}
+                className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 text-left transition-colors cursor-pointer group"
+              >
+                <span
+                  className="size-7 rounded-full flex items-center justify-center text-[10px] font-mono font-bold shrink-0"
+                  style={{
+                    backgroundColor: config.pinColor,
+                    color: "#000000",
+                    boxShadow: `0 0 10px ${config.glow}`,
+                  }}
+                >
+                  {idx + 1}
+                </span>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-xs sm:text-sm font-semibold text-white group-hover:text-lume-primary transition-colors truncate">
+                    {loc.name}
+                  </span>
+                  <span className="text-[11px] text-white/50 truncate">
+                    {loc.program} • {config.label}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Quick Category Filter Chips */}
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 px-0.5 scrollbar-none touch-pan-x">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 px-0.5 pr-24 sm:pr-0.5 scrollbar-none touch-pan-x">
         {CATEGORY_CHIPS.map((chip) => {
           const isSelected = selectedCategory === chip.id;
           const Icon = chip.icon;

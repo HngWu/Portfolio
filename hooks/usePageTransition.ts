@@ -38,15 +38,24 @@ export function usePageTransition(): UsePageTransitionReturn {
         return
       }
 
+      // Read view mode on-demand to keep callback referentially stable
+      const mode = useViewModeStore.getState().mode
+
+      // Synchronize deep dive mode with URL parameter if active
+      const targetUrl =
+        mode === "deep" && !path.includes("mode=")
+          ? `${path}${path.includes("?") ? "&" : "?"}mode=deep`
+          : path
+
       // 3. Guard against duplicate rapid clicks
       const { curtainState, targetPath } = useNavigationStore.getState()
-      if (curtainState !== "idle" && targetPath === path) {
+      if (curtainState !== "idle" && targetPath === targetUrl) {
         return
       }
 
       // Prefetch destination route immediately so assets/RSC are warm
       try {
-        router.prefetch(path)
+        router.prefetch(targetUrl)
       } catch {
         // Ignored if prefetching is unavailable
       }
@@ -57,12 +66,10 @@ export function usePageTransition(): UsePageTransitionReturn {
         window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
       if (prefersReduced) {
-        router.push(path)
+        router.push(targetUrl)
         return
       }
 
-      // Read view mode on-demand to keep callback referentially stable
-      const mode = useViewModeStore.getState().mode
       const { preset } = resolveTransition(path, mode)
 
       // 4. Validate origin element bounds with defensive error handling
@@ -103,12 +110,12 @@ export function usePageTransition(): UsePageTransitionReturn {
       setOriginRect(originRect)
       setOriginTileId(originTileId)
       setActivePreset(preset)
-      setTargetPath(path)
+      setTargetPath(targetUrl)
       setPageLoaded(false)
       setCurtainState("covering")
 
       // Trigger route swap
-      router.push(path)
+      router.push(targetUrl)
     },
     [
       router,

@@ -61,8 +61,18 @@ const DEFAULT_PROJECT_ITEMS: ProjectItem[] = [
 
 export function ProjectTile({ id, size, content, deepDive, isDragging, sortableProps }: ProjectTileProps) {
   const mode = useViewModeStore((state) => state.mode)
-  const isDeepDive = mode === "deep"
   const forceMobile = React.useContext(ForceMobileContext)
+  const isMobile = React.useSyncExternalStore(
+    React.useCallback((callback: () => void) => {
+      const mediaQuery = window.matchMedia("(max-width: 767px)")
+      mediaQuery.addEventListener("change", callback)
+      return () => mediaQuery.removeEventListener("change", callback)
+    }, []),
+    () => window.matchMedia("(max-width: 767px)").matches,
+    () => false
+  )
+  const isMobileEffective = forceMobile || isMobile
+  const isDeepDive = mode === "deep" && !isMobileEffective
   const typo = getTypographyClasses(size, isDeepDive, forceMobile)
   const deep = parseTileDeepDive("project", deepDive)
 
@@ -121,17 +131,6 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
     [activeIndex]
   )
 
-  const isMobile = React.useSyncExternalStore(
-    React.useCallback((callback: () => void) => {
-      const mediaQuery = window.matchMedia("(max-width: 767px)")
-      mediaQuery.addEventListener("change", callback)
-      return () => mediaQuery.removeEventListener("change", callback)
-    }, []),
-    () => window.matchMedia("(max-width: 767px)").matches,
-    () => false
-  )
-  const isMobileEffective = forceMobile || isMobile
-
   // Swipe / Drag Gestures
   const handleDragStart = () => {
     isInteractingRef.current = true
@@ -185,6 +184,7 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
       size={size}
       href="/projects"
       glowColor="blue"
+      canDeepDive={!isMobileEffective}
       isDragging={isDragging}
       sortableProps={sortableProps}
       deepContent={
@@ -273,6 +273,7 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                     target="_blank"
                     rel="noopener noreferrer"
                     onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white/70 hover:text-white text-xs font-mono transition-colors"
                   >
                     <Github className="size-3" />
@@ -285,6 +286,7 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                     target="_blank"
                     rel="noopener noreferrer"
                     onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-[#4A8FFF] text-xs font-mono transition-colors"
                   >
                     <ExternalLink className="size-3" />

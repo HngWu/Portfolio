@@ -169,13 +169,13 @@ console.log('✓ toSpellData correctly maps handcrafted experience (DBS Bank)')
 // 2. Test handcrafted lookup by company/id for TTP
 const ttpMock = {
   id: 'ttp-support',
-  role: 'Junior IT Application Support Engineer',
-  company: 'To The Point Pte Ltd (TTP)',
+  role: 'IT Application Support Engineer',
+  company: 'To The Point Pte Ltd',
   date: 'Sep 2024 - Present',
   highlights: ['Executed end-to-end UAT and SIT testing cycles']
 }
 const ttpSpell = toSpellData(ttpMock, 1, 5)
-if (ttpSpell.spellName !== 'Junior IT Application Support Engineer' || !ttpSpell.ingredients.some(i => i.name.includes('UAT'))) {
+if (ttpSpell.spellName !== 'IT Application Support Engineer' || !ttpSpell.ingredients.some(i => i.name.includes('UAT'))) {
   console.error('❌ toSpellData failed to map TTP handcrafted record:', ttpSpell)
   process.exit(1)
 }

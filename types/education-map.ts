@@ -2,6 +2,8 @@ import type { ParsedEducation } from "@/lib/content/portfolio";
 
 export type EducationType = "degree" | "exchange" | "bootcamp" | "workshop" | "conference";
 
+export type SheetSnapState = "peek" | "half" | "full";
+
 export interface EducationLocation {
   id: string;
   name: string;

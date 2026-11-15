@@ -54,8 +54,8 @@ const DEFAULT_EXPERIENCE_ITEMS: ExperienceItem[] = [
   },
   {
     id: "ttp-support",
-    role: "Junior IT Application Support Engineer",
-    company: "To The Point Pte Ltd (TTP)",
+    role: "IT Application Support Engineer",
+    company: "To The Point Pte Ltd",
     date: "Sep 2024 - Present",
     category: "IT Systems Support",
     highlights: [
@@ -82,8 +82,8 @@ export function ExperienceTile({
   sortableProps,
 }: ExperienceTileProps) {
   const mode = useViewModeStore((state) => state.mode)
-  const isDeepDive = mode === "deep"
   const forceMobile = React.useContext(ForceMobileContext)
+  const isDeepDive = mode === "deep"
   const typo = getTypographyClasses(size, isDeepDive, forceMobile)
   const deep = parseTileDeepDive("experience", deepDive)
 
@@ -138,43 +138,41 @@ export function ExperienceTile({
     [activeIndex]
   )
 
-  const isMobile = React.useSyncExternalStore(
-    React.useCallback((callback: () => void) => {
-      const mediaQuery = window.matchMedia("(max-width: 767px)")
-      mediaQuery.addEventListener("change", callback)
-      return () => mediaQuery.removeEventListener("change", callback)
-    }, []),
-    () => window.matchMedia("(max-width: 767px)").matches,
-    () => false
-  )
-  const isMobileEffective = forceMobile || isMobile
-
-  // Swipe / Drag Gestures
+  // Swipe / Drag Gestures with click-suppression guard
   const handleDragStart = () => {
-    isInteractingRef.current = true
+    // Reset drag distance
+  }
+
+  const handleDrag = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const dist = Math.hypot(info.offset.x, info.offset.y)
+    if (dist > 8) {
+      isInteractingRef.current = true
+    }
   }
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    setTimeout(() => {
-      isInteractingRef.current = false
-    }, 100)
+    const offsetThreshold = 35
+    const velocityThreshold = 220
 
-    const offsetThreshold = 40
-    const velocityThreshold = 250
-
-    if (isMobileEffective) {
-      if (info.offset.x < -offsetThreshold || info.velocity.x < -velocityThreshold) {
-        goToNext()
-      } else if (info.offset.x > offsetThreshold || info.velocity.x > velocityThreshold) {
-        goToPrev()
-      }
-    } else {
+    // Support both vertical swipe (matching ChevronUp/Down) and horizontal swipe
+    if (Math.abs(info.offset.y) >= Math.abs(info.offset.x)) {
       if (info.offset.y < -offsetThreshold || info.velocity.y < -velocityThreshold) {
         goToNext()
       } else if (info.offset.y > offsetThreshold || info.velocity.y > velocityThreshold) {
         goToPrev()
       }
+    } else {
+      if (info.offset.x < -offsetThreshold || info.velocity.x < -velocityThreshold) {
+        goToNext()
+      } else if (info.offset.x > offsetThreshold || info.velocity.x > velocityThreshold) {
+        goToPrev()
+      }
     }
+
+    // Keep interaction flag active briefly to swallow trailing click event from drag gesture
+    setTimeout(() => {
+      isInteractingRef.current = false
+    }, 250)
   }
 
   // Keyboard navigation when focused
@@ -221,96 +219,32 @@ export function ExperienceTile({
       ? activeItem.deepDiveHighlights
       : activeItem.highlights) || []
 
-  return (
-    <BentoTile
-      id={id}
-      size={size}
-      href="/experience"
-      glowColor="mint"
-      isDragging={isDragging}
-      sortableProps={sortableProps}
-      deepContent={
-        <div
-          tabIndex={0}
-          onKeyDown={handleKeyDown}
-          className="flex flex-col h-full overflow-hidden select-none outline-none"
-        >
-          {/* Header */}
-          <div className="flex justify-between items-start gap-3 mb-2 shrink-0 min-w-0">
-            <div className="min-w-0 shrink">
-              <div className="flex items-center gap-2 min-w-0">
-                <h3 className="font-mono tracking-tight font-bold text-lg sm:text-xl text-white/90 shrink-0">
-                  Key Responsibilities
-                </h3>
-                {activeItem.category && (
-                  <span
-                    title={activeItem.category}
-                    className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-lume-primary/10 border border-lume-primary/20 text-lume-primary font-semibold uppercase tracking-wider truncate whitespace-nowrap max-w-[120px] sm:max-w-[150px] lg:max-w-[180px] shrink"
-                  >
-                    {activeItem.category}
-                  </span>
-                )}
-              </div>
-              <p className="text-lume-primary mt-1 text-xs font-mono uppercase tracking-widest truncate">
-                {activeItem.company} · {activeItem.date}
-              </p>
-            </div>
+  const renderFace = (isDeep: boolean) => {
+    const highlights = isDeep ? deepHighlights : quickHighlights
 
-            {/* Desktop Chevrons for Deep Dive */}
-            <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-              <span className="text-[10px] font-mono text-white/30 mr-1 select-none">
-                {String(safeIndex + 1).padStart(2, "0")}/{String(items.length).padStart(2, "0")}
-              </span>
-              <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-lg p-0.5 shadow-sm">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    goToPrev()
-                  }}
-                  aria-label="Previous role"
-                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
-                >
-                  <ChevronUp className="size-3.5" />
-                </button>
-                <div className="w-[1px] h-3 bg-white/10" />
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    goToNext()
-                  }}
-                  aria-label="Next role"
-                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
-                >
-                  <ChevronDown className="size-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
+    const roleHeading = isDeep ? (
+      <h3 className="font-mono text-xl sm:text-2xl font-bold text-white/95 tracking-tight mb-1.5 line-clamp-2 leading-snug">
+        {activeItem.role}
+      </h3>
+    ) : (
+      <h3 className="font-display text-xl sm:text-2xl font-medium text-white/95 tracking-tight mb-1.5 line-clamp-2 leading-snug">
+        {activeItem.role}
+      </h3>
+    )
 
-          {/* Deep Dive Body */}
-          <div className="flex-1 space-y-2.5 pr-2 pb-2 overflow-y-auto custom-scrollbar">
-            {deepHighlights.map((highlight, i) => (
-              <div key={i} className="flex items-start gap-2.5 group/item">
-                <div className="shrink-0 p-1 mt-0.5 bg-transparent rounded-md border border-white/10 group-hover/item:border-lume-primary/30 transition-colors">
-                  {getHighlightIcon(
-                    highlight,
-                    "size-3 text-lume-primary/60 group-hover/item:text-lume-primary transition-colors"
-                  )}
-                </div>
-                <span
-                  className="text-xs md:text-[13px] text-white/70 group-hover/item:text-white/90 transition-colors leading-relaxed"
-                >
-                  {highlight}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      }
-    >
-      {/* Front Face: Quick Pitch 3D Stack */}
+    const companyDateClass = isDeep
+      ? "text-lume-primary mb-3 sm:mb-3.5 text-xs sm:text-[13px] font-mono tracking-wide"
+      : "text-white/60 mb-3 sm:mb-3.5 text-xs sm:text-[13px] font-mono tracking-wide"
+
+    const highlightTextClass = isDeep
+      ? "text-xs sm:text-[13.5px] text-white/80 group-hover/item:text-white/95 transition-colors leading-relaxed line-clamp-2"
+      : "text-xs sm:text-[13.5px] text-white/80 group-hover/item:text-white/95 transition-colors leading-relaxed line-clamp-2"
+
+    const highlightSpacingClass = isDeep
+      ? "space-y-2.5 sm:space-y-3 overflow-y-auto custom-scrollbar touch-pan-y pr-1"
+      : "space-y-2.5 sm:space-y-3 overflow-y-auto custom-scrollbar touch-pan-y pr-1"
+
+    return (
       <div
         tabIndex={0}
         onKeyDown={handleKeyDown}
@@ -333,7 +267,7 @@ export function ExperienceTile({
             )}
           </div>
 
-          {/* Desktop Controls & Counter */}
+          {/* Desktop & Mobile Controls & Counter */}
           <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
             <span className="text-[10px] font-mono text-white/30 mr-1 select-none">
               {String(safeIndex + 1).padStart(2, "0")}/{String(items.length).padStart(2, "0")}
@@ -347,7 +281,7 @@ export function ExperienceTile({
                 }}
                 aria-label="Previous role"
                 title="Previous role (Swipe Down / Up Arrow)"
-                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
               >
                 <ChevronUp className="size-3.5" />
               </button>
@@ -360,7 +294,7 @@ export function ExperienceTile({
                 }}
                 aria-label="Next role"
                 title="Next role (Swipe Up / Down Arrow)"
-                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
               >
                 <ChevronDown className="size-3.5" />
               </button>
@@ -373,7 +307,7 @@ export function ExperienceTile({
           {/* Background Peek Card 2 (Bottom-most) */}
           {peekCard2 && (
             <div
-              className="absolute inset-x-4 bottom-0 h-[84%] rounded-2xl bg-transparent border border-white/[0.04] pointer-events-none transition-all duration-300 shadow-sm"
+              className="absolute rounded-2xl bg-transparent border border-white/[0.04] pointer-events-none transition-all duration-300 shadow-sm inset-x-4 bottom-0 h-[84%]"
               style={{
                 transform: "translateY(14px) scale(0.92)",
                 opacity: 0.25,
@@ -385,7 +319,7 @@ export function ExperienceTile({
           {/* Background Peek Card 1 (Middle) */}
           {peekCard1 && (
             <div
-              className="absolute inset-x-2 bottom-0 h-[92%] rounded-2xl bg-transparent border border-white/[0.07] pointer-events-none transition-all duration-300 shadow-sm"
+              className="absolute rounded-2xl bg-transparent border border-white/[0.07] pointer-events-none transition-all duration-300 shadow-sm inset-x-2 bottom-0 h-[92%]"
               style={{
                 transform: "translateY(7px) scale(0.96)",
                 opacity: 0.5,
@@ -394,9 +328,9 @@ export function ExperienceTile({
             />
           )}
 
-          {/* Side Vertical Indicator Rail */}
+          {/* Side Vertical Indicator Rail (Desktop sm+) */}
           <div
-            className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 z-30"
+            className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 flex-col items-center gap-1.5 z-30"
             onClick={(e) => e.stopPropagation()}
           >
             {items.map((item, idx) => {
@@ -429,30 +363,26 @@ export function ExperienceTile({
           {/* Active Card Surface with Framer Motion Drag & Transitions */}
           <AnimatePresence custom={direction} mode="popLayout">
             <motion.div
-              key={activeItem.id || safeIndex}
+              key={`${isDeep ? "deep-" : "quick-"}${activeItem.id || safeIndex}`}
               custom={direction}
               variants={{
                 enter: (dir: number) => ({
-                  x: isMobileEffective ? (dir >= 0 ? 30 : -30) : 0,
-                  y: !isMobileEffective ? (dir >= 0 ? 20 : -20) : 0,
+                  y: dir >= 0 ? 20 : -20,
                   opacity: 0,
                   scale: 0.96,
                 }),
                 center: {
-                  x: 0,
                   y: 0,
                   opacity: 1,
                   scale: 1,
                   transition: {
-                    x: { type: "spring", stiffness: 350, damping: 28 },
                     y: { type: "spring", stiffness: 350, damping: 28 },
                     opacity: { duration: 0.25 },
                     scale: { duration: 0.25 },
                   },
                 },
                 exit: (dir: number) => ({
-                  x: isMobileEffective ? (dir >= 0 ? -30 : 30) : 0,
-                  y: !isMobileEffective ? (dir >= 0 ? -20 : 20) : 0,
+                  y: dir >= 0 ? -20 : 20,
                   opacity: 0,
                   scale: 0.96,
                   transition: {
@@ -463,49 +393,98 @@ export function ExperienceTile({
               initial="enter"
               animate="center"
               exit="exit"
-              drag={isMobileEffective ? "x" : "y"}
+              drag="y"
               dragDirectionLock={true}
-              dragConstraints={isMobileEffective ? { left: 0, right: 0 } : { top: 0, bottom: 0 }}
+              dragConstraints={{ top: 0, bottom: 0 }}
               dragElastic={0.2}
               onDragStart={handleDragStart}
+              onDrag={handleDrag}
               onDragEnd={handleDragEnd}
+              onClickCapture={(e) => {
+                if (isInteractingRef.current) {
+                  e.stopPropagation()
+                  e.preventDefault()
+                }
+              }}
               className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y"
             >
-              <div className="pr-5 select-none">
-                <h3 className="font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-2 leading-snug">
-                  {activeItem.role}
-                </h3>
-                <p className="text-white/50 mb-2.5 text-xs font-mono tracking-wide">
-                  {activeItem.company} · {activeItem.date}
-                </p>
+              <div className="pr-0 sm:pr-5 select-none flex-1 flex flex-col justify-between">
+                <div>
+                  {roleHeading}
+                  <p className={companyDateClass}>
+                    {activeItem.company} · {activeItem.date}
+                  </p>
 
-                {/* Highlights List */}
-                <div className="space-y-1.5 md:space-y-2">
-                  {quickHighlights.slice(0, 4).map((highlight, i) => (
-                    <div key={i} className="flex items-start gap-2 group/item">
-                      <div className="shrink-0 p-1 mt-0.5 bg-transparent rounded-md border border-white/10 group-hover/item:border-lume-primary/30 transition-colors">
-                        {getHighlightIcon(
-                          highlight,
-                          "size-2.5 md:size-3 text-lume-primary/60 group-hover/item:text-lume-primary transition-colors"
-                        )}
+                  {/* Highlights List */}
+                  <div className={highlightSpacingClass}>
+                    {highlights.slice(0, 4).map((highlight, i) => (
+                      <div key={i} className="flex items-start gap-2.5 group/item">
+                        <div className="shrink-0 p-1 mt-0.5 bg-transparent rounded-md border border-white/10 group-hover/item:border-lume-primary/30 transition-colors">
+                          {getHighlightIcon(
+                            highlight,
+                            "size-3 md:size-3.5 text-lume-primary/70 group-hover/item:text-lume-primary transition-colors"
+                          )}
+                        </div>
+                        <span className={highlightTextClass}>
+                          {highlight}
+                        </span>
                       </div>
-                      <span
-                        className="text-xs md:text-[12.5px] text-white/70 group-hover/item:text-white/90 transition-colors leading-snug line-clamp-2"
-                      >
-                        {highlight}
-                      </span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className="mt-auto pt-2.5 flex items-center justify-between border-t border-white/5 select-none">
-                <span className="text-white/40 text-xs font-mono">{activeItem.date}</span>
+                {/* Mobile Role Indicator Dots */}
+                <div className="sm:hidden mt-3 pt-2.5 flex items-center justify-center border-t border-white/5 select-none shrink-0">
+                  <div
+                    className="flex items-center gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {items.map((item, idx) => {
+                      const isCurrent = idx === safeIndex
+                      return (
+                        <button
+                          key={item.id || idx}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            goToIndex(idx)
+                          }}
+                          aria-label={`Go to ${item.company}`}
+                          className="p-1 flex items-center justify-center min-w-[24px] min-h-[24px] cursor-pointer"
+                        >
+                          <span
+                            className={cn(
+                              "transition-all duration-300 rounded-full",
+                              isCurrent
+                                ? "w-4 h-1.5 bg-lume-primary shadow-[0_0_8px_rgba(74,255,180,0.7)]"
+                                : "w-1.5 h-1.5 bg-white/25 hover:bg-white/50"
+                            )}
+                          />
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
+    )
+  }
+
+  return (
+    <BentoTile
+      id={id}
+      size={size}
+      href="/experience"
+      glowColor="mint"
+      canDeepDive={true}
+      isDragging={isDragging}
+      sortableProps={sortableProps}
+      deepContent={renderFace(true)}
+    >
+      {renderFace(false)}
     </BentoTile>
   )
 }

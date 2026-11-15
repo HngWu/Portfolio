@@ -4,7 +4,7 @@ import * as React from "react"
 import type { ParsedExperience } from "@/lib/content/portfolio"
 import { toSpellData, HANDCRAFTED_SPELLS, type SpellData } from "@/lib/content/experienceSpells"
 import { SpellPageSpread, type BookLifecycle } from "./SpellPageSpread"
-import { SpellAmbientMana } from "./SpellAmbientMana"
+import { MobileArcaneScroll } from "./MobileArcaneScroll"
 import { ExperienceBackBtn } from "./ExperienceBackBtn"
 import { usePageTransition } from "@/hooks/usePageTransition"
 import { useNavigationStore } from "@/store/useNavigationStore"
@@ -72,6 +72,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
   const [targetIndex, setTargetIndex] = React.useState<number | null>(null)
   const [direction, setDirection] = React.useState<1 | -1 | 0>(0)
   const [isTurning, setIsTurning] = React.useState(false)
+  const [mobileFolioTab, setMobileFolioTab] = React.useState<"left" | "right">("left")
 
   // Ref tracking to guarantee race-free completion
   const targetIndexRef = React.useRef(targetIndex)
@@ -145,7 +146,7 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
     }
   }, [lifecycle, triggerOpeningFlip])
 
-  // Wheel & Scroll Trigger: scroll down during prologue flips to Exp 1; scroll up on first page closes
+  // Wheel & Scroll Trigger: scroll down during prologue flips to Exp 1 on desktop
   React.useEffect(() => {
     if (typeof window === "undefined") return
 
@@ -160,18 +161,13 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
         setTimeout(() => {
           wheelDebounce = false
         }, 500)
-      } else if (lifecycle === "idle" && activeIndex === 0 && e.deltaY < -40) {
-        wheelDebounce = true
-        handleExit("/")
-        setTimeout(() => {
-          wheelDebounce = false
-        }, 500)
       }
+      // Note: Removed aggressive wheel auto-exit (e.deltaY < -40) to prevent random returns to home
     }
 
     window.addEventListener("wheel", handleWheel, { passive: true })
     return () => window.removeEventListener("wheel", handleWheel)
-  }, [lifecycle, activeIndex, triggerOpeningFlip, handleExit])
+  }, [lifecycle, triggerOpeningFlip])
 
   // Epilogue timer: display Epilogue and Afterword for 3.0s then gracefully transition home
   React.useEffect(() => {
@@ -320,146 +316,209 @@ export function ExperienceSpellbook({ experienceList }: ExperienceSpellbookProps
 
   const showHUD = lifecycle === "idle" || lifecycle === "turning-page"
 
+  // Touch Swipe Gesture System for Mobile
+  const touchStartXRef = React.useRef(0)
+  const touchStartYRef = React.useRef(0)
+  const touchStartTimeRef = React.useRef(0)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartXRef.current = e.touches[0].clientX
+      touchStartYRef.current = e.touches[0].clientY
+      touchStartTimeRef.current = Date.now()
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.changedTouches.length === 1) {
+      const deltaX = e.changedTouches[0].clientX - touchStartXRef.current
+      const deltaY = e.changedTouches[0].clientY - touchStartYRef.current
+      const elapsed = Date.now() - touchStartTimeRef.current
+
+      // Horizontal swipe (distance > 40px, mostly horizontal)
+      if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4 && elapsed < 650) {
+        if (deltaX < 0) {
+          // Swipe Left -> Next
+          if (lifecycle === "prologue") {
+            triggerOpeningFlip()
+          } else if (lifecycle === "idle") {
+            if (mobileFolioTab === "left") {
+              setMobileFolioTab("right")
+            } else {
+              goToNext()
+              setMobileFolioTab("left")
+            }
+          }
+        } else {
+          // Swipe Right -> Prev
+          if (lifecycle === "idle") {
+            if (mobileFolioTab === "right") {
+              setMobileFolioTab("left")
+            } else {
+              goToPrev()
+              setMobileFolioTab("right")
+            }
+          }
+        }
+      }
+      // Note: Removed aggressive vertical swipe-down auto-exit to prevent random returns to home
+    }
+  }
+
   return (
     <div className="relative w-full h-full flex flex-col select-none">
-      {/* Return to Home Back Button with Smooth Exit Closing Animation */}
-      <ExperienceBackBtn onBack={() => handleExit("/")} />
+      {/* Desktop 3D Hardcover Arcane Spellbook (Screens >= lg) */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="hidden lg:flex relative w-full h-full flex-col select-none"
+      >
+        {/* Return to Home Back Button with Smooth Exit Closing Animation */}
+        <ExperienceBackBtn onBack={() => handleExit("/")} />
 
-      {/* Ambient Luminous Dust Particles */}
-      <SpellAmbientMana />
+        {/* Main 3D Book Stage — always occupies full height so HUD never shifts it */}
+        <div className="relative z-10 w-full h-full flex items-center justify-center min-h-0">
+          <SpellPageSpread
+            lifecycle={lifecycle}
+            onLifecycleAdvance={setLifecycle}
+            onOpeningFlip={triggerOpeningFlip}
+            onReturnHome={handleReturnHomeImmediate}
+            currentSpell={currentSpell}
+            targetSpell={targetSpell}
+            currentIndex={activeIndex}
+            targetIndex={targetIndex}
+            totalSpells={spells.length}
+            direction={direction}
+            isTurning={isTurning}
+            onNextPage={goToNext}
+            onPrevPage={goToPrev}
+            onFlipComplete={handleFlipComplete}
+            spells={spells}
+            onSelectRole={goToIndex}
+            audioEnabled={audioEnabled}
+          />
+        </div>
 
-      {/* Main 3D Book Stage — always occupies full height so HUD never shifts it */}
-      <div className="relative z-10 w-full h-full flex items-center justify-center min-h-0">
-        <SpellPageSpread
-          lifecycle={lifecycle}
-          onLifecycleAdvance={setLifecycle}
-          onOpeningFlip={triggerOpeningFlip}
-          onReturnHome={handleReturnHomeImmediate}
-          currentSpell={currentSpell}
-          targetSpell={targetSpell}
-          currentIndex={activeIndex}
-          targetIndex={targetIndex}
-          totalSpells={spells.length}
-          direction={direction}
-          isTurning={isTurning}
-          onNextPage={goToNext}
-          onPrevPage={goToPrev}
-          onFlipComplete={handleFlipComplete}
-          spells={spells}
-          onSelectRole={goToIndex}
-          audioEnabled={audioEnabled}
-        />
-      </div>
+        {/* Bottom Floating Navigation & Chapter HUD */}
+        {showHUD && (
+          <div
+            className="absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-0 right-0 z-30 flex flex-col items-center gap-1.5 px-2 pointer-events-none"
+            style={{
+              animation: "hud-slide-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both",
+            }}
+          >
+            <div className="pointer-events-auto flex items-center justify-between sm:justify-center gap-1.5 sm:gap-3 p-1 sm:p-1.5 rounded-2xl bg-black/75 border border-white/10 backdrop-blur-xl shadow-[0_10px_35px_rgba(0,0,0,0.6)] max-w-[calc(100vw-1rem)] sm:max-w-none">
+              {/* Previous Role Button */}
+              <button
+                type="button"
+                onClick={goToPrev}
+                disabled={activeIndex === 0 || isTurning}
+                aria-label="Previous Role"
+                className="flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-white/[0.04] border border-white/10 text-white/70 hover:bg-white/[0.08] hover:text-white disabled:opacity-20 disabled:pointer-events-none transition-all text-xs font-mono active:scale-95 cursor-pointer shadow-md shrink-0"
+              >
+                <ChevronLeft className="size-4 text-[var(--lume-primary,#4affb4)]" />
+                <span className="hidden sm:inline">Previous</span>
+              </button>
 
-      {/* Bottom Floating Navigation & Chapter HUD — absolutely positioned so it never shifts the book */}
-      {showHUD && (
-        <div
-          className="absolute bottom-4 md:bottom-6 left-0 right-0 z-30 flex flex-col items-center gap-2 px-2 pointer-events-none"
-          style={{
-            animation: "hud-slide-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both",
-          }}
-        >
-          <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-3 md:gap-4 p-1.5 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl shadow-[0_10px_35px_rgba(0,0,0,0.6)]">
-            {/* Previous Role Button */}
-            <button
-              type="button"
-              onClick={goToPrev}
-              disabled={activeIndex === 0 || isTurning}
-              aria-label="Previous Role"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-white/70 hover:bg-white/[0.08] hover:text-white disabled:opacity-20 disabled:pointer-events-none transition-all text-xs font-mono active:scale-95 cursor-pointer shadow-md"
-            >
-              <ChevronLeft className="size-4 text-[var(--lume-primary,#4affb4)]" />
-              <span className="hidden sm:inline">Previous</span>
-            </button>
+              {/* Chapter Timeline Scrubber */}
+              <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-white/[0.03] border border-white/10 shadow-sm shrink-0">
+                <div className="flex items-center gap-1.5">
+                  {spells.map((s, idx) => {
+                    const isActive = idx === activeIndex
+                    const isDest = idx === targetIndex
+                    return (
+                      <button
+                        key={s.id || idx}
+                        type="button"
+                        onClick={() => goToIndex(idx)}
+                        disabled={isTurning}
+                        title={`${s.realm} — ${s.spellName}`}
+                        aria-label={`Jump to Chapter ${idx + 1}: ${s.realm}`}
+                        className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                          isActive
+                            ? "w-6 sm:w-8 bg-[var(--lume-primary,#4affb4)] shadow-[0_0_12px_var(--lume-primary)]"
+                            : isDest
+                            ? "w-4 sm:w-6 bg-[var(--mode-accent-bright,#6affff)] animate-pulse"
+                            : "w-2 sm:w-2.5 bg-white/20 hover:bg-white/50"
+                        }`}
+                      />
+                    )
+                  })}
+                </div>
 
-            {/* Chapter Timeline Scrubber */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 shadow-sm">
-              <div className="flex items-center gap-1.5">
-                {spells.map((s, idx) => {
-                  const isActive = idx === activeIndex
-                  const isDest = idx === targetIndex
-                  return (
-                    <button
-                      key={s.id || idx}
-                      type="button"
-                      onClick={() => goToIndex(idx)}
-                      disabled={isTurning}
-                      title={`${s.realm} — ${s.spellName}`}
-                      aria-label={`Jump to Chapter ${idx + 1}: ${s.realm}`}
-                      className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                        isActive
-                          ? "w-8 bg-[var(--lume-primary,#4affb4)] shadow-[0_0_12px_var(--lume-primary)]"
-                          : isDest
-                          ? "w-6 bg-[var(--mode-accent-bright,#6affff)] animate-pulse"
-                          : "w-2.5 bg-white/20 hover:bg-white/50"
-                      }`}
-                    />
-                  )
-                })}
+                <span className="ml-1.5 sm:ml-2.5 text-[10px] sm:text-[11px] font-mono text-white/70 font-semibold whitespace-nowrap">
+                  {String(activeIndex + 1).padStart(2, "0")} / {String(spells.length).padStart(2, "0")}
+                </span>
               </div>
 
-              <span className="ml-2.5 text-[11px] font-mono text-white/70 font-semibold">
-                {String(activeIndex + 1).padStart(2, "0")} / {String(spells.length).padStart(2, "0")}
+              {/* Next Role Button */}
+              <button
+                type="button"
+                onClick={goToNext}
+                disabled={activeIndex === spells.length - 1 || isTurning}
+                aria-label="Next Role"
+                className="flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-white/[0.04] border border-white/10 text-white/70 hover:bg-white/[0.08] hover:text-white disabled:opacity-20 disabled:pointer-events-none transition-all text-xs font-mono active:scale-95 cursor-pointer shadow-md shrink-0"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="size-4 text-[var(--lume-primary,#4affb4)]" />
+              </button>
+
+              {/* Auxiliary Controls (Sound & Close Book) */}
+              <div className="flex items-center gap-1 pl-1 sm:pl-1.5 border-l border-white/15 shrink-0">
+                {/* Audio Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setAudioEnabled((prev) => !prev)}
+                  title={audioEnabled ? "Mute Paper & Metal Sound Effects" : "Enable Paper & Metal Sound Effects"}
+                  aria-label="Toggle page turn audio"
+                  className={`p-1.5 sm:p-2 rounded-xl border transition-all cursor-pointer ${
+                    audioEnabled
+                      ? "bg-[var(--lume-primary,#4affb4)]/15 border-[var(--lume-primary)]/40 text-[var(--lume-primary,#4affb4)] shadow-[0_0_12px_rgba(74,255,180,0.2)]"
+                      : "bg-white/[0.03] border-white/10 text-white/40 hover:text-white/80"
+                  }`}
+                >
+                  {audioEnabled ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
+                </button>
+
+                {/* Close Tome Button */}
+                <button
+                  type="button"
+                  onClick={() => handleExit("/")}
+                  title="Close Grimoire & Return Home"
+                  aria-label="Close Grimoire & Return Home"
+                  className="p-1.5 sm:p-2 rounded-xl bg-white/[0.03] border border-white/10 text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-all cursor-pointer"
+                >
+                  <RotateCcw className="size-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Chapter Context & Keyboard Hint Badge */}
+            <div className="pointer-events-none flex items-center gap-2 text-[10px] sm:text-[11px] font-mono text-white/40 px-2">
+              <span className="flex items-center gap-1.5 text-white/60 truncate max-w-[260px] sm:max-w-none">
+                <Layers className="size-2.5 sm:size-3 text-[var(--lume-primary,#4affb4)] shrink-0" />
+                <span className="font-semibold text-white/80 truncate">{currentSpell.realm}</span>
+                <span className="hidden sm:inline text-white/40">—</span>
+                <span className="hidden sm:inline truncate">{currentSpell.spellName}</span>
+              </span>
+              <span className="hidden md:inline text-white/25">·</span>
+              <span className="hidden md:inline text-[10px] text-white/30">
+                [← / → keys or edge click to flip chapters · Scroll up or Esc to close]
               </span>
             </div>
-
-            {/* Next Role Button */}
-            <button
-              type="button"
-              onClick={goToNext}
-              disabled={activeIndex === spells.length - 1 || isTurning}
-              aria-label="Next Role"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-white/70 hover:bg-white/[0.08] hover:text-white disabled:opacity-20 disabled:pointer-events-none transition-all text-xs font-mono active:scale-95 cursor-pointer shadow-md"
-            >
-              <span className="hidden sm:inline">Next</span>
-              <ChevronRight className="size-4 text-[var(--lume-primary,#4affb4)]" />
-            </button>
-
-            {/* Auxiliary Controls (Sound & Close Book) */}
-            <div className="flex items-center gap-1.5 pl-1.5 border-l border-white/15">
-              {/* Audio Toggle */}
-              <button
-                type="button"
-                onClick={() => setAudioEnabled((prev) => !prev)}
-                title={audioEnabled ? "Mute Paper & Metal Sound Effects" : "Enable Paper & Metal Sound Effects"}
-                aria-label="Toggle page turn audio"
-                className={`p-2 rounded-xl border transition-all cursor-pointer ${
-                  audioEnabled
-                    ? "bg-[var(--lume-primary,#4affb4)]/15 border-[var(--lume-primary)]/40 text-[var(--lume-primary,#4affb4)] shadow-[0_0_12px_rgba(74,255,180,0.2)]"
-                    : "bg-white/[0.03] border-white/10 text-white/40 hover:text-white/80"
-                }`}
-              >
-                {audioEnabled ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
-              </button>
-
-              {/* Close Tome Button */}
-              <button
-                type="button"
-                onClick={() => handleExit("/")}
-                title="Close Grimoire & Return Home"
-                aria-label="Close Grimoire & Return Home"
-                className="p-2 rounded-xl bg-white/[0.03] border border-white/10 text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-all cursor-pointer"
-              >
-                <RotateCcw className="size-3.5" />
-              </button>
-            </div>
           </div>
+        )}
+      </div>
 
-          {/* Quick Chapter Context & Keyboard Hint Badge */}
-          <div className="pointer-events-none flex items-center gap-3 text-[11px] font-mono text-white/40">
-            <span className="flex items-center gap-1.5 text-white/60 truncate max-w-[280px] sm:max-w-none">
-              <Layers className="size-3 text-[var(--lume-primary,#4affb4)] shrink-0" />
-              <span className="font-semibold text-white/80">{currentSpell.realm}</span>
-              <span className="hidden sm:inline text-white/40">—</span>
-              <span className="hidden sm:inline truncate">{currentSpell.spellName}</span>
-            </span>
-            <span className="hidden md:inline text-white/25">·</span>
-            <span className="hidden md:inline text-[10px] text-white/30">
-              [← / → keys or edge click to flip chapters · Scroll up or Esc to close]
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Mobile Arcane Engineering Scroll (Screens < lg) */}
+      <div className="lg:hidden relative z-10 w-full h-full flex flex-col min-h-0">
+        <MobileArcaneScroll
+          spells={spells}
+          audioEnabled={audioEnabled}
+          onToggleAudio={() => setAudioEnabled((prev) => !prev)}
+          onReturnHome={handleReturnHomeImmediate}
+        />
+      </div>
     </div>
   )
 }

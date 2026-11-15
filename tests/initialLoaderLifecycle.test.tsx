@@ -82,7 +82,7 @@ describe("Initial Loader & Bento Grid Static Occlusion Suite", () => {
 
     // Verify telemetry HUD is rendered immediately in DOM
     const hud = container.textContent
-    expect(hud).toContain("INITIALIZING RUNIC ENGINE")
+    expect(hud).toContain("CALIBRATING CELESTIAL ORRERY")
   })
 
   it("returns null on subpages when pathname is not root '/'", () => {
