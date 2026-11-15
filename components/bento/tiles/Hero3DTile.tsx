@@ -61,7 +61,7 @@ export function Hero3DTile({
     <BentoTile 
       id={id} 
       size={size} 
-      className="p-0 bg-transparent overflow-hidden h-full w-full min-h-[220px] xs:min-h-[250px] sm:min-h-[340px] md:min-h-0 aspect-[16/10] sm:aspect-auto" 
+      className="p-0 bg-transparent overflow-hidden h-full w-full min-h-[170px] xs:min-h-[200px] sm:min-h-[280px] md:min-h-0 aspect-[16/10] sm:aspect-auto" 
       isDragging={isDragging} 
       sortableProps={sortableProps}
       canDeepDive={false}
@@ -72,12 +72,12 @@ export function Hero3DTile({
     >
       <div 
         ref={containerRef}
-        className="w-full h-full min-h-[220px] xs:min-h-[250px] sm:min-h-[340px] md:min-h-0 relative pointer-events-auto overflow-hidden"
+        className="w-full h-full min-h-[170px] xs:min-h-[200px] sm:min-h-[280px] md:min-h-0 relative pointer-events-auto overflow-hidden"
         onMouseEnter={() => !isDraggingActive && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         {showTemplate ? (
-          <div className="w-full h-full relative overflow-hidden flex flex-col justify-between p-3.5 sm:p-6 md:p-8 bg-[#0a0a0a]/80 border border-white/10 rounded-2xl sm:rounded-3xl backdrop-blur-md select-none">
+          <div className="w-full h-full relative overflow-hidden flex flex-col justify-between p-3 xs:p-4 sm:p-6 md:p-8 bg-[#0a0a0a]/80 border border-white/10 rounded-2xl sm:rounded-3xl backdrop-blur-md select-none">
             {/* Blueprint Grid Background */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
@@ -106,10 +106,10 @@ export function Hero3DTile({
             {/* Center Visual: Animated Glowing Orb & Rotating Wireframe Cube */}
             <div className="relative flex flex-col items-center justify-center flex-1 my-1.5 sm:my-3 z-10">
               {/* Outer ambient glow pulse */}
-              <div className="absolute size-28 sm:size-44 rounded-full bg-lume-primary/10 blur-2xl animate-pulse pointer-events-none" />
+              <div className="absolute size-20 xs:size-28 sm:size-44 rounded-full bg-lume-primary/10 blur-2xl animate-pulse pointer-events-none" />
 
               {/* Central container with emerald accents and shadow */}
-              <div className="relative size-20 sm:size-28 md:size-32 rounded-2xl sm:rounded-3xl border border-lume-primary/30 bg-black/50 backdrop-blur-sm flex items-center justify-center shadow-[0_0_30px_rgba(74,255,180,0.15)] group/cube">
+              <div className="relative size-16 xs:size-20 sm:size-28 md:size-32 rounded-2xl sm:rounded-3xl border border-lume-primary/30 bg-black/50 backdrop-blur-sm flex items-center justify-center shadow-[0_0_30px_rgba(74,255,180,0.15)] group/cube">
                 {/* Planetary orbital rings */}
                 <div className="absolute -inset-2 sm:-inset-3 rounded-full border border-dashed border-lume-primary/20 animate-spin [animation-duration:14s] pointer-events-none" />
                 <div className="absolute -inset-4 sm:-inset-6 rounded-full border border-dotted border-white/10 animate-spin [animation-duration:24s] [animation-direction:reverse] pointer-events-none" />
@@ -120,7 +120,7 @@ export function Hero3DTile({
                   <div className="absolute size-3.5 sm:size-5 rounded-full bg-lume-primary/40 shadow-[0_0_20px_rgba(74,255,180,0.9)]" />
                   
                   <svg
-                    className="size-8 sm:size-14 text-lume-primary drop-shadow-[0_0_12px_rgba(74,255,180,0.6)] animate-pulse"
+                    className="size-7 xs:size-8 sm:size-14 text-lume-primary drop-shadow-[0_0_12px_rgba(74,255,180,0.6)] animate-pulse"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -136,12 +136,12 @@ export function Hero3DTile({
               </div>
 
               {/* Title */}
-              <h3 className="mt-2.5 sm:mt-5 text-sm sm:text-base md:text-lg font-display font-bold tracking-wider text-white/90 uppercase text-center">
+              <h3 className="mt-2 sm:mt-5 text-xs xs:text-sm sm:text-base md:text-lg font-display font-bold tracking-wider text-white/90 uppercase text-center">
                 3D HEXCORE ARTIFACT
               </h3>
 
               {/* Note */}
-              <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs font-mono text-white/50 text-center max-w-[240px] sm:max-w-[290px] leading-relaxed line-clamp-2">
+              <p className="mt-0.5 sm:mt-1.5 text-[9px] xs:text-[10px] sm:text-xs font-mono text-white/50 text-center max-w-[240px] sm:max-w-[290px] leading-relaxed line-clamp-2">
                 Toggle &apos;Live 3D&apos; in toolbar to initialize WebGL R3F simulation
               </p>
             </div>

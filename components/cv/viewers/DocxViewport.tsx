@@ -148,13 +148,13 @@ export function DocxViewport({ doc }: DocxViewportProps) {
   const handleResetZoom = () => setZoom(100)
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#090b10] select-none">
+    <div className="w-full h-full flex flex-col bg-black/40 backdrop-blur-xl select-none">
       {/* Top Document Controls Bar */}
       <div className="h-12 px-4 border-b border-white/10 bg-white/[0.02] backdrop-blur-md flex items-center justify-between text-xs text-white/60 font-mono">
         {/* Left: Page navigation */}
         <div className="flex items-center gap-2">
           {pages.length > 0 && (
-            <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-lg p-0.5">
+            <div className="flex items-center bg-white/[0.03] border border-white/10 rounded-lg p-0.5">
               <button
                 type="button"
                 onClick={handlePrevPage}
@@ -187,7 +187,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
         {/* Right: Zoom & Download */}
         <div className="flex items-center gap-2">
           {pages.length > 0 && (
-            <div className="hidden sm:flex items-center bg-white/[0.04] border border-white/10 rounded-lg p-0.5">
+            <div className="hidden sm:flex items-center bg-white/[0.03] border border-white/10 rounded-lg p-0.5">
               <button
                 type="button"
                 onClick={handleZoomOut}
@@ -223,7 +223,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
           <a
             href={doc.url}
             download={doc.filename}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#4AFFB4]/10 hover:bg-[#4AFFB4]/20 border border-[#4AFFB4]/30 text-[#4AFFB4] text-xs font-semibold transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-lume-primary/10 hover:bg-lume-primary/20 border border-lume-primary/30 text-lume-primary text-xs font-semibold transition-all cursor-pointer shadow-[0_0_15px_rgba(74,255,180,0.1)] hover:shadow-[0_0_20px_rgba(74,255,180,0.2)]"
             title="Download original Microsoft Word document"
           >
             <Download className="w-3.5 h-3.5" />
@@ -233,7 +233,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
       </div>
 
       {/* Main Document Viewport Area */}
-      <div className="relative flex-1 w-full overflow-hidden bg-[#12151c]">
+      <div className="relative flex-1 w-full overflow-hidden bg-black/25">
         <div
           ref={scrollContainerRef}
           className="w-full h-full overflow-auto p-2 sm:p-8 custom-scrollbar touch-pan-x touch-pan-y"
@@ -244,7 +244,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
               className="min-w-full w-fit mx-auto flex flex-col items-center justify-center origin-top py-2"
             >
               <div
-                className="transition-[width] duration-100 ease-out shadow-2xl rounded-sm sm:rounded-xl overflow-hidden border border-white/10 bg-white shrink-0"
+                className="transition-[width] duration-100 ease-out shadow-[0_12px_45px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.08)] rounded-lg overflow-hidden bg-white shrink-0"
                 style={{ width: `${currentTargetWidth}px` }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -257,16 +257,16 @@ export function DocxViewport({ doc }: DocxViewportProps) {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-8 text-center text-white my-auto h-full">
-              <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 max-w-md backdrop-blur-xl">
-                <FileText className="w-10 h-10 text-[#4AFFB4] mx-auto mb-3" />
-                <h3 className="text-base font-semibold">{doc.title}</h3>
-                <p className="text-xs text-white/50 mt-1 mb-4">
+              <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 max-w-md backdrop-blur-xl shadow-2xl">
+                <FileText className="w-10 h-10 text-lume-primary mx-auto mb-3" />
+                <h3 className="text-base font-semibold font-display">{doc.title}</h3>
+                <p className="text-xs text-white/50 mt-1 mb-4 font-mono">
                   Microsoft Word Document ({doc.sizeLabel})
                 </p>
                 <a
                   href={doc.url}
                   download={doc.filename}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#4AFFB4] text-black font-semibold text-xs transition-transform hover:scale-105"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-lume-primary text-black font-semibold text-xs transition-transform hover:scale-105 shadow-[0_0_20px_rgba(74,255,180,0.25)]"
                 >
                   <Download className="w-4 h-4" />
                   <span>Download {doc.filename}</span>
@@ -278,7 +278,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
 
         {/* Mobile Floating Zoom Pill */}
         {pages.length > 0 && (
-          <div className="sm:hidden absolute bottom-4 right-4 z-30 flex items-center bg-[#0c1017]/95 backdrop-blur-xl border border-white/15 rounded-full p-1 shadow-[0_4px_20px_rgba(0,0,0,0.6)] select-none">
+          <div className="sm:hidden absolute bottom-4 right-4 z-30 flex items-center bg-black/85 backdrop-blur-xl border border-white/15 rounded-full p-1 shadow-[0_4px_25px_rgba(0,0,0,0.8)] select-none">
             <button
               type="button"
               onClick={handleZoomOut}
@@ -292,7 +292,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
             <button
               type="button"
               onClick={handleResetZoom}
-              className="px-2.5 text-xs font-mono font-medium text-white/90 hover:text-[#4AFFB4] transition-colors cursor-pointer"
+              className="px-2.5 text-xs font-mono font-medium text-white/90 hover:text-lume-primary transition-colors cursor-pointer"
               title="Reset zoom to 100%"
               aria-label="Reset zoom to 100%"
             >
@@ -322,7 +322,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
               onClick={() => setCurrentPage(idx)}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
                 currentPage === idx
-                  ? "bg-[#4AFFB4]/15 border border-[#4AFFB4]/40 text-[#4AFFB4] font-medium shadow-sm"
+                  ? "bg-lume-primary/15 border border-lume-primary/40 text-lume-primary font-medium shadow-sm"
                   : "bg-white/[0.02] border border-white/10 text-white/50 hover:text-white"
               }`}
             >

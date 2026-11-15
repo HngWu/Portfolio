@@ -32,7 +32,7 @@ export function getSizeClasses(sizeKey: string, isDeepDive: boolean = false, for
     "6x1": isDeepDive ? "col-span-2 row-span-2 md:col-span-6 xl:col-span-6" : "col-span-2 row-span-1 md:col-span-6 xl:col-span-6",
     "6x2": isDeepDive ? "col-span-2 row-span-3 md:col-span-6 xl:col-span-6" : "col-span-2 row-span-2 md:col-span-6 xl:col-span-6",
     "6x4": isDeepDive ? "col-span-2 row-span-6 md:col-span-6 xl:col-span-6" : "col-span-2 row-span-4 md:col-span-6 xl:col-span-6",
-    "6x6": isDeepDive ? "col-span-2 row-span-8 md:col-span-6 xl:col-span-6" : "col-span-2 row-span-6 md:col-span-6 xl:col-span-6",
+    "6x6": isDeepDive ? "col-span-2 row-span-6 md:col-span-6 xl:col-span-6" : "col-span-2 row-span-4 md:col-span-6 md:row-span-6 xl:col-span-6 xl:row-span-6",
     "8x2": isDeepDive ? "col-span-2 row-span-4 md:col-span-6 xl:col-span-8" : "col-span-2 row-span-2 md:col-span-6 xl:col-span-8",
     "8x4": isDeepDive ? "col-span-2 row-span-7 md:col-span-6 xl:col-span-8" : "col-span-2 row-span-4 md:col-span-6 xl:col-span-8",
     "12x2": isDeepDive ? "col-span-2 row-span-4 md:col-span-6 xl:col-span-12" : "col-span-2 row-span-2 md:col-span-6 xl:col-span-12",

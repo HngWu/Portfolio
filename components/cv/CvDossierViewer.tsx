@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useSearchParams } from "next/navigation"
+import { useNavigationStore } from "@/store/useNavigationStore"
 import { CvHeaderBar } from "./CvHeaderBar"
 import { CvFileExplorer } from "./CvFileExplorer"
 import { CvPdfViewport } from "./CvPdfViewport"
@@ -60,6 +61,11 @@ export function CvDossierViewer({
     }
   }, [searchParams, activeDoc.url, activeDoc.filename])
 
+  // Report page load to transition system
+  React.useEffect(() => {
+    useNavigationStore.getState().reportPageLoaded("/cv")
+  }, [])
+
   // Fullscreen change listener
   React.useEffect(() => {
     const handleFullscreenChange = () => {
@@ -116,7 +122,7 @@ export function CvDossierViewer({
   }
 
   return (
-    <div className="min-h-screen bg-[#050609] text-white flex flex-col selection:bg-[#4AFFB4]/30 selection:text-white">
+    <div className="min-h-screen bg-black/40 backdrop-blur-[2px] text-white flex flex-col selection:bg-lume-primary/30 selection:text-white relative">
       {/* Top Header */}
       <CvHeaderBar
         activeDoc={activeDoc}
@@ -154,7 +160,7 @@ export function CvDossierViewer({
           >
             <div
               ref={containerRef}
-              className="w-full h-[calc(100vh-6.5rem)] min-h-[600px] rounded-2xl bg-[#090b10] border border-white/10 flex flex-col overflow-hidden shadow-2xl relative"
+              className="w-full h-[calc(100vh-6.5rem)] min-h-[600px] rounded-2xl bg-white/[0.02] backdrop-blur-xl border border-white/10 flex flex-col overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)] relative"
             >
               {renderActiveViewport()}
             </div>

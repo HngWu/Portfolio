@@ -202,7 +202,7 @@ export function CvPdfViewport({
           wrapper = document.createElement("div")
           wrapper.id = `cv-pdf-page-${pageNum}`
           wrapper.className =
-            "cv-pdf-page-wrapper rounded-sm shadow-xl overflow-hidden border border-white/10 bg-white transition-[width,height] duration-75 relative shrink-0"
+            "cv-pdf-page-wrapper rounded-lg shadow-[0_12px_45px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.08)] overflow-hidden bg-white transition-[width,height] duration-75 relative shrink-0"
           wrapper.dataset.aspectRatio = String(aspectRatio)
           wrapper.style.width = `${currentTargetWidth}px`
           wrapper.style.height = `${targetHeight}px`
@@ -369,20 +369,20 @@ export function CvPdfViewport({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full min-h-[600px] flex flex-col overflow-hidden bg-[#090b10] select-none"
+      className="relative w-full h-full min-h-[600px] flex flex-col overflow-hidden bg-black/40 backdrop-blur-xl select-none"
     >
       {/* Modern Minimalist Viewport Chrome Bar */}
-      <div className="h-11 px-4 border-b border-white/10 bg-[#0c1017] backdrop-blur-xl flex items-center justify-between text-xs text-white/50 font-mono select-none">
+      <div className="h-11 px-4 border-b border-white/10 bg-white/[0.02] backdrop-blur-xl flex items-center justify-between text-xs text-white/50 font-mono select-none">
         {/* Document Title & Pages */}
         <div className="flex items-center gap-2.5 truncate">
-          <FileText className="w-3.5 h-3.5 text-[#4AFFB4] shrink-0" />
+          <FileText className="w-3.5 h-3.5 text-lume-primary shrink-0" />
           <span className="text-white/90 font-medium truncate">{activeFilename}</span>
           <span className="text-white/20">|</span>
           <span className="text-[11px] text-white/40 shrink-0">{activeSize}</span>
           {numPages > 1 && (
             <>
               <span className="text-white/20 hidden sm:inline">|</span>
-              <span className="text-[11px] text-[#4AFFB4] font-mono hidden sm:inline">
+              <span className="text-[11px] text-lume-primary font-mono hidden sm:inline">
                 {numPages} Pages
               </span>
             </>
@@ -393,7 +393,7 @@ export function CvPdfViewport({
         <div className="flex items-center gap-2 shrink-0">
           {/* Zoom controls (Active for Canvas View, visible on sm+ screens) */}
           {useCanvas && (
-            <div className="hidden sm:flex items-center bg-white/[0.04] border border-white/10 rounded-lg p-0.5">
+            <div className="hidden sm:flex items-center bg-white/[0.03] border border-white/10 rounded-lg p-0.5">
               <button
                 type="button"
                 onClick={handleZoomOut}
@@ -432,7 +432,7 @@ export function CvPdfViewport({
             title="Reload document"
             className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/60 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#4AFFB4]" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-lume-primary" : ""}`} />
             <span className="hidden md:inline">Reload</span>
           </button>
 
@@ -440,7 +440,7 @@ export function CvPdfViewport({
             href={activeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/60 hover:text-[#4AFFB4] transition-colors flex items-center gap-1"
+            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/60 hover:text-lume-primary transition-colors flex items-center gap-1"
             title="Open raw PDF file in new browser tab"
           >
             <ExternalLink className="w-3.5 h-3.5" />
@@ -450,11 +450,11 @@ export function CvPdfViewport({
       </div>
 
       {/* Main Canvas / Native Document Viewport Area */}
-      <div className="relative flex-1 w-full h-full overflow-hidden bg-[#12151c]">
+      <div className="relative flex-1 w-full h-full overflow-hidden bg-black/25">
         {/* Loading Spinner on initial load */}
         {loading && numPages === 0 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 font-mono text-xs gap-3 z-20 bg-[#12151c]/80 backdrop-blur-sm">
-            <div className="w-6 h-6 border-2 border-[#4AFFB4]/20 border-t-[#4AFFB4] rounded-full animate-spin" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 font-mono text-xs gap-3 z-20 bg-black/75 backdrop-blur-sm">
+            <div className="w-6 h-6 border-2 border-lume-primary/20 border-t-lume-primary rounded-full animate-spin shadow-[0_0_15px_rgba(74,255,180,0.2)]" />
             <span>Rendering High-Resolution Document...</span>
           </div>
         )}
@@ -482,7 +482,7 @@ export function CvPdfViewport({
 
         {/* Mobile Floating Zoom Pill - permanently docked in viewport bottom-right */}
         {useCanvas && (
-          <div className="sm:hidden absolute bottom-4 right-4 z-30 flex items-center bg-[#0c1017]/95 backdrop-blur-xl border border-white/15 rounded-full p-1 shadow-[0_4px_20px_rgba(0,0,0,0.6)] select-none">
+          <div className="sm:hidden absolute bottom-4 right-4 z-30 flex items-center bg-black/85 backdrop-blur-xl border border-white/15 rounded-full p-1 shadow-[0_4px_25px_rgba(0,0,0,0.8)] select-none">
             <button
               type="button"
               onClick={handleZoomOut}
@@ -496,7 +496,7 @@ export function CvPdfViewport({
             <button
               type="button"
               onClick={handleResetZoom}
-              className="px-2.5 text-xs font-mono font-medium text-white/90 hover:text-[#4AFFB4] transition-colors cursor-pointer"
+              className="px-2.5 text-xs font-mono font-medium text-white/90 hover:text-lume-primary transition-colors cursor-pointer"
               title="Reset zoom to 100%"
               aria-label="Reset zoom to 100%"
             >

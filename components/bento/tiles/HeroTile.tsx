@@ -1,10 +1,12 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { BentoTile } from "../BentoTile"
 import { Download } from "lucide-react"
 import { useViewModeStore } from "@/store/useViewModeStore"
+import { usePageTransition } from "@/hooks/usePageTransition"
 import type { HeroContent } from "@/lib/tiles/schemas"
 
 interface HeroTileProps {
@@ -47,8 +49,12 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
     window.dispatchEvent(new CustomEvent("open-command-palette"))
   }
 
-  const handleDownloadCv = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const { navigateWithTransition } = usePageTransition()
+
+  const handleCvClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
     e.stopPropagation()
+    navigateWithTransition("/cv", e.currentTarget)
   }
 
   const router = useRouter()
@@ -177,20 +183,19 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
           <div className="relative z-10 border-t border-white/5 pt-3 sm:pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 w-full mt-3 sm:mt-5 md:mt-8">
             {/* Bottom Left: Download CV Button */}
             <div className="flex items-center">
-              <a 
-                href="/resume.pdf"
-                download="resume.pdf"
-                onClick={handleDownloadCv}
+              <Link 
+                href="/cv"
+                onClick={handleCvClick}
                 onMouseEnter={prefetchCvAssets}
                 onFocus={prefetchCvAssets}
-                aria-label="Download CV as PDF"
+                aria-label="View and Download CV"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 py-2 sm:px-2.5 sm:py-1.5 bg-white/[0.02] hover:bg-mode-accent/10 border border-white/5 hover:border-mode-accent/30 rounded-xl text-white/60 hover:text-mode-accent-bright transition-all duration-300 select-none cursor-pointer group/cv"
               >
                 <Download className="w-4 h-4 shrink-0 transition-transform group-hover/cv:-translate-y-0.5" />
                 <span className="text-xs sm:text-sm font-semibold tracking-wide text-white/60 group-hover/cv:text-mode-accent-bright transition-colors">
                   Download CV
                 </span>
-              </a>
+              </Link>
             </div>
 
             {/* Bottom Right: Command Palette Trigger */}
@@ -254,20 +259,19 @@ export function HeroTile({ id, size, content, isDragging, sortableProps }: HeroT
         <div className="relative z-10 border-t border-white/5 pt-3 sm:pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 w-full mt-3 sm:mt-5 md:mt-8">
           {/* Bottom Left: Download CV Button */}
           <div className="flex items-center">
-            <a 
-              href="/resume.pdf"
-              download="resume.pdf"
-              onClick={handleDownloadCv}
+            <Link 
+              href="/cv"
+              onClick={handleCvClick}
               onMouseEnter={prefetchCvAssets}
               onFocus={prefetchCvAssets}
-              aria-label="Download CV as PDF"
+              aria-label="View and Download CV"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 py-2 sm:px-2.5 sm:py-1.5 bg-white/[0.02] hover:bg-mode-accent/10 border border-white/5 hover:border-mode-accent/30 rounded-xl text-white/60 hover:text-mode-accent-bright transition-all duration-300 select-none cursor-pointer group/cv"
             >
               <Download className="w-4 h-4 shrink-0 transition-transform group-hover/cv:-translate-y-0.5" />
               <span className="text-xs sm:text-sm font-semibold tracking-wide text-white/60 group-hover/cv:text-mode-accent-bright transition-colors">
                 Download CV
               </span>
-            </a>
+            </Link>
           </div>
 
           {/* Bottom Right: Command Palette Trigger */}

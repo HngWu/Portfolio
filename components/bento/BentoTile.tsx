@@ -213,9 +213,9 @@ export function BentoTile({
           >
             {children}
             {isClickable && !href?.startsWith("http") && (
-              <div className="absolute bottom-0 right-4 z-20 opacity-0 transform translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 flex items-center gap-2 text-xs font-mono text-white/50 pointer-events-none">
+              <div className="hidden md:flex absolute bottom-2.5 right-3.5 sm:bottom-3 sm:right-4 z-20 items-center gap-1.5 text-[11px] font-mono text-white/50 group-hover:text-mode-accent-bright opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
                 <span>View Details</span>
-                <span>→</span>
+                <span className="text-xs transition-transform group-hover:translate-x-0.5">→</span>
               </div>
             )}
           </GlassCard>
@@ -256,9 +256,9 @@ export function BentoTile({
               )}
             </div>
             {isClickable && !href?.startsWith("http") && (
-              <div className="absolute bottom-0 right-4 z-20 opacity-0 transform translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 flex items-center gap-2 text-xs font-mono text-white/50 pointer-events-none">
+              <div className="hidden md:flex absolute bottom-2.5 right-3.5 sm:bottom-3 sm:right-4 z-20 items-center gap-1.5 text-[11px] font-mono text-white/50 group-hover:text-mode-accent-bright opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
                 <span>View Details</span>
-                <span>→</span>
+                <span className="text-xs transition-transform group-hover:translate-x-0.5">→</span>
               </div>
             )}
           </GlassCard>

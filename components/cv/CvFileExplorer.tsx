@@ -77,16 +77,16 @@ export function CvFileExplorer({
   const getFolderIcon = (iconType: DocumentFolder["iconType"]) => {
     switch (iconType) {
       case "hackathons":
-        return <Trophy className="w-3.5 h-3.5 text-[#4AFFB4]" />
+        return <Trophy className="w-3.5 h-3.5 text-lume-primary" />
       case "scholarships":
         return <Award className="w-3.5 h-3.5 text-amber-300" />
       case "honours":
         return <Star className="w-3.5 h-3.5 text-cyan-300" />
       case "grades":
-        return <ShieldCheck className="w-3.5 h-3.5 text-[#4AFFB4]" />
+        return <ShieldCheck className="w-3.5 h-3.5 text-lume-primary" />
       case "resume":
       default:
-        return <Folder className="w-3.5 h-3.5 text-[#4AFFB4]" />
+        return <Folder className="w-3.5 h-3.5 text-mode-accent-bright" />
     }
   }
 
@@ -110,7 +110,7 @@ export function CvFileExplorer({
 
   const getFileIcon = (doc: VaultDocument) => {
     if (doc.id === "resume") {
-      return <Sparkles className="w-4 h-4 text-[#4AFFB4] shrink-0" />
+      return <Sparkles className="w-4 h-4 text-mode-accent-bright shrink-0" />
     }
     return <FileText className="w-4 h-4 text-white/60 shrink-0" />
   }
@@ -118,13 +118,13 @@ export function CvFileExplorer({
   return (
     <aside className="w-full flex flex-col gap-4 text-white">
       {/* File Explorer Container Card */}
-      <div className="rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl p-4 sm:p-5 flex flex-col shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#4AFFB4]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-xl p-4 sm:p-5 flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-36 h-36 bg-lume-primary/[0.06] rounded-full blur-3xl pointer-events-none" />
 
         {/* Explorer Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-[#4AFFB4]/10 border border-[#4AFFB4]/30 text-[#4AFFB4]">
+            <div className="p-1.5 rounded-lg bg-lume-primary/10 border border-lume-primary/30 text-lume-primary">
               <FolderOpen className="w-4 h-4" />
             </div>
             <div>
@@ -147,7 +147,7 @@ export function CvFileExplorer({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search credentials, hackathons, awards..."
-            className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.05] focus:bg-white/[0.07] border border-white/10 focus:border-[#4AFFB4]/40 text-xs text-white placeholder-white/30 font-mono transition-all outline-none"
+            className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] focus:bg-white/[0.06] border border-white/10 focus:border-lume-primary/40 focus:ring-1 focus:ring-lume-primary/20 text-xs text-white placeholder-white/30 font-mono transition-all outline-none"
           />
           {searchQuery && (
             <button
@@ -177,8 +177,8 @@ export function CvFileExplorer({
                     onClick={() => onSelectDoc(doc.id)}
                     className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 group ${
                       isSelected
-                        ? "bg-[#4AFFB4]/10 border-[#4AFFB4]/40 shadow-[0_0_15px_rgba(74,255,180,0.1)]"
-                        : "bg-white/[0.01] hover:bg-white/[0.04] border-white/5"
+                        ? "bg-lume-primary/10 border-lume-primary/40 shadow-[0_0_20px_rgba(74,255,180,0.12)] text-lume-primary"
+                        : "bg-white/[0.015] hover:bg-white/[0.04] border-white/5 hover:border-white/10"
                     }`}
                   >
                     <div className="mt-0.5">{getFileIcon(doc)}</div>
@@ -186,7 +186,7 @@ export function CvFileExplorer({
                       <div className="flex items-center justify-between gap-1.5">
                         <span
                           className={`text-xs font-semibold truncate ${
-                            isSelected ? "text-[#4AFFB4]" : "text-white/90 group-hover:text-white"
+                            isSelected ? "text-lume-primary font-bold" : "text-white/90 group-hover:text-white"
                           }`}
                         >
                           {doc.title}
@@ -239,8 +239,8 @@ export function CvFileExplorer({
                             onClick={() => onSelectDoc(doc.id)}
                             className={`w-full text-left p-2 rounded-xl border transition-all cursor-pointer flex items-start gap-2 group ${
                               isSelected
-                                ? "bg-[#4AFFB4]/10 border-[#4AFFB4]/40 shadow-[0_0_15px_rgba(74,255,180,0.1)]"
-                                : "bg-white/[0.01] hover:bg-white/[0.04] border-white/5"
+                                ? "bg-lume-primary/10 border-lume-primary/40 shadow-[0_0_20px_rgba(74,255,180,0.12)] text-lume-primary"
+                                : "bg-white/[0.015] hover:bg-white/[0.04] border-white/5 hover:border-white/10"
                             }`}
                           >
                             <div className="mt-0.5">{getFileIcon(doc)}</div>
@@ -249,7 +249,7 @@ export function CvFileExplorer({
                                 <span
                                   className={`text-xs font-medium truncate ${
                                     isSelected
-                                      ? "text-[#4AFFB4] font-semibold"
+                                      ? "text-lume-primary font-bold"
                                       : "text-white/85 group-hover:text-white"
                                   }`}
                                 >
@@ -275,7 +275,7 @@ export function CvFileExplorer({
       </div>
 
       {/* Direct Connect Quick Action Footer */}
-      <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl flex flex-col gap-2.5">
+      <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-xl flex flex-col gap-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
         <span className="text-[10px] font-mono uppercase tracking-wider text-white/40">
           Direct Connect
         </span>
@@ -284,15 +284,15 @@ export function CvFileExplorer({
           <button
             type="button"
             onClick={handleCopyEmail}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 text-xs text-white/80 hover:text-white transition-all cursor-pointer group active:scale-[0.99]"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-mode-accent/30 text-xs text-white/80 hover:text-white transition-all cursor-pointer group active:scale-[0.99]"
             title="Click to copy email address"
           >
             <div className="flex items-center gap-2 truncate">
-              <Mail className="w-3.5 h-3.5 text-[#4AFFB4] shrink-0" />
+              <Mail className="w-3.5 h-3.5 text-lume-primary shrink-0" />
               <span className="font-mono text-xs truncate">{contact.email}</span>
             </div>
             {copied ? (
-              <span className="flex items-center gap-1 text-[10px] font-mono text-[#4AFFB4] shrink-0">
+              <span className="flex items-center gap-1 text-[10px] font-mono text-lume-primary shrink-0">
                 <Check className="w-3 h-3" /> Copied
               </span>
             ) : (
@@ -309,7 +309,7 @@ export function CvFileExplorer({
               href={contact.github}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 text-xs text-white/70 hover:text-white transition-all font-mono"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-white/20 text-xs text-white/70 hover:text-white transition-all font-mono"
             >
               <Github className="w-3.5 h-3.5" />
               <span>GitHub</span>
@@ -320,7 +320,7 @@ export function CvFileExplorer({
               href={contact.linkedin}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 text-xs text-white/70 hover:text-white transition-all font-mono"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-white/20 text-xs text-white/70 hover:text-white transition-all font-mono"
             >
               <Linkedin className="w-3.5 h-3.5" />
               <span>LinkedIn</span>
