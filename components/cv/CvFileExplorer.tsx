@@ -18,10 +18,12 @@ import {
   Trophy,
   Award,
   Star,
+  MapPin,
 } from "lucide-react"
 import type { VaultDocument, DocumentFolder } from "@/lib/cv/documents"
 import { VAULT_FOLDERS } from "@/lib/cv/documents"
-import type { ParsedContact } from "@/lib/content/portfolio"
+import type { ParsedContact, PortfolioContent } from "@/lib/content/portfolio"
+import { useViewModeStore } from "@/store/useViewModeStore"
 
 export interface CvFileExplorerProps {
   documents: VaultDocument[]
@@ -29,6 +31,7 @@ export interface CvFileExplorerProps {
   selectedDocId: string
   onSelectDoc: (id: string) => void
   contact?: ParsedContact
+  hero?: PortfolioContent["hero"]
 }
 
 export function CvFileExplorer({
@@ -37,7 +40,9 @@ export function CvFileExplorer({
   selectedDocId,
   onSelectDoc,
   contact,
+  hero,
 }: CvFileExplorerProps) {
+  const mode = useViewModeStore((state) => state.mode)
   const activeFolders = folders || VAULT_FOLDERS
   const [searchQuery, setSearchQuery] = React.useState("")
   const [expandedFolders, setExpandedFolders] = React.useState<Record<string, boolean>>({
@@ -76,15 +81,16 @@ export function CvFileExplorer({
 
   const getFolderIcon = (iconType: DocumentFolder["iconType"]) => {
     switch (iconType) {
+      case "resume":
+        return <Sparkles className="w-3.5 h-3.5 text-mode-accent-bright" />
       case "hackathons":
         return <Trophy className="w-3.5 h-3.5 text-lume-primary" />
       case "scholarships":
-        return <Award className="w-3.5 h-3.5 text-amber-300" />
+        return <Award className="w-3.5 h-3.5 text-lume-warm" />
       case "honours":
         return <Star className="w-3.5 h-3.5 text-cyan-300" />
       case "grades":
         return <ShieldCheck className="w-3.5 h-3.5 text-lume-primary" />
-      case "resume":
       default:
         return <Folder className="w-3.5 h-3.5 text-mode-accent-bright" />
     }
@@ -108,23 +114,58 @@ export function CvFileExplorer({
     }
   }
 
-  const getFileIcon = (doc: VaultDocument) => {
+  const getFileIcon = (doc: VaultDocument, isSelected: boolean) => {
     if (doc.id === "resume") {
       return <Sparkles className="w-4 h-4 text-mode-accent-bright shrink-0" />
     }
-    return <FileText className="w-4 h-4 text-white/60 shrink-0" />
+    return (
+      <FileText
+        className={`w-4 h-4 shrink-0 transition-colors ${
+          isSelected ? "text-mode-accent-bright" : "text-white/60"
+        }`}
+      />
+    )
   }
 
   return (
     <aside className="w-full flex flex-col gap-4 text-white">
+      {/* Profile Summary Chip Card */}
+      <div className="rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-xl p-4 sm:p-5 flex flex-col gap-3 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-mode-accent/[0.08] rounded-full blur-3xl pointer-events-none" />
+
+        {/* Availability Status Pill */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>{contact?.availability || "AVAILABLE FOR SELECT OPPORTUNITIES"}</span>
+          </div>
+        </div>
+
+        {/* Candidate Identity */}
+        <div>
+          <h3 className="text-base sm:text-lg font-bold font-display text-white tracking-tight">
+            {hero?.mark || "Software Engineer"}
+          </h3>
+          <p className="text-xs font-mono text-white/60 mt-0.5">
+            {hero?.role || "Full Stack & Creative Developer"}
+          </p>
+        </div>
+
+        {/* Timezone / Location */}
+        <div className="pt-2 border-t border-white/5 flex items-center gap-1 text-[11px] font-mono text-white/40">
+          <MapPin className="w-3.5 h-3.5 text-white/40 shrink-0" />
+          <span>{contact?.timezone || "Singapore (UTC+8)"}</span>
+        </div>
+      </div>
+
       {/* File Explorer Container Card */}
       <div className="rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-xl p-4 sm:p-5 flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-36 h-36 bg-lume-primary/[0.06] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-36 h-36 bg-mode-accent/[0.06] rounded-full blur-3xl pointer-events-none" />
 
         {/* Explorer Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-lume-primary/10 border border-lume-primary/30 text-lume-primary">
+            <div className="p-1.5 rounded-lg bg-mode-accent/10 border border-mode-accent/30 text-mode-accent-bright">
               <FolderOpen className="w-4 h-4" />
             </div>
             <div>
@@ -147,13 +188,13 @@ export function CvFileExplorer({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search credentials, hackathons, awards..."
-            className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] focus:bg-white/[0.06] border border-white/10 focus:border-lume-primary/40 focus:ring-1 focus:ring-lume-primary/20 text-xs text-white placeholder-white/30 font-mono transition-all outline-none"
+            className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] focus:bg-white/[0.06] border border-white/10 focus:border-mode-accent/40 focus:ring-1 focus:ring-mode-accent/20 text-xs font-mono text-white placeholder-white/30 transition-all outline-none"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -177,16 +218,18 @@ export function CvFileExplorer({
                     onClick={() => onSelectDoc(doc.id)}
                     className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 group ${
                       isSelected
-                        ? "bg-lume-primary/10 border-lume-primary/40 shadow-[0_0_20px_rgba(74,255,180,0.12)] text-lume-primary"
-                        : "bg-white/[0.015] hover:bg-white/[0.04] border-white/5 hover:border-white/10"
+                        ? "bg-mode-accent/10 border-mode-accent/40 shadow-[0_0_20px_rgba(var(--mode-glow-rgb),0.15)] text-mode-accent-bright"
+                        : "bg-white/[0.015] hover:bg-white/[0.04] border-white/5 hover:border-white/10 text-white/85 group-hover:text-white"
                     }`}
                   >
-                    <div className="mt-0.5">{getFileIcon(doc)}</div>
+                    <div className="mt-0.5">{getFileIcon(doc, isSelected)}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1.5">
                         <span
-                          className={`text-xs font-semibold truncate ${
-                            isSelected ? "text-lume-primary font-bold" : "text-white/90 group-hover:text-white"
+                          className={`text-xs truncate ${
+                            isSelected
+                              ? "text-mode-accent-bright font-bold"
+                              : "text-white/85 group-hover:text-white font-semibold"
                           }`}
                         >
                           {doc.title}
@@ -239,18 +282,18 @@ export function CvFileExplorer({
                             onClick={() => onSelectDoc(doc.id)}
                             className={`w-full text-left p-2 rounded-xl border transition-all cursor-pointer flex items-start gap-2 group ${
                               isSelected
-                                ? "bg-lume-primary/10 border-lume-primary/40 shadow-[0_0_20px_rgba(74,255,180,0.12)] text-lume-primary"
-                                : "bg-white/[0.015] hover:bg-white/[0.04] border-white/5 hover:border-white/10"
+                                ? "bg-mode-accent/10 border-mode-accent/40 shadow-[0_0_20px_rgba(var(--mode-glow-rgb),0.15)] text-mode-accent-bright"
+                                : "bg-white/[0.015] hover:bg-white/[0.04] border-white/5 hover:border-white/10 text-white/85 group-hover:text-white"
                             }`}
                           >
-                            <div className="mt-0.5">{getFileIcon(doc)}</div>
+                            <div className="mt-0.5">{getFileIcon(doc, isSelected)}</div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1.5">
                                 <span
-                                  className={`text-xs font-medium truncate ${
+                                  className={`text-xs truncate ${
                                     isSelected
-                                      ? "text-lume-primary font-bold"
-                                      : "text-white/85 group-hover:text-white"
+                                      ? "text-mode-accent-bright font-bold"
+                                      : "text-white/85 group-hover:text-white font-medium"
                                   }`}
                                 >
                                   {doc.title}
@@ -288,12 +331,12 @@ export function CvFileExplorer({
             title="Click to copy email address"
           >
             <div className="flex items-center gap-2 truncate">
-              <Mail className="w-3.5 h-3.5 text-lume-primary shrink-0" />
+              <Mail className="w-3.5 h-3.5 text-mode-accent-bright shrink-0" />
               <span className="font-mono text-xs truncate">{contact.email}</span>
             </div>
             {copied ? (
-              <span className="flex items-center gap-1 text-[10px] font-mono text-lume-primary shrink-0">
-                <Check className="w-3 h-3" /> Copied
+              <span className="flex items-center gap-1 text-[10px] font-mono text-mode-accent-bright shrink-0 font-medium">
+                <Check className="w-3 h-3" /> Copied!
               </span>
             ) : (
               <span className="text-[10px] font-mono text-white/40 group-hover:text-white/70 shrink-0">
@@ -309,7 +352,7 @@ export function CvFileExplorer({
               href={contact.github}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-white/20 text-xs text-white/70 hover:text-white transition-all font-mono"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-mode-accent/30 text-xs text-white/70 hover:text-white transition-all font-mono shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:shadow-[0_0_15px_rgba(var(--mode-glow-rgb),0.1)] active:scale-[0.98]"
             >
               <Github className="w-3.5 h-3.5" />
               <span>GitHub</span>
@@ -320,7 +363,7 @@ export function CvFileExplorer({
               href={contact.linkedin}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-white/20 text-xs text-white/70 hover:text-white transition-all font-mono"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-mode-accent/30 text-xs text-white/70 hover:text-white transition-all font-mono shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:shadow-[0_0_15px_rgba(var(--mode-glow-rgb),0.1)] active:scale-[0.98]"
             >
               <Linkedin className="w-3.5 h-3.5" />
               <span>LinkedIn</span>

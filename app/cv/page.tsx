@@ -31,7 +31,7 @@ export default async function CvPage() {
     <React.Suspense
       fallback={
         <div className="min-h-screen bg-transparent text-white/50 flex flex-col items-center justify-center font-mono text-xs gap-3">
-          <div className="w-7 h-7 border-2 border-lume-primary/20 border-t-lume-primary rounded-full animate-spin shadow-[0_0_20px_rgba(74,255,180,0.2)]" />
+          <div className="w-8 h-8 border-2 border-mode-accent/20 border-t-mode-accent rounded-full animate-spin shadow-[0_0_20px_rgba(var(--mode-glow-rgb),0.3)]" />
           <span className="tracking-widest uppercase text-[11px] text-white/60">Loading Dossier...</span>
         </div>
       }

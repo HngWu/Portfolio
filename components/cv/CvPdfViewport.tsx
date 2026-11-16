@@ -9,6 +9,7 @@ import {
   ZoomOut,
 } from "lucide-react"
 import type { VaultDocument } from "@/lib/cv/documents"
+import { useViewModeStore } from "@/store/useViewModeStore"
 
 export interface CvPdfViewportProps {
   containerRef?: React.RefObject<HTMLDivElement | null>
@@ -27,6 +28,9 @@ export function CvPdfViewport({
   doc,
   pdfUrl = "/resume.pdf",
 }: CvPdfViewportProps) {
+  const mode = useViewModeStore((state) => state.mode)
+  const isDeepDive = mode === "deep"
+
   const activeUrl = doc?.url || pdfUrl
   const activeFilename = doc?.filename || "resume.pdf"
   const activeSize = doc?.sizeLabel || "Official Document"
@@ -289,6 +293,7 @@ export function CvPdfViewport({
         touchStartDistRef.current = getDistance(e.touches)
         initialTouchZoomRef.current = zoom
         currentRatioRef.current = 1
+        touchStartPosRef.current = null
       } else if (e.touches.length === 1) {
         touchStartPosRef.current = {
           x: e.touches[0].clientX,
@@ -342,16 +347,26 @@ export function CvPdfViewport({
       }
     }
 
+    const onTouchCancel = () => {
+      if (isPinchingRef.current) {
+        target.style.transform = ""
+        isPinchingRef.current = false
+        touchStartDistRef.current = null
+        currentRatioRef.current = 1
+      }
+      touchStartPosRef.current = null
+    }
+
     el.addEventListener("touchstart", onTouchStart, { passive: true })
     el.addEventListener("touchmove", onTouchMove, { passive: false })
     el.addEventListener("touchend", onTouchEnd, { passive: true })
-    el.addEventListener("touchcancel", onTouchEnd, { passive: true })
+    el.addEventListener("touchcancel", onTouchCancel, { passive: true })
 
     return () => {
       el.removeEventListener("touchstart", onTouchStart)
       el.removeEventListener("touchmove", onTouchMove)
       el.removeEventListener("touchend", onTouchEnd)
-      el.removeEventListener("touchcancel", onTouchEnd)
+      el.removeEventListener("touchcancel", onTouchCancel)
     }
   }, [zoom])
 
@@ -375,14 +390,20 @@ export function CvPdfViewport({
       <div className="h-11 px-4 border-b border-white/10 bg-white/[0.02] backdrop-blur-xl flex items-center justify-between text-xs text-white/50 font-mono select-none">
         {/* Document Title & Pages */}
         <div className="flex items-center gap-2.5 truncate">
-          <FileText className="w-3.5 h-3.5 text-lume-primary shrink-0" />
-          <span className="text-white/90 font-medium truncate">{activeFilename}</span>
+          <FileText className="w-3.5 h-3.5 text-mode-accent-bright shrink-0" />
+          <span
+            className={`truncate text-white/90 font-medium ${
+              isDeepDive ? "font-mono" : "font-display"
+            }`}
+          >
+            {activeFilename}
+          </span>
           <span className="text-white/20">|</span>
           <span className="text-[11px] text-white/40 shrink-0">{activeSize}</span>
           {numPages > 1 && (
             <>
               <span className="text-white/20 hidden sm:inline">|</span>
-              <span className="text-[11px] text-lume-primary font-mono hidden sm:inline">
+              <span className="text-[11px] text-mode-accent-bright font-mono hidden sm:inline">
                 {numPages} Pages
               </span>
             </>
@@ -407,7 +428,7 @@ export function CvPdfViewport({
               <button
                 type="button"
                 onClick={handleResetZoom}
-                className="px-1.5 sm:px-2 text-[10px] sm:text-[11px] text-white/60 hover:text-white transition-colors cursor-pointer"
+                className="px-1.5 sm:px-2 text-[11px] font-mono text-white/60 hover:text-mode-accent-bright transition-colors cursor-pointer"
                 title="Reset zoom to 100%"
                 aria-label="Reset zoom to 100%"
               >
@@ -432,7 +453,7 @@ export function CvPdfViewport({
             title="Reload document"
             className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/60 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-lume-primary" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-mode-accent-bright" : ""}`} />
             <span className="hidden md:inline">Reload</span>
           </button>
 
@@ -440,7 +461,7 @@ export function CvPdfViewport({
             href={activeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/60 hover:text-lume-primary transition-colors flex items-center gap-1"
+            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/60 hover:text-mode-accent-bright transition-colors flex items-center gap-1"
             title="Open raw PDF file in new browser tab"
           >
             <ExternalLink className="w-3.5 h-3.5" />
@@ -454,7 +475,7 @@ export function CvPdfViewport({
         {/* Loading Spinner on initial load */}
         {loading && numPages === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 font-mono text-xs gap-3 z-20 bg-black/75 backdrop-blur-sm">
-            <div className="w-6 h-6 border-2 border-lume-primary/20 border-t-lume-primary rounded-full animate-spin shadow-[0_0_15px_rgba(74,255,180,0.2)]" />
+            <div className="w-6 h-6 border-2 border-mode-accent/20 border-t-mode-accent rounded-full animate-spin shadow-[0_0_20px_rgba(var(--mode-glow-rgb),0.3)]" />
             <span>Rendering High-Resolution Document...</span>
           </div>
         )}
@@ -487,7 +508,7 @@ export function CvPdfViewport({
               type="button"
               onClick={handleZoomOut}
               disabled={zoom <= 60}
-              className="p-1.5 rounded-full hover:bg-white/10 text-white/80 active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+              className="p-1.5 rounded-full hover:bg-white/10 text-white/80 active:scale-95 disabled:opacity-30 cursor-pointer"
               title="Zoom out"
               aria-label="Zoom out"
             >
@@ -496,7 +517,7 @@ export function CvPdfViewport({
             <button
               type="button"
               onClick={handleResetZoom}
-              className="px-2.5 text-xs font-mono font-medium text-white/90 hover:text-lume-primary transition-colors cursor-pointer"
+              className="px-2.5 text-xs font-mono font-medium text-white/90 hover:text-mode-accent-bright transition-colors cursor-pointer"
               title="Reset zoom to 100%"
               aria-label="Reset zoom to 100%"
             >
@@ -506,7 +527,7 @@ export function CvPdfViewport({
               type="button"
               onClick={handleZoomIn}
               disabled={zoom >= 220}
-              className="p-1.5 rounded-full hover:bg-white/10 text-white/80 active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+              className="p-1.5 rounded-full hover:bg-white/10 text-white/80 active:scale-95 disabled:opacity-30 cursor-pointer"
               title="Zoom in"
               aria-label="Zoom in"
             >

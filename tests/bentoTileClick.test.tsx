@@ -8,6 +8,7 @@ mock.module("next/navigation", () => ({
     prefetch: mock((_url: string) => {}),
   }),
   usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
 }))
 
 describe("Tile and Link Interactions in Deep Dive Mode", () => {

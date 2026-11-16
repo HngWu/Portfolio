@@ -8,6 +8,7 @@ mock.module("next/navigation", () => ({
     prefetch: mock((_url: string) => {}),
   }),
   usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
 }))
 
 describe("HeroTile Headline 2-Line & Stable Height Constraints", () => {

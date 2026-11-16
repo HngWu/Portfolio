@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { useNavigationStore } from "@/store/useNavigationStore"
+import { useViewModeStore } from "@/store/useViewModeStore"
 import { CvHeaderBar } from "./CvHeaderBar"
 import { CvFileExplorer } from "./CvFileExplorer"
 import { CvPdfViewport } from "./CvPdfViewport"
@@ -26,6 +27,7 @@ export function CvDossierViewer({
   initialFolders,
   initialDocuments,
 }: CvDossierViewerProps) {
+  const mode = useViewModeStore((state) => state.mode)
   const folders = initialFolders && initialFolders.length > 0 ? initialFolders : VAULT_FOLDERS
   const documents =
     initialDocuments && initialDocuments.length > 0 ? initialDocuments : VAULT_DOCUMENTS
@@ -122,7 +124,10 @@ export function CvDossierViewer({
   }
 
   return (
-    <div className="min-h-screen bg-black/40 backdrop-blur-[2px] text-white flex flex-col selection:bg-lume-primary/30 selection:text-white relative">
+    <div className="min-h-screen bg-black/40 backdrop-blur-[2px] text-white flex flex-col selection:bg-mode-accent/30 selection:text-white relative">
+      {/* Ambient Mode Glow */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-mode-accent/[0.03] rounded-full blur-3xl pointer-events-none" />
+
       {/* Top Header */}
       <CvHeaderBar
         activeDoc={activeDoc}
@@ -149,6 +154,7 @@ export function CvDossierViewer({
               selectedDocId={selectedDocId}
               onSelectDoc={handleSelectDoc}
               contact={portfolio.contact}
+              hero={portfolio.hero}
             />
           </div>
 

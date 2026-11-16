@@ -3,12 +3,16 @@
 import * as React from "react"
 import { FileText, Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Layers } from "lucide-react"
 import type { VaultDocument } from "@/lib/cv/documents"
+import { useViewModeStore } from "@/store/useViewModeStore"
 
 export interface DocxViewportProps {
   doc: VaultDocument
 }
 
 export function DocxViewport({ doc }: DocxViewportProps) {
+  const mode = useViewModeStore((state) => state.mode)
+  const isDeepDive = mode === "deep"
+
   const pages = doc.previewPages || []
   const [currentPage, setCurrentPage] = React.useState(0)
   const [zoom, setZoom] = React.useState(100)
@@ -72,6 +76,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
         touchStartDistRef.current = getDistance(e.touches)
         initialTouchZoomRef.current = zoom
         currentRatioRef.current = 1
+        touchStartPosRef.current = null
       } else if (e.touches.length === 1) {
         touchStartPosRef.current = {
           x: e.touches[0].clientX,
@@ -122,16 +127,26 @@ export function DocxViewport({ doc }: DocxViewportProps) {
       }
     }
 
+    const onTouchCancel = () => {
+      if (isPinchingRef.current) {
+        target.style.transform = ""
+        isPinchingRef.current = false
+        touchStartDistRef.current = null
+        currentRatioRef.current = 1
+      }
+      touchStartPosRef.current = null
+    }
+
     el.addEventListener("touchstart", onTouchStart, { passive: true })
     el.addEventListener("touchmove", onTouchMove, { passive: false })
     el.addEventListener("touchend", onTouchEnd, { passive: true })
-    el.addEventListener("touchcancel", onTouchEnd, { passive: true })
+    el.addEventListener("touchcancel", onTouchCancel, { passive: true })
 
     return () => {
       el.removeEventListener("touchstart", onTouchStart)
       el.removeEventListener("touchmove", onTouchMove)
       el.removeEventListener("touchend", onTouchEnd)
-      el.removeEventListener("touchcancel", onTouchEnd)
+      el.removeEventListener("touchcancel", onTouchCancel)
     }
   }, [zoom])
 
@@ -179,7 +194,11 @@ export function DocxViewport({ doc }: DocxViewportProps) {
             </div>
           )}
 
-          <span className="text-white/70 truncate hidden md:inline max-w-[280px]">
+          <span
+            className={`truncate hidden md:inline max-w-[280px] text-white/70 ${
+              isDeepDive ? "font-mono" : "font-display"
+            }`}
+          >
             {doc.title}
           </span>
         </div>
@@ -201,7 +220,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
               <button
                 type="button"
                 onClick={handleResetZoom}
-                className="px-2 text-[11px] text-white/60 hover:text-white transition-colors cursor-pointer"
+                className="px-2 text-[11px] font-mono text-white/60 hover:text-mode-accent-bright transition-colors cursor-pointer"
                 title="Reset zoom to 100%"
                 aria-label="Reset zoom to 100%"
               >
@@ -223,7 +242,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
           <a
             href={doc.url}
             download={doc.filename}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-lume-primary/10 hover:bg-lume-primary/20 border border-lume-primary/30 text-lume-primary text-xs font-semibold transition-all cursor-pointer shadow-[0_0_15px_rgba(74,255,180,0.1)] hover:shadow-[0_0_20px_rgba(74,255,180,0.2)]"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mode-accent/10 hover:bg-mode-accent/20 border border-mode-accent/30 text-mode-accent-bright text-xs font-semibold transition-all cursor-pointer shadow-[0_0_15px_rgba(var(--mode-glow-rgb),0.1)] hover:shadow-[0_0_20px_rgba(var(--mode-glow-rgb),0.2)]"
             title="Download original Microsoft Word document"
           >
             <Download className="w-3.5 h-3.5" />
@@ -236,7 +255,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
       <div className="relative flex-1 w-full overflow-hidden bg-black/25">
         <div
           ref={scrollContainerRef}
-          className="w-full h-full overflow-auto p-2 sm:p-8 custom-scrollbar touch-pan-x touch-pan-y"
+          className="w-full h-full overflow-auto custom-scrollbar p-2 sm:p-6 pb-24 touch-pan-x touch-pan-y"
         >
           {pages.length > 0 ? (
             <div
@@ -258,15 +277,21 @@ export function DocxViewport({ doc }: DocxViewportProps) {
           ) : (
             <div className="flex flex-col items-center justify-center p-8 text-center text-white my-auto h-full">
               <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 max-w-md backdrop-blur-xl shadow-2xl">
-                <FileText className="w-10 h-10 text-lume-primary mx-auto mb-3" />
-                <h3 className="text-base font-semibold font-display">{doc.title}</h3>
+                <FileText className="w-10 h-10 text-mode-accent-bright mx-auto mb-3" />
+                <h3
+                  className={`text-base font-semibold ${
+                    isDeepDive ? "font-mono" : "font-display"
+                  }`}
+                >
+                  {doc.title}
+                </h3>
                 <p className="text-xs text-white/50 mt-1 mb-4 font-mono">
                   Microsoft Word Document ({doc.sizeLabel})
                 </p>
                 <a
                   href={doc.url}
                   download={doc.filename}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-lume-primary text-black font-semibold text-xs transition-transform hover:scale-105 shadow-[0_0_20px_rgba(74,255,180,0.25)]"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-mode-accent text-black font-semibold text-xs transition-transform hover:scale-105 shadow-[0_0_20px_rgba(var(--mode-glow-rgb),0.25)]"
                 >
                   <Download className="w-4 h-4" />
                   <span>Download {doc.filename}</span>
@@ -283,7 +308,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
               type="button"
               onClick={handleZoomOut}
               disabled={zoom <= 60}
-              className="p-1.5 rounded-full hover:bg-white/10 text-white/80 active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+              className="p-1.5 rounded-full hover:bg-white/10 text-white/80 active:scale-95 disabled:opacity-30 cursor-pointer"
               title="Zoom out"
               aria-label="Zoom out"
             >
@@ -292,7 +317,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
             <button
               type="button"
               onClick={handleResetZoom}
-              className="px-2.5 text-xs font-mono font-medium text-white/90 hover:text-lume-primary transition-colors cursor-pointer"
+              className="px-2.5 text-xs font-mono font-medium text-white/90 hover:text-mode-accent-bright transition-colors cursor-pointer"
               title="Reset zoom to 100%"
               aria-label="Reset zoom to 100%"
             >
@@ -302,7 +327,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
               type="button"
               onClick={handleZoomIn}
               disabled={zoom >= 220}
-              className="p-1.5 rounded-full hover:bg-white/10 text-white/80 active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+              className="p-1.5 rounded-full hover:bg-white/10 text-white/80 active:scale-95 disabled:opacity-30 cursor-pointer"
               title="Zoom in"
               aria-label="Zoom in"
             >
@@ -322,7 +347,7 @@ export function DocxViewport({ doc }: DocxViewportProps) {
               onClick={() => setCurrentPage(idx)}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
                 currentPage === idx
-                  ? "bg-lume-primary/15 border border-lume-primary/40 text-lume-primary font-medium shadow-sm"
+                  ? "bg-mode-accent/15 border border-mode-accent/40 text-mode-accent-bright font-medium shadow-sm"
                   : "bg-white/[0.02] border border-white/10 text-white/50 hover:text-white"
               }`}
             >

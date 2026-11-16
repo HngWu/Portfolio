@@ -1,5 +1,7 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator"
-GlobalRegistrator.register()
+try {
+  GlobalRegistrator.register()
+} catch {}
 
 import { describe, it, expect, beforeEach, mock } from "bun:test"
 import React from "react"
@@ -12,6 +14,7 @@ import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 let currentPathname = "/"
 mock.module("next/navigation", () => ({
   usePathname: () => currentPathname,
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({
     push: () => {},
     replace: () => {},

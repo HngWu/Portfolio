@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 // Mock next/navigation
 mock.module("next/navigation", () => ({
   usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({
     push: () => {},
     replace: () => {},
