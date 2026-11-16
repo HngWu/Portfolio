@@ -132,6 +132,14 @@ describe("CV Page Component Suite", () => {
       expect(backLink?.getAttribute("aria-label")).toBe("Back to Portfolio")
       expect(backLink?.textContent).toContain("PORTFOLIO")
 
+      // Mobile icon-only styling verification (icon only on mobile, text revealed on sm+)
+      expect(backLink?.className).toContain("size-9")
+      expect(backLink?.className).toContain("sm:w-auto")
+      const backTextSpan = backLink?.querySelector("span")
+      expect(backTextSpan).not.toBeNull()
+      expect(backTextSpan?.className).toContain("hidden")
+      expect(backTextSpan?.className).toContain("sm:inline")
+
       // Breadcrumb verification
       expect(container.textContent).toContain("Vault")
       expect(container.textContent).toContain(defaultDoc.title)

@@ -91,12 +91,12 @@ export function DiscoveryBar({
             e.preventDefault()
             navigateWithTransition("/")
           }}
-          className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-white/10 bg-[#0e0f14]/80 backdrop-blur-md text-white/70 hover:text-white hover:border-white/20 transition-all active:scale-95 text-xs font-mono shrink-0 shadow-lg group"
+          className="flex items-center justify-center size-9 sm:size-auto sm:px-3.5 sm:py-2.5 sm:gap-2 rounded-xl border border-white/10 bg-[#0e0f14]/80 backdrop-blur-md text-white/70 hover:text-white hover:border-white/20 transition-all active:scale-95 text-xs font-mono shrink-0 shadow-lg group"
           aria-label="Back to home"
           title="Back to home (Esc)"
         >
           <ArrowLeft className="size-4 group-hover:-translate-x-0.5 transition-transform" />
-          <span className="inline font-medium">Home</span>
+          <span className="hidden sm:inline font-medium">Home</span>
         </Link>
 
         {/* Search input with '/' hotkey hint */}

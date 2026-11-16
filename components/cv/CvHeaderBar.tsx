@@ -49,11 +49,11 @@ export function CvHeaderBar({
               e.preventDefault()
               navigateWithTransition("/", e.currentTarget)
             }}
-            className="w-auto h-9 px-3 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 rounded-xl flex items-center gap-2 text-white transition-all shadow-[0_4px_20px_rgba(0,0,0,0.3)] backdrop-blur-xl group active:scale-95 shrink-0"
+            className="size-9 p-0 sm:w-auto sm:h-9 sm:px-3 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 rounded-xl flex items-center justify-center sm:justify-start sm:gap-2 text-white transition-all shadow-[0_4px_20px_rgba(0,0,0,0.3)] backdrop-blur-xl group active:scale-95 shrink-0"
             aria-label="Back to Portfolio"
           >
             <ArrowLeft className="w-4 h-4 transition-all group-hover:-translate-x-0.5 text-white/60 group-hover:text-lume-primary" />
-            <span className="font-mono text-xs uppercase tracking-wider text-white/70 group-hover:text-white">PORTFOLIO</span>
+            <span className="hidden sm:inline font-mono text-xs uppercase tracking-wider text-white/70 group-hover:text-white">PORTFOLIO</span>
           </Link>
           <span className="text-white/20 select-none text-xs sm:text-sm hidden sm:inline" aria-hidden="true">
             /
