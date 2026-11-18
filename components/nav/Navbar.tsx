@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft } from "lucide-react"
 import { ViewModeToggle } from "./ViewModeToggle"
 import { PerformanceToggle } from "./PerformanceToggle"
+import { Logo } from "@/components/ui/Logo"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 import { usePageTransition } from "@/hooks/usePageTransition"
 
@@ -63,28 +64,7 @@ export function Navbar() {
                   transition={{ duration: 0.2, ease: "easeOut" }}
                   className="flex items-center justify-center"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="size-5 text-white/85 group-hover:text-lume-primary transition-colors duration-300"
-                  >
-                    <path
-                      d="M12 2L2 12L12 22L22 12L12 2Z"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M12 6L6 12L12 18L18 12L12 6Z"
-                      fill="currentColor"
-                      fillOpacity="0.2"
-                      stroke="currentColor"
-                      strokeWidth="1.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <Logo className="size-5 text-white/85 group-hover:text-lume-primary transition-colors duration-300" />
                 </motion.div>
               ) : (
                 <motion.div
