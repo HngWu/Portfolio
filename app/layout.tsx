@@ -52,6 +52,12 @@ export const metadata: Metadata = {
     template: "%s | Portfolio",
   },
   description: "Creative Developer & Software Engineer Portfolio",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/icon.svg",
+  },
 };
 
 export default async function RootLayout({
