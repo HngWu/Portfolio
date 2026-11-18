@@ -124,13 +124,6 @@ export function TerminalTile({
     }
   }, [mode])
 
-  React.useEffect(() => {
-    const isMobileViewport = window.innerWidth < 768
-    const isMobileUserAgent = /iphone|ipad|ipod|android/i.test(navigator.userAgent)
-    if (tileInputRef.current && !isMobileViewport && !isMobileUserAgent) {
-      tileInputRef.current.focus({ preventScroll: true })
-    }
-  }, [])
 
   const scrollToBottom = React.useCallback(() => {
     if (tileScrollRef.current) {
@@ -146,9 +139,8 @@ export function TerminalTile({
   }, [history, scrollToBottom])
 
   React.useEffect(() => {
-    const activeInput = isMaximized ? maxInputRef.current : tileInputRef.current
-    if (activeInput) {
-      activeInput.focus({ preventScroll: true })
+    if (isMaximized && maxInputRef.current) {
+      maxInputRef.current.focus({ preventScroll: true })
     }
     scrollToBottom()
   }, [isMaximized, scrollToBottom])

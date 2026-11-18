@@ -25,20 +25,6 @@ export function InitialLoaderOverlay() {
   const forceComplete = useSiteLoaderStore((s) => s.forceComplete)
 
   const mode = useViewModeStore((s) => s.mode)
-  const setMode = useViewModeStore((s) => s.setMode)
-
-  // Synchronize initial mode from URL search param if present on load
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search)
-      const urlMode = params.get("mode")
-      if (urlMode === "quick" || urlMode === "deep") {
-        if (urlMode !== mode) {
-          setMode(urlMode)
-        }
-      }
-    }
-  }, [mode, setMode])
 
   // Construct pure mode palettes strictly adhering to Quick-Pitch and Deep-Dive color themes
   const palette: GyroPalette = useMemo(() => {
