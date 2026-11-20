@@ -644,7 +644,7 @@ describe("Tile Deep Dive Parity Suite", () => {
       expect(lastBentoTileProps.canExpand).toBe(false)
     })
 
-    it("renders Deep Dive face with font-mono tracking-tight font-bold header and font-mono body/meta", () => {
+    it("renders Deep Dive face with exact same layout as Quick Pitch: Header, Active Card Body, and Controls, but with font-mono typography", () => {
       useViewModeStore.setState({ mode: "deep" })
 
       const html = renderToStaticMarkup(
@@ -659,15 +659,12 @@ describe("Tile Deep Dive Parity Suite", () => {
       // Header uses font-mono tracking-tight font-bold on project name
       expect(html).toContain("font-mono tracking-tight font-bold")
       expect(html).toContain("TriviaDuel")
-      expect(html).toContain("Stack &amp; Strategy")
+      expect(html).toContain("Projects")
+      expect(html).toContain("Real-time multiplayer trivia platform")
 
-      // Notes paragraph uses font-mono
+      // Body and tags use font-mono
       expect(html).toContain("font-mono")
-      expect(html).toContain("Sub-100ms synchronization")
-
-      // Meta and tags use font-mono
-      expect(html).toContain("Production Ready")
-      expect(html).toContain("text-[#4A8FFF] mt-1 font-mono uppercase")
+      expect(html).toContain("Next.js 16")
     })
   })
 })

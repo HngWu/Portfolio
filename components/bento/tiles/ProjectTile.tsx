@@ -4,7 +4,7 @@ import * as React from "react"
 import { BentoTile } from "../BentoTile"
 import { Badge } from "@/components/ui/Badge"
 import { useViewModeStore } from "@/store/useViewModeStore"
-import { FolderGit2, ChevronLeft, ChevronRight, ExternalLink, Github } from "lucide-react"
+import { FolderGit2, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn, getTypographyClasses } from "@/lib/utils"
 import { ForceMobileContext } from "../ForceMobileContext"
 import { parseTileDeepDive, type ProjectContent, type ProjectItem } from "@/lib/tiles/schemas"
@@ -168,156 +168,47 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
   const peekCard1 = items[(safeIndex + 1) % items.length]
   const peekCard2 = items.length > 2 ? items[(safeIndex + 2) % items.length] : null
 
-  const activeNotes = activeItem.notes || deep.notes
+  const renderFace = (isDeep: boolean) => {
+    const currentTypo = isDeep ? deepTypo : typo
+    const accentIconClass = isDeep ? "text-mode-accent-bright" : "text-[#4A8FFF]"
+    const badgeClass = isDeep
+      ? "font-mono text-[9px] px-2 py-0.5 rounded-full bg-mode-accent/10 border border-mode-accent/20 text-mode-accent-bright font-semibold uppercase tracking-wider truncate whitespace-nowrap max-w-[120px] sm:max-w-[150px] shrink"
+      : "font-mono text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider truncate whitespace-nowrap max-w-[120px] sm:max-w-[150px] shrink"
+    const activeDotClass = isDeep
+      ? "w-4 h-1.5 bg-mode-accent-bright shadow-[0_0_8px_rgba(106,255,255,0.7)]"
+      : "w-4 h-1.5 bg-[#4A8FFF] shadow-[0_0_8px_rgba(74,143,255,0.7)]"
+    const headingClass = isDeep
+      ? cn(deepTypo.heading, "font-mono tracking-tight font-bold text-lg sm:text-xl text-white/90 line-clamp-1 leading-tight mb-1")
+      : "font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-1 leading-tight"
+    const bodyClass = isDeep
+      ? cn(deepTypo.body, "font-mono text-white/60 text-xs sm:text-sm font-normal line-clamp-2 leading-relaxed mb-3")
+      : cn(typo.body, "text-white/60 text-xs sm:text-sm font-normal line-clamp-2 leading-relaxed mb-3")
+    const metaClass = isDeep
+      ? cn(deepTypo.meta, "text-white/60 font-mono text-xs sm:text-[13px]")
+      : cn(typo.meta, "text-white/60 font-mono text-xs sm:text-[13px]")
+    const tagBadgeClass = isDeep
+      ? "px-2 py-0.5 text-[10px] font-mono"
+      : "px-2 py-0.5 text-[10px]"
 
-  return (
-    <BentoTile
-      id={id}
-      size={size}
-      href="/projects"
-      glowColor="blue"
-      canDeepDive={true}
-      canMorph={false}
-      canExpand={false}
-      isDragging={isDragging}
-      sortableProps={sortableProps}
-      deepContent={
-        <div
-          tabIndex={0}
-          onKeyDown={handleKeyDown}
-          className="flex flex-col h-full overflow-hidden select-none outline-none"
-        >
-          {/* Header */}
-          <div className="flex justify-between items-start gap-3 mb-2 shrink-0 min-w-0">
-            <div className="min-w-0 shrink">
-              <div className="flex items-center gap-2 min-w-0">
-                <h3 className={cn(deepTypo.heading, "text-white/90 shrink-0 truncate")}>
-                  {activeItem.name}
-                </h3>
-                {activeItem.category && (
-                  <span
-                    title={activeItem.category}
-                    className={cn(
-                      deepTypo.meta,
-                      "hidden sm:inline-flex px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider truncate whitespace-nowrap max-w-[120px] sm:max-w-[150px] shrink"
-                    )}
-                  >
-                    {activeItem.category}
-                  </span>
-                )}
-              </div>
-              <p className={cn(deepTypo.meta, "text-[#4A8FFF] mt-1 font-mono uppercase tracking-widest truncate")}>
-                Stack & Strategy
-              </p>
-            </div>
-
-            {/* Desktop Chevrons for Deep Dive */}
-            <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-              <span className="text-[10px] font-mono text-white/30 mr-1 select-none">
-                {String(safeIndex + 1).padStart(2, "0")}/{String(items.length).padStart(2, "0")}
-              </span>
-              <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-lg p-0.5 shadow-sm">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    goToPrev()
-                  }}
-                  aria-label="Previous project"
-                  title="Previous project (Swipe Right / Left Arrow)"
-                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
-                >
-                  <ChevronLeft className="size-3.5" />
-                </button>
-                <div className="w-[1px] h-3 bg-white/10" />
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    goToNext()
-                  }}
-                  aria-label="Next project"
-                  title="Next project (Swipe Left / Right Arrow)"
-                  className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
-                >
-                  <ChevronRight className="size-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Deep Dive Body */}
-          <div className="flex-1 space-y-3 pr-1 pb-1 overflow-y-auto custom-scrollbar flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-1.5">
-                {activeItem.techStack.map((tag) => (
-                  <Badge key={tag} variant="lume" className="px-2 py-0.5 text-[10px] font-mono">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-
-              {activeNotes && (
-                <p className={cn(deepTypo.body, "font-mono text-white/70 leading-relaxed text-xs md:text-[13px]")}>
-                  {activeNotes}
-                </p>
-              )}
-            </div>
-
-            <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                {activeItem.githubUrl && (
-                  <a
-                    href={activeItem.githubUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white/70 hover:text-white text-xs font-mono transition-colors"
-                  >
-                    <Github className="size-3" />
-                    <span>Repo</span>
-                  </a>
-                )}
-                {activeItem.liveUrl && (
-                  <a
-                    href={activeItem.liveUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-[#4A8FFF] text-xs font-mono transition-colors"
-                  >
-                    <ExternalLink className="size-3" />
-                    <span>Live Demo</span>
-                  </a>
-                )}
-              </div>
-              <span className={cn(deepTypo.meta, "font-mono text-lume-primary uppercase tracking-widest text-[10px]")}>
-                Production Ready
-              </span>
-            </div>
-          </div>
-        </div>
-      }
-    >
-      {/* Front Face: Quick Pitch 3D Stack */}
+    return (
       <div
+        role="region"
+        aria-label="Projects carousel"
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className="relative flex flex-col h-full w-full outline-none"
+        className="relative flex flex-col h-full w-full outline-none focus-visible:ring-1 focus-visible:ring-mode-accent rounded-xl"
       >
         {/* Top Header with Category badge and Desktop Controls */}
         <div className="flex items-center justify-between mb-2 shrink-0 relative z-30">
           <div className="flex items-center gap-2 min-w-0 shrink">
-            <span className={cn(typo.meta, "text-white/40 uppercase tracking-widest flex items-center gap-1.5 shrink-0")}>
-              <FolderGit2 className={cn(typo.icon, "text-[#4A8FFF]")} />
+            <span className={cn(currentTypo.meta, "text-white/40 uppercase tracking-widest flex items-center gap-1.5 shrink-0")}>
+              <FolderGit2 className={cn(currentTypo.icon, accentIconClass)} aria-hidden="true" />
               Projects
             </span>
             {activeItem.category && (
               <span
                 title={activeItem.category}
-                className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider truncate whitespace-nowrap max-w-[120px] sm:max-w-[150px] shrink"
+                className={cn("hidden sm:inline-flex", badgeClass)}
               >
                 {activeItem.category}
               </span>
@@ -338,9 +229,12 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                 }}
                 aria-label="Previous project"
                 title="Previous project (Swipe Right / Left Arrow)"
-                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
+                className={cn(
+                  "p-1.5 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer",
+                  isDeep ? "hover:bg-white/10 hover:text-mode-accent-bright text-white/50" : "hover:bg-white/10 hover:text-lume-primary text-white/50"
+                )}
               >
-                <ChevronLeft className="size-3.5" />
+                <ChevronLeft className="size-3.5" aria-hidden="true" />
               </button>
               <div className="w-[1px] h-3 bg-white/10" />
               <button
@@ -351,9 +245,12 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                 }}
                 aria-label="Next project"
                 title="Next project (Swipe Left / Right Arrow)"
-                className="p-1.5 hover:bg-white/10 hover:text-lume-primary text-white/50 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer"
+                className={cn(
+                  "p-1.5 rounded transition-colors active:scale-95 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer",
+                  isDeep ? "hover:bg-white/10 hover:text-mode-accent-bright text-white/50" : "hover:bg-white/10 hover:text-lume-primary text-white/50"
+                )}
               >
-                <ChevronRight className="size-3.5" />
+                <ChevronRight className="size-3.5" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -388,7 +285,7 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
           {/* Active Card Surface with Framer Motion Drag & Transitions */}
           <AnimatePresence custom={direction} mode="popLayout">
             <motion.div
-              key={activeItem.id || safeIndex}
+              key={`${isDeep ? "deep" : "qp"}-${activeItem.id || safeIndex}`}
               custom={direction}
               variants={{
                 enter: (dir: number) => ({
@@ -427,22 +324,22 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
               className="relative z-10 flex flex-col justify-between h-full w-full cursor-grab active:cursor-grabbing touch-pan-y min-h-0"
             >
               <div className="select-none">
-                <h3 className="font-display text-lg sm:text-xl font-medium text-white/90 tracking-tight mb-1 line-clamp-1 leading-tight">
+                <h3 className={headingClass}>
                   {activeItem.name}
                 </h3>
-                <p className={cn(typo.body, "text-white/60 text-xs sm:text-sm font-normal line-clamp-2 leading-relaxed mb-3")}>
+                <p className={bodyClass}>
                   {activeItem.description}
                 </p>
 
                 {/* Tech Stack Badges */}
                 <div className="flex flex-wrap gap-1.5">
                   {activeItem.techStack.slice(0, 3).map((tag) => (
-                    <Badge key={tag} variant="lume" className="px-2 py-0.5 text-[10px]">
+                    <Badge key={tag} variant="lume" className={tagBadgeClass}>
                       {tag}
                     </Badge>
                   ))}
                   {activeItem.techStack.length > 3 && (
-                    <Badge variant="outline" className="px-1.5 py-0.5 text-[10px]">
+                    <Badge variant="outline" className={cn("px-1.5 py-0.5 text-[10px]", isDeep && "font-mono")}>
                       +{activeItem.techStack.length - 3}
                     </Badge>
                   )}
@@ -451,7 +348,7 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
 
               {/* Bottom Horizontal Project Indicator Pills */}
               <div className="mt-auto pt-2.5 flex items-center justify-between border-t border-white/5 select-none shrink-0">
-                <span className={cn(typo.meta, "text-white/60 font-mono text-xs sm:text-[13px]")}>
+                <span className={metaClass}>
                   {activeItem.year || "2025"}
                 </span>
                 <div
@@ -464,6 +361,7 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                       <button
                         key={item.id || idx}
                         type="button"
+                        aria-current={isCurrent ? "true" : undefined}
                         onClick={(e) => {
                           e.stopPropagation()
                           goToIndex(idx)
@@ -476,7 +374,7 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                           className={cn(
                             "transition-all duration-300 rounded-full",
                             isCurrent
-                              ? "w-4 h-1.5 bg-[#4A8FFF] shadow-[0_0_8px_rgba(74,143,255,0.7)]"
+                              ? activeDotClass
                               : "w-1.5 h-1.5 bg-white/20 hover:bg-white/50 hover:scale-125"
                           )}
                         />
@@ -489,6 +387,23 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
           </AnimatePresence>
         </div>
       </div>
+    )
+  }
+
+  return (
+    <BentoTile
+      id={id}
+      size={size}
+      href="/projects"
+      glowColor="blue"
+      canDeepDive={true}
+      canMorph={false}
+      canExpand={false}
+      isDragging={isDragging}
+      sortableProps={sortableProps}
+      deepContent={renderFace(true)}
+    >
+      {renderFace(false)}
     </BentoTile>
   )
 }
