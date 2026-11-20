@@ -30,6 +30,7 @@ import { EducationTile } from "@/components/bento/tiles/EducationTile"
 import { SkillsTile } from "@/components/bento/tiles/SkillsTile"
 import { ExperienceTile } from "@/components/bento/tiles/ExperienceTile"
 import { ProjectTile } from "@/components/bento/tiles/ProjectTile"
+import { ForceMobileContext } from "@/components/bento/ForceMobileContext"
 
 describe("Tile Deep Dive Parity Suite", () => {
   beforeEach(() => {
@@ -606,7 +607,7 @@ describe("Tile Deep Dive Parity Suite", () => {
       notes: "Sub-100ms synchronization for 10 players. Multi-model fallback strategy.",
     }
 
-    it("passes canDeepDive=true to BentoTile and renders deepContent", () => {
+    it("passes canMorph=false, canExpand=false, and canDeepDive=true to BentoTile and renders deepContent", () => {
       renderToStaticMarkup(
         React.createElement(ProjectTile, {
           id: "proj-test",
@@ -618,7 +619,29 @@ describe("Tile Deep Dive Parity Suite", () => {
 
       expect(lastBentoTileProps).not.toBeNull()
       expect(lastBentoTileProps.canDeepDive).toBe(true)
+      expect(lastBentoTileProps.canMorph).toBe(false)
+      expect(lastBentoTileProps.canExpand).toBe(false)
       expect(lastBentoTileProps.deepContent).not.toBeNull()
+    })
+
+    it("passes canDeepDive=true unconditionally even in mobile context (ForceMobileContext)", () => {
+      renderToStaticMarkup(
+        React.createElement(
+          ForceMobileContext.Provider,
+          { value: true },
+          React.createElement(ProjectTile, {
+            id: "proj-test-mobile",
+            size: "4x3",
+            content: projectContent,
+            deepDive: projectDeepDive,
+          })
+        )
+      )
+
+      expect(lastBentoTileProps).not.toBeNull()
+      expect(lastBentoTileProps.canDeepDive).toBe(true)
+      expect(lastBentoTileProps.canMorph).toBe(false)
+      expect(lastBentoTileProps.canExpand).toBe(false)
     })
 
     it("renders Deep Dive face with font-mono tracking-tight font-bold header and font-mono body/meta", () => {
@@ -633,8 +656,9 @@ describe("Tile Deep Dive Parity Suite", () => {
         })
       )
 
-      // Header uses font-mono tracking-tight font-bold
+      // Header uses font-mono tracking-tight font-bold on project name
       expect(html).toContain("font-mono tracking-tight font-bold")
+      expect(html).toContain("TriviaDuel")
       expect(html).toContain("Stack &amp; Strategy")
 
       // Notes paragraph uses font-mono

@@ -72,7 +72,6 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
     () => false
   )
   const isMobileEffective = forceMobile || isMobile
-  const isDeepDive = mode === "deep" && !isMobileEffective
   const typo = getTypographyClasses(size, false, forceMobile)
   const deepTypo = getTypographyClasses(size, true, forceMobile)
   const deep = parseTileDeepDive("project", deepDive)
@@ -177,7 +176,9 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
       size={size}
       href="/projects"
       glowColor="blue"
-      canDeepDive={!isMobileEffective}
+      canDeepDive={true}
+      canMorph={false}
+      canExpand={false}
       isDragging={isDragging}
       sortableProps={sortableProps}
       deepContent={
@@ -190,8 +191,8 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
           <div className="flex justify-between items-start gap-3 mb-2 shrink-0 min-w-0">
             <div className="min-w-0 shrink">
               <div className="flex items-center gap-2 min-w-0">
-                <h3 className={cn(deepTypo.heading, "text-white/90 shrink-0")}>
-                  Stack & Strategy
+                <h3 className={cn(deepTypo.heading, "text-white/90 shrink-0 truncate")}>
+                  {activeItem.name}
                 </h3>
                 {activeItem.category && (
                   <span
@@ -206,7 +207,7 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                 )}
               </div>
               <p className={cn(deepTypo.meta, "text-[#4A8FFF] mt-1 font-mono uppercase tracking-widest truncate")}>
-                {activeItem.name}
+                Stack & Strategy
               </p>
             </div>
 
