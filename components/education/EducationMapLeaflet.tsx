@@ -156,20 +156,22 @@ export default function EducationMapLeaflet({
     // Smooth entrance fly-in zoom into Singapore with desktop sidebar compensation
     if (!hasAnimatedEntry.current) {
       hasAnimatedEntry.current = true;
-      setTimeout(() => {
-        if (mapRef.current) {
-          const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
-          const zoom = 12;
-          const targetPoint = mapRef.current.project([1.3521, 103.8198], zoom);
-          const pixelOffsetX = isDesktop ? -240 : 0;
-          const offsetLatLng = mapRef.current.unproject(targetPoint.add([pixelOffsetX, 0]), zoom);
+      if (!activeId) {
+        setTimeout(() => {
+          if (mapRef.current) {
+            const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
+            const zoom = 12;
+            const targetPoint = mapRef.current.project([1.3521, 103.8198], zoom);
+            const pixelOffsetX = isDesktop ? -240 : 0;
+            const offsetLatLng = mapRef.current.unproject(targetPoint.add([pixelOffsetX, 0]), zoom);
 
-          mapRef.current.flyTo(offsetLatLng, zoom, {
-            duration: 1.5,
-            easeLinearity: 0.25,
-          });
-        }
-      }, 250);
+            mapRef.current.flyTo(offsetLatLng, zoom, {
+              duration: 1.5,
+              easeLinearity: 0.25,
+            });
+          }
+        }, 250);
+      }
     }
 
     // Observe container resize (e.g. fullscreen toggle / window resize)
@@ -322,7 +324,20 @@ export default function EducationMapLeaflet({
     // On desktop: offset camera left by 240px so landmark is centered in open right canvas
     // On mobile: offset camera down dynamically based on bottom sheet snap point
     const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
-    const targetZoom = Math.max(map.getZoom(), 14);
+    
+    // Check if target milestone is university level (e.g. NUS / Stanford)
+    const isUniversity =
+      (activeLoc.name + " " + activeLoc.program).toLowerCase().includes("university") ||
+      (activeLoc.name + " " + activeLoc.program).toLowerCase().includes("nus") ||
+      (activeLoc.name + " " + activeLoc.program).toLowerCase().includes("bcomp");
+
+    // Level-tailored zoom:
+    // University campuses (like NUS Kent Ridge) span ~150 hectares across ridges, best viewed at ~14.2 - 14.5.
+    // Schools (primary/secondary/diploma) are compact campuses best viewed at ~15.5.
+    const defaultLevelZoom = isUniversity ? 14.2 : 15.4;
+    const currentZoom = map.getZoom();
+    const targetZoom = currentZoom >= 14 ? Math.max(currentZoom, defaultLevelZoom) : defaultLevelZoom;
+
     const pixelOffsetX = isDesktop ? -240 : 0;
     
     let pixelOffsetY = 0;
@@ -341,9 +356,31 @@ export default function EducationMapLeaflet({
     const offsetPoint = targetPoint.add([pixelOffsetX, pixelOffsetY]);
     const offsetLatLng = map.unproject(offsetPoint, targetZoom);
 
+    // Calculate distance between current center and destination to scale duration and easing curve
+    const currentCenter = map.getCenter();
+    const distMeters = currentCenter.distanceTo(L.latLng(activeLoc.lat, activeLoc.lng));
+    const distKm = distMeters / 1000;
+
+    // Dynamically scale flight parameters:
+    // Long flight (> 6km, such as across Singapore into/out of University level):
+    // Use an extended cinematic duration (1.75s) with a gentle easing curve so the map
+    // smoothly ascends, glides across Singapore, and softly descends into campus.
+    // Short hop (< 2km, like between Yishun primary & secondary): 0.9s snappy pan.
+    let flightDuration = 1.2;
+    let easeLinearity = 0.25;
+
+    if (distKm > 6) {
+      flightDuration = 1.75;
+      easeLinearity = 0.20;
+    } else if (distKm <= 2) {
+      flightDuration = 0.9;
+      easeLinearity = 0.30;
+    }
+
     map.flyTo(offsetLatLng, targetZoom, {
-      duration: 1.2,
-      easeLinearity: 0.25,
+      duration: flightDuration,
+      easeLinearity,
+      noMoveStart: true,
     });
   }, [activeId, locations, sheetSnap, theme]);
 

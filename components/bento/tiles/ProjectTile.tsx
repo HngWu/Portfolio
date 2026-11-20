@@ -73,7 +73,8 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
   )
   const isMobileEffective = forceMobile || isMobile
   const isDeepDive = mode === "deep" && !isMobileEffective
-  const typo = getTypographyClasses(size, isDeepDive, forceMobile)
+  const typo = getTypographyClasses(size, false, forceMobile)
+  const deepTypo = getTypographyClasses(size, true, forceMobile)
   const deep = parseTileDeepDive("project", deepDive)
 
   // Resolve items: prefer items array, fallback to single content fields merged with default items
@@ -189,19 +190,22 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
           <div className="flex justify-between items-start gap-3 mb-2 shrink-0 min-w-0">
             <div className="min-w-0 shrink">
               <div className="flex items-center gap-2 min-w-0">
-                <h3 className="font-mono tracking-tight font-bold text-lg sm:text-xl text-white/90 shrink-0">
+                <h3 className={cn(deepTypo.heading, "text-white/90 shrink-0")}>
                   Stack & Strategy
                 </h3>
                 {activeItem.category && (
                   <span
                     title={activeItem.category}
-                    className="hidden sm:inline-flex font-mono text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider truncate whitespace-nowrap max-w-[120px] sm:max-w-[150px] shrink"
+                    className={cn(
+                      deepTypo.meta,
+                      "hidden sm:inline-flex px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#4A8FFF] font-semibold uppercase tracking-wider truncate whitespace-nowrap max-w-[120px] sm:max-w-[150px] shrink"
+                    )}
                   >
                     {activeItem.category}
                   </span>
                 )}
               </div>
-              <p className="text-[#4A8FFF] mt-1 text-xs font-mono uppercase tracking-widest truncate">
+              <p className={cn(deepTypo.meta, "text-[#4A8FFF] mt-1 font-mono uppercase tracking-widest truncate")}>
                 {activeItem.name}
               </p>
             </div>
@@ -246,14 +250,14 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
             <div className="space-y-3">
               <div className="flex flex-wrap gap-1.5">
                 {activeItem.techStack.map((tag) => (
-                  <Badge key={tag} variant="lume" className="px-2 py-0.5 text-[10px]">
+                  <Badge key={tag} variant="lume" className="px-2 py-0.5 text-[10px] font-mono">
                     {tag}
                   </Badge>
                 ))}
               </div>
 
               {activeNotes && (
-                <p className="text-xs md:text-[13px] text-white/70 leading-relaxed">
+                <p className={cn(deepTypo.body, "font-mono text-white/70 leading-relaxed text-xs md:text-[13px]")}>
                   {activeNotes}
                 </p>
               )}
@@ -288,7 +292,7 @@ export function ProjectTile({ id, size, content, deepDive, isDragging, sortableP
                   </a>
                 )}
               </div>
-              <span className="font-mono text-[10px] text-lume-primary uppercase tracking-widest">
+              <span className={cn(deepTypo.meta, "font-mono text-lume-primary uppercase tracking-widest text-[10px]")}>
                 Production Ready
               </span>
             </div>

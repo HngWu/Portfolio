@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { motion, type PanInfo } from "framer-motion";
+import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import type { EducationLocation, SheetSnapState } from "@/types/education-map";
 import { TYPE_CONFIGS } from "./EducationPinSvg";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,63 @@ export interface GoogleMapsPlacePanelProps {
   isMobileSheet?: boolean;
 }
 
+export function getMilestoneLevel(loc: EducationLocation) {
+  const norm = `${loc.name} ${loc.program} ${loc.caption || ""}`.toLowerCase();
+  if (norm.includes("primary") || norm.includes("psle") || norm.includes("peiying") || norm.includes("elementary")) {
+    return {
+      label: "Primary Education",
+      shortLabel: "Primary",
+      badgeColor: "#F59E0B",
+      badgeBg: "rgba(245, 158, 11, 0.15)",
+      badgeBorder: "rgba(245, 158, 11, 0.45)",
+      badgeGlow: "rgba(245, 158, 11, 0.3)",
+      isUniversity: false,
+    };
+  }
+  if (norm.includes("secondary") || norm.includes("o level") || norm.includes("o-level") || norm.includes("chung cheng") || norm.includes("high school")) {
+    return {
+      label: "Secondary Education",
+      shortLabel: "Secondary",
+      badgeColor: "#38BDF8",
+      badgeBg: "rgba(56, 189, 248, 0.15)",
+      badgeBorder: "rgba(56, 189, 248, 0.45)",
+      badgeGlow: "rgba(56, 189, 248, 0.3)",
+      isUniversity: false,
+    };
+  }
+  if (norm.includes("diploma") || norm.includes("polytechnic") || norm.includes("poly") || norm.includes("nyp") || norm.includes("nanyang poly")) {
+    return {
+      label: "Diploma / Polytechnic",
+      shortLabel: "Diploma",
+      badgeColor: "#A855F7",
+      badgeBg: "rgba(168, 85, 247, 0.15)",
+      badgeBorder: "rgba(168, 85, 247, 0.45)",
+      badgeGlow: "rgba(168, 85, 247, 0.3)",
+      isUniversity: false,
+    };
+  }
+  if (norm.includes("university") || norm.includes("bachelor") || norm.includes("degree") || norm.includes("nus") || norm.includes("bcomp") || norm.includes("undergraduate") || norm.includes("stanford")) {
+    return {
+      label: "University Level",
+      shortLabel: "University",
+      badgeColor: "#4A8FFF",
+      badgeBg: "rgba(74, 143, 255, 0.18)",
+      badgeBorder: "rgba(74, 143, 255, 0.55)",
+      badgeGlow: "rgba(74, 143, 255, 0.45)",
+      isUniversity: true,
+    };
+  }
+  return {
+    label: "Academic Milestone",
+    shortLabel: "Milestone",
+    badgeColor: "#4AFFB4",
+    badgeBg: "rgba(74, 255, 180, 0.15)",
+    badgeBorder: "rgba(74, 255, 180, 0.4)",
+    badgeGlow: "rgba(74, 255, 180, 0.3)",
+    isUniversity: false,
+  };
+}
+
 export function GoogleMapsPlacePanel({
   location,
   currentIndex,
@@ -48,9 +105,49 @@ export function GoogleMapsPlacePanel({
   className,
   isMobileSheet = false,
 }: GoogleMapsPlacePanelProps) {
+  // Track navigation direction for slide transitions between milestones
+  const prevIndexRef = React.useRef(currentIndex);
+  const [direction, setDirection] = React.useState(0);
+
+  React.useEffect(() => {
+    if (currentIndex !== prevIndexRef.current) {
+      let dir = currentIndex > prevIndexRef.current ? 1 : -1;
+      // Handle wrap-around transitions smoothly (e.g. University -> Primary or vice-versa)
+      if (prevIndexRef.current === totalCount - 1 && currentIndex === 0) {
+        dir = 1;
+      } else if (prevIndexRef.current === 0 && currentIndex === totalCount - 1) {
+        dir = -1;
+      }
+      setDirection(dir);
+      prevIndexRef.current = currentIndex;
+    }
+  }, [currentIndex, totalCount]);
+
   if (!location) return null;
 
   const config = TYPE_CONFIGS[location.type] || TYPE_CONFIGS.degree;
+  const levelMeta = getMilestoneLevel(location);
+
+  // Shared milestone content transition variants
+  const contentVariants = {
+    enter: (dir: number) => ({
+      x: dir >= 0 ? 60 : -60,
+      opacity: 0,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        x: { type: "spring" as const, stiffness: 300, damping: 30 },
+        opacity: { duration: 0.25 },
+      },
+    },
+    exit: (dir: number) => ({
+      x: dir >= 0 ? -60 : 60,
+      opacity: 0,
+      transition: { duration: 0.2 },
+    }),
+  };
 
   // Format date range nicely
   const formatDateRange = (start?: string, end?: string) => {
@@ -138,23 +235,33 @@ export function GoogleMapsPlacePanel({
               onClick={() => onSnapChange?.("half")}
             >
               <span
-                className="size-9 rounded-full flex items-center justify-center text-xs font-mono font-bold shrink-0"
+                className="size-9 rounded-full flex items-center justify-center text-xs font-mono font-bold shrink-0 transition-colors duration-300"
                 style={{
-                  backgroundColor: config.pinColor,
+                  backgroundColor: levelMeta.badgeColor,
                   color: "#000000",
-                  boxShadow: `0 0 14px ${config.glow}`,
+                  boxShadow: `0 0 14px ${levelMeta.badgeGlow}`,
                 }}
               >
                 {currentIndex + 1}
               </span>
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm font-semibold text-white truncate">
-                  {location.name}
-                </span>
-                <span className="text-xs text-white/50 truncate">
-                  {location.program}
-                </span>
-              </div>
+              <AnimatePresence custom={direction} mode="popLayout">
+                <motion.div
+                  key={location.id}
+                  custom={direction}
+                  variants={contentVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  className="flex flex-col min-w-0"
+                >
+                  <span className="text-sm font-semibold text-white truncate">
+                    {location.name}
+                  </span>
+                  <span className="text-xs text-white/50 truncate">
+                    {location.program}
+                  </span>
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {/* Quick Actions Cluster */}
@@ -227,34 +334,52 @@ export function GoogleMapsPlacePanel({
           "relative w-full bg-neutral-900 overflow-hidden shrink-0 transition-all duration-300",
           isFull ? "h-44 sm:h-52" : "h-32 sm:h-36"
         )}>
-          {location.thumbnail ? (
-            <Image
-              src={location.thumbnail}
-              alt={location.name}
-              fill
-              sizes="100vw"
-              className="object-cover"
-              priority={currentIndex === 0}
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-neutral-900 via-neutral-800 to-black flex items-center justify-center">
-              <GraduationCap className="size-16 text-white/20" />
-            </div>
-          )}
+          <AnimatePresence custom={direction} mode="popLayout">
+            <motion.div
+              key={`mobile-photo-${location.id}`}
+              custom={direction}
+              variants={{
+                enter: (dir: number) => ({ opacity: 0, scale: 1.06, x: dir * 25 }),
+                center: { opacity: 1, scale: 1, x: 0, transition: { duration: 0.35, ease: "easeOut" } },
+                exit: (dir: number) => ({ opacity: 0, scale: 0.96, x: dir * -25, transition: { duration: 0.25 } }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="absolute inset-0 w-full h-full"
+            >
+              {location.thumbnail ? (
+                <Image
+                  src={location.thumbnail}
+                  alt={location.name}
+                  fill
+                  sizes="100vw"
+                  className="object-cover"
+                  priority={currentIndex === 0}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-neutral-900 via-neutral-800 to-black flex items-center justify-center">
+                  <GraduationCap className="size-16 text-white/20" />
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
 
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent pointer-events-none z-[1]" />
 
           {/* Top Panel Actions: Milestone Badge, Recenter, Snap Toggle */}
-          <div className="absolute top-2.5 left-3 right-3 flex items-center justify-between pointer-events-auto">
+          <div className="absolute top-2.5 left-3 right-3 flex items-center justify-between pointer-events-auto z-[2]">
             <span
-              className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-md border shadow-lg"
+              className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-md border shadow-lg flex items-center gap-1.5 transition-all duration-300"
               style={{
-                borderColor: config.border,
-                color: config.text,
+                borderColor: levelMeta.badgeBorder,
+                color: levelMeta.badgeColor,
+                boxShadow: `0 0 14px ${levelMeta.badgeGlow}`,
               }}
             >
-              {config.label.toLowerCase() === "degree" ? "Milestone" : config.label} • {currentIndex + 1}/{totalCount}
+              {levelMeta.isUniversity && <GraduationCap className="size-3 text-[#4A8FFF]" />}
+              <span>{levelMeta.isUniversity ? "Milestone" : `${levelMeta.shortLabel} Milestone`} • {currentIndex + 1}/{totalCount}</span>
             </span>
 
             <div className="flex items-center gap-1.5">
@@ -293,69 +418,101 @@ export function GoogleMapsPlacePanel({
           </div>
 
           {/* Bottom Title on Header Photo */}
-          <div className="absolute bottom-2.5 left-3.5 right-3.5 space-y-0.5">
-            <h2 className="text-base sm:text-xl font-display font-medium text-white leading-tight drop-shadow-md line-clamp-1">
-              {location.name}
-            </h2>
-            <p className="text-xs text-white/85 font-medium leading-tight drop-shadow-sm line-clamp-1">
-              {location.program}
-            </p>
+          <div className="absolute bottom-2.5 left-3.5 right-3.5 z-[2] overflow-hidden">
+            <AnimatePresence custom={direction} mode="wait">
+              <motion.div
+                key={`mobile-title-${location.id}`}
+                custom={direction}
+                variants={{
+                  enter: (dir: number) => ({ opacity: 0, y: 12, x: dir * 15 }),
+                  center: { opacity: 1, y: 0, x: 0, transition: { duration: 0.28, ease: "easeOut" } },
+                  exit: (dir: number) => ({ opacity: 0, y: -8, x: dir * -15, transition: { duration: 0.18 } }),
+                }}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="space-y-0.5"
+              >
+                <h2 className="text-base sm:text-xl font-display font-medium text-white leading-tight drop-shadow-md line-clamp-1">
+                  {location.name}
+                </h2>
+                <p className="text-xs text-white/85 font-medium leading-tight drop-shadow-sm line-clamp-1">
+                  {location.program}
+                </p>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
         {/* Scrollable Content Body */}
         <div className="p-3.5 sm:p-4 space-y-3 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-          {/* Quick Metrics Bar */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            {location.gpa && location.gpa !== "-" && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-lume-primary/10 border border-lume-primary/30 text-lume-primary text-xs font-mono font-semibold">
-                <GraduationCap className="size-3.5" />
-                <span>GPA / Score: {location.gpa}</span>
-              </div>
-            )}
+          <AnimatePresence custom={direction} mode="wait">
+            <motion.div
+              key={`mobile-body-${location.id}`}
+              custom={direction}
+              variants={{
+                enter: (dir: number) => ({ opacity: 0, x: dir * 25 }),
+                center: { opacity: 1, x: 0, transition: { duration: 0.28, ease: "easeOut" } },
+                exit: (dir: number) => ({ opacity: 0, x: dir * -25, transition: { duration: 0.18 } }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="space-y-3"
+            >
+              {/* Quick Metrics Bar */}
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                {location.gpa && location.gpa !== "-" && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-lume-primary/10 border border-lume-primary/30 text-lume-primary text-xs font-mono font-semibold">
+                    <GraduationCap className="size-3.5" />
+                    <span>GPA / Score: {location.gpa}</span>
+                  </div>
+                )}
 
-            {dateText && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-white/80 text-xs font-mono">
-                <Calendar className="size-3 text-white/40" />
-                <span>{dateText}</span>
-              </div>
-            )}
+                {dateText && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-white/80 text-xs font-mono">
+                    <Calendar className="size-3 text-white/40" />
+                    <span>{dateText}</span>
+                  </div>
+                )}
 
-            {(location.city || location.country) && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-white/70 text-xs">
-                <MapPin className="size-3 text-white/40" />
-                <span>
-                  {location.city ? `${location.city}, ` : ""}
-                  {location.country || "Singapore"}
-                </span>
+                {(location.city || location.country) && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-white/70 text-xs">
+                    <MapPin className="size-3 text-white/40" />
+                    <span>
+                      {location.city ? `${location.city}, ` : ""}
+                      {location.country || "Singapore"}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          {/* Academic Honours Highlight Card */}
-          {location.honours && location.honours !== "-" && (
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1 shadow-[0_0_20px_rgba(245,158,11,0.08)]">
-              <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold">
-                <Award className="size-3.5" />
-                <span>Honours & Recognition</span>
-              </div>
-              <p className="text-xs sm:text-sm leading-relaxed text-amber-200 font-medium">
-                {location.honours}
-              </p>
-            </div>
-          )}
+              {/* Academic Honours Highlight Card */}
+              {location.honours && location.honours !== "-" && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1 shadow-[0_0_20px_rgba(245,158,11,0.08)]">
+                  <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold">
+                    <Award className="size-3.5" />
+                    <span>Honours & Recognition</span>
+                  </div>
+                  <p className="text-xs sm:text-sm leading-relaxed text-amber-200 font-medium">
+                    {location.honours}
+                  </p>
+                </div>
+              )}
 
-          {/* Milestone Overview Narrative */}
-          {location.caption && (
-            <div className="space-y-1">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-white/45 block">
-                Milestone Overview
-              </span>
-              <p className="text-xs sm:text-sm text-white/80 leading-relaxed bg-white/[0.02] p-3 rounded-xl border border-white/5 font-sans">
-                {location.caption}
-              </p>
-            </div>
-          )}
+              {/* Milestone Overview Narrative */}
+              {location.caption && (
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-mono tracking-widest text-white/45 block">
+                    Milestone Overview
+                  </span>
+                  <p className="text-xs sm:text-sm text-white/80 leading-relaxed bg-white/[0.02] p-3 rounded-xl border border-white/5 font-sans">
+                    {location.caption}
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Footer Navigation Bar (Previous & Next Milestone) */}
@@ -410,23 +567,33 @@ export function GoogleMapsPlacePanel({
       >
         <div className="flex items-center gap-3 min-w-0 pr-2">
           <span
-            className="size-9 rounded-full flex items-center justify-center text-xs font-mono font-bold shrink-0"
+            className="size-9 rounded-full flex items-center justify-center text-xs font-mono font-bold shrink-0 transition-colors duration-300"
             style={{
-              backgroundColor: config.pinColor,
+              backgroundColor: levelMeta.badgeColor,
               color: "#000000",
-              boxShadow: `0 0 14px ${config.glow}`,
+              boxShadow: `0 0 14px ${levelMeta.badgeGlow}`,
             }}
           >
             {currentIndex + 1}
           </span>
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm sm:text-base font-semibold text-white truncate">
-              {location.name}
-            </span>
-            <span className="text-xs text-white/50 truncate">
-              {location.program}
-            </span>
-          </div>
+          <AnimatePresence custom={direction} mode="popLayout">
+            <motion.div
+              key={`desktop-collapsed-${location.id}`}
+              custom={direction}
+              variants={contentVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="flex flex-col min-w-0"
+            >
+              <span className="text-sm sm:text-base font-semibold text-white truncate">
+                {location.name}
+              </span>
+              <span className="text-xs text-white/50 truncate">
+                {location.program}
+              </span>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0 border-l border-white/10 pl-2.5">
@@ -481,34 +648,52 @@ export function GoogleMapsPlacePanel({
       >
         {/* Header Cover Photo */}
         <div className="relative w-full h-44 sm:h-52 md:h-56 lg:h-64 bg-neutral-900 overflow-hidden shrink-0">
-          {location.thumbnail ? (
-            <Image
-              src={location.thumbnail}
-              alt={location.name}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 480px, 540px"
-              className="object-cover"
-              priority={currentIndex === 0}
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-neutral-900 via-neutral-800 to-black flex items-center justify-center">
-              <GraduationCap className="size-16 sm:size-20 text-white/20" />
-            </div>
-          )}
+          <AnimatePresence custom={direction} mode="popLayout">
+            <motion.div
+              key={`desktop-photo-${location.id}`}
+              custom={direction}
+              variants={{
+                enter: (dir: number) => ({ opacity: 0, scale: 1.08, x: dir * 30 }),
+                center: { opacity: 1, scale: 1, x: 0, transition: { duration: 0.4, ease: "easeOut" } },
+                exit: (dir: number) => ({ opacity: 0, scale: 0.95, x: dir * -30, transition: { duration: 0.25 } }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="absolute inset-0 w-full h-full"
+            >
+              {location.thumbnail ? (
+                <Image
+                  src={location.thumbnail}
+                  alt={location.name}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 480px, 540px"
+                  className="object-cover"
+                  priority={currentIndex === 0}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-neutral-900 via-neutral-800 to-black flex items-center justify-center">
+                  <GraduationCap className="size-16 sm:size-20 text-white/20" />
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
 
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/45 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/45 to-transparent pointer-events-none z-[1]" />
 
           {/* Top Panel Actions: Milestone Badge, Recenter, Collapse */}
-          <div className="absolute top-3 left-3 right-3 sm:top-3.5 sm:left-3.5 sm:right-3.5 flex items-center justify-between pointer-events-auto">
+          <div className="absolute top-3 left-3 right-3 sm:top-3.5 sm:left-3.5 sm:right-3.5 flex items-center justify-between pointer-events-auto z-[2]">
             <span
-              className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border shadow-lg"
+              className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border shadow-lg flex items-center gap-1.5 transition-all duration-300"
               style={{
-                borderColor: config.border,
-                color: config.text,
+                borderColor: levelMeta.badgeBorder,
+                color: levelMeta.badgeColor,
+                boxShadow: `0 0 16px ${levelMeta.badgeGlow}`,
               }}
             >
-              {config.label} • Milestone {currentIndex + 1}/{totalCount}
+              {levelMeta.isUniversity && <GraduationCap className="size-3.5 text-[#4A8FFF]" />}
+              <span>{levelMeta.label} • Milestone {currentIndex + 1}/{totalCount}</span>
             </span>
 
             <div className="flex items-center gap-1.5">
@@ -535,69 +720,101 @@ export function GoogleMapsPlacePanel({
           </div>
 
           {/* Bottom Title on Header Photo */}
-          <div className="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-5 sm:right-5 space-y-1">
-            <h2 className="text-lg sm:text-2xl md:text-3xl font-display font-medium text-white leading-tight drop-shadow-md">
-              {location.name}
-            </h2>
-            <p className="text-xs sm:text-sm md:text-base text-white/85 font-medium leading-tight drop-shadow-sm">
-              {location.program}
-            </p>
+          <div className="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-5 sm:right-5 z-[2] overflow-hidden">
+            <AnimatePresence custom={direction} mode="wait">
+              <motion.div
+                key={`desktop-title-${location.id}`}
+                custom={direction}
+                variants={{
+                  enter: (dir: number) => ({ opacity: 0, y: 15, x: dir * 20 }),
+                  center: { opacity: 1, y: 0, x: 0, transition: { duration: 0.3, ease: "easeOut" } },
+                  exit: (dir: number) => ({ opacity: 0, y: -10, x: dir * -20, transition: { duration: 0.2 } }),
+                }}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="space-y-1"
+              >
+                <h2 className="text-lg sm:text-2xl md:text-3xl font-display font-medium text-white leading-tight drop-shadow-md">
+                  {location.name}
+                </h2>
+                <p className="text-xs sm:text-sm md:text-base text-white/85 font-medium leading-tight drop-shadow-sm">
+                  {location.program}
+                </p>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
         {/* Scrollable Content Body */}
         <div className="p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-          {/* Quick Metrics Bar */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-            {location.gpa && location.gpa !== "-" && (
-              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-lume-primary/10 border border-lume-primary/30 text-lume-primary text-xs sm:text-sm font-mono font-semibold shadow-[0_0_15px_rgba(74,255,180,0.1)]">
-                <GraduationCap className="size-4" />
-                <span>GPA / Score: {location.gpa}</span>
-              </div>
-            )}
+          <AnimatePresence custom={direction} mode="wait">
+            <motion.div
+              key={`desktop-body-${location.id}`}
+              custom={direction}
+              variants={{
+                enter: (dir: number) => ({ opacity: 0, x: dir * 30 }),
+                center: { opacity: 1, x: 0, transition: { duration: 0.3, ease: "easeOut" } },
+                exit: (dir: number) => ({ opacity: 0, x: dir * -30, transition: { duration: 0.2 } }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="space-y-4 sm:space-y-5"
+            >
+              {/* Quick Metrics Bar */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                {location.gpa && location.gpa !== "-" && (
+                  <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-lume-primary/10 border border-lume-primary/30 text-lume-primary text-xs sm:text-sm font-mono font-semibold shadow-[0_0_15px_rgba(74,255,180,0.1)]">
+                    <GraduationCap className="size-4" />
+                    <span>GPA / Score: {location.gpa}</span>
+                  </div>
+                )}
 
-            {dateText && (
-              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-white/80 text-xs sm:text-sm font-mono">
-                <Calendar className="size-3.5 text-white/40" />
-                <span>{dateText}</span>
-              </div>
-            )}
+                {dateText && (
+                  <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-white/80 text-xs sm:text-sm font-mono">
+                    <Calendar className="size-3.5 text-white/40" />
+                    <span>{dateText}</span>
+                  </div>
+                )}
 
-            {(location.city || location.country) && (
-              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-white/70 text-xs sm:text-sm">
-                <MapPin className="size-3.5 text-white/40" />
-                <span>
-                  {location.city ? `${location.city}, ` : ""}
-                  {location.country || "Singapore"}
-                </span>
+                {(location.city || location.country) && (
+                  <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-white/70 text-xs sm:text-sm">
+                    <MapPin className="size-3.5 text-white/40" />
+                    <span>
+                      {location.city ? `${location.city}, ` : ""}
+                      {location.country || "Singapore"}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          {/* Honours / Recognition Highlight Card */}
-          {location.honours && location.honours !== "-" && (
-            <div className="p-3.5 sm:p-4 md:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1.5 shadow-[0_0_20px_rgba(245,158,11,0.08)]">
-              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">
-                <Award className="size-4" />
-                <span>Academic Honours & Awards</span>
-              </div>
-              <p className="text-xs sm:text-sm md:text-base leading-relaxed text-amber-200 font-medium">
-                {location.honours}
-              </p>
-            </div>
-          )}
+              {/* Honours / Recognition Highlight Card */}
+              {location.honours && location.honours !== "-" && (
+                <div className="p-3.5 sm:p-4 md:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1.5 shadow-[0_0_20px_rgba(245,158,11,0.08)]">
+                  <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">
+                    <Award className="size-4" />
+                    <span>Academic Honours & Awards</span>
+                  </div>
+                  <p className="text-xs sm:text-sm md:text-base leading-relaxed text-amber-200 font-medium">
+                    {location.honours}
+                  </p>
+                </div>
+              )}
 
-          {/* Narrative Summary / Description */}
-          {location.caption && (
-            <div className="space-y-1.5 sm:space-y-2">
-              <span className="text-[11px] sm:text-xs uppercase font-mono tracking-widest text-white/45 block">
-                Milestone Overview
-              </span>
-              <p className="text-xs sm:text-sm md:text-base text-white/80 leading-relaxed bg-white/[0.02] p-3.5 sm:p-4 md:p-5 rounded-2xl border border-white/5 font-sans">
-                {location.caption}
-              </p>
-            </div>
-          )}
+              {/* Narrative Summary / Description */}
+              {location.caption && (
+                <div className="space-y-1.5 sm:space-y-2">
+                  <span className="text-[11px] sm:text-xs uppercase font-mono tracking-widest text-white/45 block">
+                    Milestone Overview
+                  </span>
+                  <p className="text-xs sm:text-sm md:text-base text-white/80 leading-relaxed bg-white/[0.02] p-3.5 sm:p-4 md:p-5 rounded-2xl border border-white/5 font-sans">
+                    {location.caption}
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Footer Navigation Bar (Previous & Next Milestone) */}

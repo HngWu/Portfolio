@@ -29,6 +29,7 @@ import { ContactTile } from "@/components/bento/tiles/ContactTile"
 import { EducationTile } from "@/components/bento/tiles/EducationTile"
 import { SkillsTile } from "@/components/bento/tiles/SkillsTile"
 import { ExperienceTile } from "@/components/bento/tiles/ExperienceTile"
+import { ProjectTile } from "@/components/bento/tiles/ProjectTile"
 
 describe("Tile Deep Dive Parity Suite", () => {
   beforeEach(() => {
@@ -586,6 +587,63 @@ describe("Tile Deep Dive Parity Suite", () => {
       expect(html).not.toContain("xs:text-2xl")
       expect(html).not.toContain("xs:text-sm")
       expect(html).not.toContain("space-y-3 sm:space-y-3.5")
+    })
+  })
+
+  // =========================================================================
+  // 6. ProjectTile Deep Dive Parity & Typography Mode Alignment
+  // =========================================================================
+  describe("ProjectTile", () => {
+    const projectContent = {
+      name: "TriviaDuel",
+      description: "Real-time multiplayer trivia platform with resilient AI generation.",
+      techStack: ["Next.js 16", "Gemini AI", "Redis", "SQLite"],
+      githubUrl: "https://github.com/HngWu",
+      liveUrl: "https://triviaduel.dev",
+      featured: true,
+    }
+    const projectDeepDive = {
+      notes: "Sub-100ms synchronization for 10 players. Multi-model fallback strategy.",
+    }
+
+    it("passes canDeepDive=true to BentoTile and renders deepContent", () => {
+      renderToStaticMarkup(
+        React.createElement(ProjectTile, {
+          id: "proj-test",
+          size: "4x3",
+          content: projectContent,
+          deepDive: projectDeepDive,
+        })
+      )
+
+      expect(lastBentoTileProps).not.toBeNull()
+      expect(lastBentoTileProps.canDeepDive).toBe(true)
+      expect(lastBentoTileProps.deepContent).not.toBeNull()
+    })
+
+    it("renders Deep Dive face with font-mono tracking-tight font-bold header and font-mono body/meta", () => {
+      useViewModeStore.setState({ mode: "deep" })
+
+      const html = renderToStaticMarkup(
+        React.createElement(ProjectTile, {
+          id: "proj-test",
+          size: "4x3",
+          content: projectContent,
+          deepDive: projectDeepDive,
+        })
+      )
+
+      // Header uses font-mono tracking-tight font-bold
+      expect(html).toContain("font-mono tracking-tight font-bold")
+      expect(html).toContain("Stack &amp; Strategy")
+
+      // Notes paragraph uses font-mono
+      expect(html).toContain("font-mono")
+      expect(html).toContain("Sub-100ms synchronization")
+
+      // Meta and tags use font-mono
+      expect(html).toContain("Production Ready")
+      expect(html).toContain("text-[#4A8FFF] mt-1 font-mono uppercase")
     })
   })
 })
