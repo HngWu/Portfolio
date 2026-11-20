@@ -62,6 +62,7 @@ export function BentoGrid({
             y: 0,
             scale: 1,
             filter: "brightness(1) blur(0px)",
+            clearProps: "filter",
             duration: 0.85,
             stagger: {
               amount: 0.38,

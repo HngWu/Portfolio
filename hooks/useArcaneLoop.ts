@@ -374,6 +374,9 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
     window.addEventListener('resize', onResize)
 
     // 5. Delegated pointer events
+    // Cache the hovered tile rect on pointer move so the render loop never calls
+    // getBoundingClientRect — avoiding forced synchronous layout reads at 60 fps.
+    const cachedTileRectRef = { current: null as DOMRect | null }
     const onPointerMove = (e: PointerEvent) => {
       pointerRef.current.targetX = e.clientX
       pointerRef.current.targetY = e.clientY
@@ -384,6 +387,9 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
       hoveredTileElRef.current = tileEl
       if (tileEl) {
         tileRef.current.tileId = tileEl.getAttribute('data-bento-tile') || tileEl.id || null
+        cachedTileRectRef.current = tileEl.getBoundingClientRect()
+      } else {
+        cachedTileRectRef.current = null
       }
     }
     window.addEventListener('pointermove', onPointerMove, { passive: true })
@@ -391,6 +397,7 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
     const onPointerLeave = () => {
       pointerRef.current.active = false
       hoveredTileElRef.current = null
+      cachedTileRectRef.current = null
     }
     document.documentElement.addEventListener('pointerleave', onPointerLeave)
     window.addEventListener('blur', onPointerLeave)
@@ -479,10 +486,11 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
       }
 
       // Tile rect & intensity easing
+      // Use the cached rect from onPointerMove to avoid getBoundingClientRect inside rAF.
       const tile = tileRef.current
       const hoveredEl = hoveredTileElRef.current
-      if (hoveredEl && hoveredEl.isConnected) {
-        const currentRect = hoveredEl.getBoundingClientRect()
+      if (hoveredEl && hoveredEl.isConnected && cachedTileRectRef.current) {
+        const currentRect = cachedTileRectRef.current
         tile.targetRect = currentRect
         tile.targetIntensity = 1.0
         tile.tileId = hoveredEl.getAttribute('data-bento-tile') || hoveredEl.id || null

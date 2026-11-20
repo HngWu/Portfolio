@@ -119,8 +119,11 @@ export function BentoTile({
   }, [id])
 
   React.useLayoutEffect(() => {
+    // Skip forced layout reads when tile cannot morph or expand (e.g. ProjectTile, StatTile).
+    // This avoids unnecessary synchronous scrollHeight queries that cause layout thrashing.
+    if (!canMorph || !canExpand) return
     recalculateRows()
-  }, [recalculateRows, deepContent])
+  }, [recalculateRows, canMorph, canExpand])
 
   const spanClass = getSizeClasses(size, canExpand && isDeepDive && !dynamicRows, forceMobile)
   const isClickable = !!href && !sortableProps && !isDragging

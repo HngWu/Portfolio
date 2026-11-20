@@ -28,25 +28,56 @@ export function Navbar() {
 
   const isHome = pathname === "/"
   const mode = useViewModeStore((s) => s.mode)
-  const [tilt, setTilt] = React.useState({ x: 0, y: 0 })
+
+  // Performance: use ref-based tilt to avoid React re-renders on every mouse move.
+  // Only isHovered triggers a re-render (for Logo prop), and only on enter/leave (not move).
+  const logoTiltRef = React.useRef<HTMLDivElement>(null)
+  const tiltRafRef = React.useRef<number | null>(null)
+  const pendingTiltRef = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const [isHovered, setIsHovered] = React.useState(false)
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  React.useEffect(() => {
+    return () => {
+      if (tiltRafRef.current !== null) {
+        cancelAnimationFrame(tiltRafRef.current)
+      }
+    }
+  }, [])
+
+  const handleMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
     if (!rect.width || !rect.height) return
     const x = (e.clientX - rect.left) / rect.width - 0.5
     const y = (e.clientY - rect.top) / rect.height - 0.5
-    setTilt({ x: x * 18, y: -y * 18 })
-  }
+    pendingTiltRef.current = { x: x * 18, y: -y * 18 }
 
-  const handleMouseEnter = () => {
+    // Apply transform directly via rAF — zero React re-renders
+    if (tiltRafRef.current === null) {
+      tiltRafRef.current = requestAnimationFrame(() => {
+        if (logoTiltRef.current) {
+          const { x: tx, y: ty } = pendingTiltRef.current
+          logoTiltRef.current.style.transform = `rotateX(${ty}deg) rotateY(${tx}deg)`
+        }
+        tiltRafRef.current = null
+      })
+    }
+  }, [])
+
+  const handleMouseEnter = React.useCallback(() => {
     setIsHovered(true)
-  }
+  }, [])
 
-  const handleMouseLeave = () => {
-    setTilt({ x: 0, y: 0 })
+  const handleMouseLeave = React.useCallback(() => {
+    pendingTiltRef.current = { x: 0, y: 0 }
+    if (logoTiltRef.current) {
+      logoTiltRef.current.style.transform = `rotateX(0deg) rotateY(0deg)`
+    }
+    if (tiltRafRef.current !== null) {
+      cancelAnimationFrame(tiltRafRef.current)
+      tiltRafRef.current = null
+    }
     setIsHovered(false)
-  }
+  }, [])
 
   return (
     <motion.header
@@ -80,11 +111,9 @@ export function Navbar() {
           >
             <AnimatePresence mode="wait" initial={false}>
               {isHome ? (
-                <motion.div
-                  key="home-logo-tilt-wrapper"
-                  animate={{ rotateX: tilt.y, rotateY: tilt.x }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  style={{ transformStyle: "preserve-3d" }}
+                <div
+                  ref={logoTiltRef}
+                  style={{ transformStyle: "preserve-3d", transition: "transform 0.15s ease-out" }}
                   className="flex items-center justify-center"
                 >
                   <AnimatePresence mode="wait" initial={false}>
@@ -107,7 +136,7 @@ export function Navbar() {
                       />
                     </motion.div>
                   </AnimatePresence>
-                </motion.div>
+                </div>
               ) : (
                 <motion.div
                   key="back-icon"
