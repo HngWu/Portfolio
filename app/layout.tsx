@@ -8,6 +8,7 @@ import { InitialLoaderOverlay } from "@/components/layout/InitialLoaderOverlay";
 import { ArcaneBackground } from "@/components/background/ArcaneBackground";
 import { ThemeApplier } from "@/components/providers/ThemeApplier";
 import { ModeApplier } from "@/components/providers/ModeApplier";
+import { DynamicFavicon } from "@/components/ui/DynamicFavicon";
 import { CursorProvider } from "@/components/providers/CursorProvider";
 import { PerformanceMonitor } from "@/components/performance/PerformanceMonitor";
 import { PageTransitionsProvider } from "@/components/providers/PageTransitionsProvider";
@@ -77,6 +78,7 @@ export default async function RootLayout({
         <InitialLoaderOverlay />
         <ThemeApplier />
         <ModeApplier />
+        <DynamicFavicon />
         <CursorProvider />
         <PerformanceMonitor />
         <ArcaneBackground />

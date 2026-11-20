@@ -10,6 +10,7 @@ import { PerformanceToggle } from "./PerformanceToggle"
 import { Logo } from "@/components/ui/Logo"
 import { useSiteLoaderStore } from "@/store/useSiteLoaderStore"
 import { usePageTransition } from "@/hooks/usePageTransition"
+import { useViewModeStore } from "@/store/useViewModeStore"
 
 export function Navbar() {
   const pathname = usePathname()
@@ -26,6 +27,26 @@ export function Navbar() {
   }
 
   const isHome = pathname === "/"
+  const mode = useViewModeStore((s) => s.mode)
+  const [tilt, setTilt] = React.useState({ x: 0, y: 0 })
+  const [isHovered, setIsHovered] = React.useState(false)
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    if (!rect.width || !rect.height) return
+    const x = (e.clientX - rect.left) / rect.width - 0.5
+    const y = (e.clientY - rect.top) / rect.height - 0.5
+    setTilt({ x: x * 18, y: -y * 18 })
+  }
+
+  const handleMouseEnter = () => {
+    setIsHovered(true)
+  }
+
+  const handleMouseLeave = () => {
+    setTilt({ x: 0, y: 0 })
+    setIsHovered(false)
+  }
 
   return (
     <motion.header
@@ -52,19 +73,40 @@ export function Navbar() {
         >
           <div 
             style={{ viewTransitionName: "brand-logo" }}
-            className="w-10 h-10 bg-white/[0.03] border border-white/10 rounded-xl flex items-center justify-center text-white transition-all duration-300 hover:bg-white/[0.08] hover:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl group-hover:scale-105 active:scale-95"
+            onMouseMove={isHome ? handleMouseMove : undefined}
+            onMouseEnter={isHome ? handleMouseEnter : undefined}
+            onMouseLeave={isHome ? handleMouseLeave : undefined}
+            className="w-10 h-10 bg-white/[0.03] border border-white/10 rounded-xl flex items-center justify-center text-white transition-all duration-300 hover:bg-white/[0.08] hover:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl group-hover:scale-105 active:scale-95 [perspective:600px]"
           >
             <AnimatePresence mode="wait" initial={false}>
               {isHome ? (
                 <motion.div
-                  key="home-logo"
-                  initial={{ opacity: 0, scale: 0.7, rotate: -20 }}
-                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                  exit={{ opacity: 0, scale: 0.7, rotate: 20 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  key="home-logo-tilt-wrapper"
+                  animate={{ rotateX: tilt.y, rotateY: tilt.x }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  style={{ transformStyle: "preserve-3d" }}
                   className="flex items-center justify-center"
                 >
-                  <Logo className="size-5 text-white/85 group-hover:text-lume-primary transition-colors duration-300" />
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={`home-logo-${mode}`}
+                      initial={{ rotateY: 180, scale: 0.85, opacity: 0.7 }}
+                      animate={{ rotateY: 0, scale: 1, opacity: 1 }}
+                      exit={{ rotateY: -180, scale: 0.85, opacity: 0.7 }}
+                      transition={{
+                        duration: 0.55,
+                        ease: [0.34, 1.25, 0.64, 1],
+                      }}
+                      style={{ transformStyle: "preserve-3d" }}
+                      className="flex items-center justify-center"
+                    >
+                      <Logo 
+                        mode={mode}
+                        isHovered={isHovered}
+                        className="size-5 text-white/85 group-hover:text-lume-primary transition-colors duration-300" 
+                      />
+                    </motion.div>
+                  </AnimatePresence>
                 </motion.div>
               ) : (
                 <motion.div
