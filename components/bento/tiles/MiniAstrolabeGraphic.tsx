@@ -97,6 +97,8 @@ const EDGES = [
 ]
 
 // 36 Astrolabe graduation tick marks around the perimeter (every 10 deg)
+// Coordinates are rounded to 4 decimal places to ensure SSR/client hydration parity.
+const r4 = (n: number) => Math.round(n * 1e4) / 1e4
 const BRASS_TICKS = Array.from({ length: 36 }).map((_, i) => {
   const deg = i * 10
   const rad = (deg * Math.PI) / 180
@@ -105,10 +107,10 @@ const BRASS_TICKS = Array.from({ length: 36 }).map((_, i) => {
   const rOut = 66
   return {
     deg,
-    x1: 160 + rIn * Math.cos(rad),
-    y1: 80 + rIn * Math.sin(rad),
-    x2: 160 + rOut * Math.cos(rad),
-    y2: 80 + rOut * Math.sin(rad),
+    x1: r4(160 + rIn * Math.cos(rad)),
+    y1: r4(80 + rIn * Math.sin(rad)),
+    x2: r4(160 + rOut * Math.cos(rad)),
+    y2: r4(80 + rOut * Math.sin(rad)),
     isMajor,
   }
 })
