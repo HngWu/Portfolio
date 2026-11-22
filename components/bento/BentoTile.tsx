@@ -81,34 +81,55 @@ export function BentoTile({
   const isMobile = React.useSyncExternalStore(subscribeMobile, getMobileSnapshot, getMobileServerSnapshot)
   const isMobileOverride = forceMobile || isMobile
 
-  const recalculateRows = React.useCallback(() => {
-    if (isDeepDive && canExpand && canMorph && backRef.current) {
+  const recalculateRows = React.useCallback((contentHeight: number) => {
+    if (isDeepDive && canExpand && canMorph) {
       // Base row height (60px) and gaps (8/12/16px) matching BentoGrid.tsx
       const rowHeight = 60
       const vw = typeof window !== "undefined" ? window.innerWidth : 1024
       const gap = vw >= 1280 ? 16 : (vw >= 768 ? 12 : 8)
-      
-      const contentHeight = backRef.current.scrollHeight
+
       const padding = 48 // p-4 or p-6 is 24px * 2
       const totalHeight = contentHeight + padding
-      
+
       // Calculate how many spans of (rowHeight + gap) are needed
       const neededRows = Math.ceil(totalHeight / (rowHeight + gap))
-      
+
       // Get base rows from size string (e.g. '4x2' -> 2)
       const baseRows = parseInt(size.split('x')[1]) || 1
-      
+
       setDynamicRows(Math.max(baseRows, neededRows))
     } else {
       setDynamicRows(null)
     }
   }, [isDeepDive, canExpand, canMorph, size])
 
+  // Use a ResizeObserver on the back-face content so rows are only recalculated
+  // when the element's size actually changes — not on every render cycle.
+  // This eliminates the synchronous scrollHeight layout-thrash that the old
+  // useLayoutEffect approach caused across all tiles simultaneously.
   React.useEffect(() => {
-    recalculateRows()
-    window.addEventListener("resize", recalculateRows)
-    return () => window.removeEventListener("resize", recalculateRows)
-  }, [recalculateRows])
+    if (!canMorph || !canExpand) return
+    const el = backRef.current
+    if (!el) return
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) {
+        recalculateRows(entry.contentRect.height)
+      }
+    })
+    observer.observe(el)
+    // Seed with the current height so the initial render is correct.
+    recalculateRows(el.scrollHeight)
+
+    const onResize = () => recalculateRows(el.scrollHeight)
+    window.addEventListener("resize", onResize)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", onResize)
+    }
+  }, [recalculateRows, canMorph, canExpand])
 
   React.useEffect(() => {
     return () => {
@@ -117,13 +138,6 @@ export function BentoTile({
       }
     }
   }, [id])
-
-  React.useLayoutEffect(() => {
-    // Skip forced layout reads when tile cannot morph or expand (e.g. ProjectTile, StatTile).
-    // This avoids unnecessary synchronous scrollHeight queries that cause layout thrashing.
-    if (!canMorph || !canExpand) return
-    recalculateRows()
-  }, [recalculateRows, canMorph, canExpand])
 
   const spanClass = getSizeClasses(size, canExpand && isDeepDive && !dynamicRows, forceMobile)
   const isClickable = !!href && !sortableProps && !isDragging

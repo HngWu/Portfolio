@@ -53,8 +53,16 @@ export function Hero3DTile({
     }
 
     updateAnchor()
-    window.addEventListener("resize", updateAnchor)
-    return () => window.removeEventListener("resize", updateAnchor)
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null
+    const onResize = () => {
+      if (resizeTimer) clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(updateAnchor, 150)
+    }
+    window.addEventListener("resize", onResize)
+    return () => {
+      window.removeEventListener("resize", onResize)
+      if (resizeTimer) clearTimeout(resizeTimer)
+    }
   }, [setHeroAnchorRect])
 
   return (

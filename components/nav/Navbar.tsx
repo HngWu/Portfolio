@@ -16,17 +16,6 @@ export function Navbar() {
   const pathname = usePathname()
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
   const { navigateWithTransition } = usePageTransition()
-
-  if (
-    pathname?.startsWith("/admin") ||
-    pathname === "/cv" ||
-    pathname === "/education" ||
-    pathname === "/experience"
-  ) {
-    return null
-  }
-
-  const isHome = pathname === "/"
   const mode = useViewModeStore((s) => s.mode)
 
   // Performance: use ref-based tilt to avoid React re-renders on every mouse move.
@@ -78,6 +67,18 @@ export function Navbar() {
     }
     setIsHovered(false)
   }, [])
+
+  // All hooks must be called before any conditional returns.
+  if (
+    pathname?.startsWith("/admin") ||
+    pathname === "/cv" ||
+    pathname === "/education" ||
+    pathname === "/experience"
+  ) {
+    return null
+  }
+
+  const isHome = pathname === "/"
 
   return (
     <motion.header

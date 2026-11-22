@@ -255,8 +255,16 @@ export function MechanicalDeityScene() {
       setIsMobile(window.innerWidth < 768)
     }
     checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null
+    const onResize = () => {
+      if (resizeTimer) clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(checkMobile, 150)
+    }
+    window.addEventListener("resize", onResize)
+    return () => {
+      window.removeEventListener("resize", onResize)
+      if (resizeTimer) clearTimeout(resizeTimer)
+    }
   }, [])
 
   // Auto-initiate Genesis Assembly on initial page mount when 3D is active
