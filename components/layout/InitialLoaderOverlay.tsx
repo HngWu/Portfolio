@@ -91,7 +91,7 @@ export function InitialLoaderOverlay() {
     if (!ctx) return
 
     const updateCanvasDimensions = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const dpr = Math.min(window.devicePixelRatio || 1, 3)
       const w = window.innerWidth
       const h = window.innerHeight
       canvas.width = Math.floor(w * dpr)
@@ -303,9 +303,9 @@ export function InitialLoaderOverlay() {
 
       {/* 3. Subtle Technical Scanline & Blueprint Overlay (Mode-Reactive) */}
       <motion.div
-        animate={{ opacity: phase === "booting" ? 0.65 : 0 }}
+        animate={{ opacity: phase === "booting" ? 0.25 : 0 }}
         transition={{ duration: 0.35 }}
-        className="absolute inset-0 bg-[size:100%_4px,6px_100%] pointer-events-none z-10"
+        className="absolute inset-0 bg-[size:100%_2px,6px_100%] pointer-events-none z-10"
         style={{
           backgroundImage: isDeep
             ? "linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.3) 50%), linear-gradient(90deg, rgba(74,143,255,0.025), rgba(106,255,255,0.015))"
