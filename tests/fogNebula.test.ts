@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test"
-import { renderFog } from "@/components/background/layers/fog"
+import { renderFog, createFogSpriteHolders } from "@/components/background/layers/fog"
 import { LayerContext } from "@/components/background/types"
 
 describe("Volumetric Alchemical Nebulae & Armillary Grid", () => {
@@ -64,7 +64,7 @@ describe("Volumetric Alchemical Nebulae & Armillary Grid", () => {
       hexCenters: [],
     }
 
-    renderFog(layerCtx)
+    renderFog(layerCtx, createFogSpriteHolders())
     expect(saveCount).toBe(restoreCount)
     expect(saveCount).toBeGreaterThanOrEqual(1)
     // 4 radial gradients in Quick Pitch: Solar Gold, Amethyst Abyss, Twilight Indigo, Quicksilver Veil
@@ -83,7 +83,7 @@ describe("Volumetric Alchemical Nebulae & Armillary Grid", () => {
       height: 1080,
     } as unknown as LayerContext
 
-    renderFog(layerCtx)
+    renderFog(layerCtx, createFogSpriteHolders())
     expect(called).toBe(false)
   })
 
@@ -138,7 +138,7 @@ describe("Volumetric Alchemical Nebulae & Armillary Grid", () => {
       hexCenters: [],
     }
 
-    renderFog(layerCtx)
+    renderFog(layerCtx, createFogSpriteHolders())
     expect(saveCount).toBe(restoreCount)
     expect(saveCount).toBe(1)
     // Quick Pitch armillary ellipses should NOT be rendered in Deep Dive mode
@@ -200,7 +200,7 @@ describe("Volumetric Alchemical Nebulae & Armillary Grid", () => {
       hexCenters: [],
     }
 
-    renderFog(layerCtx)
+    renderFog(layerCtx, createFogSpriteHolders())
     expect(saveCount).toBe(restoreCount)
     // When t = 0:
     // Gold Core: x = 1000 * 0.72 + sin(0) * 30 = 720, y = 1000 * 0.32 + cos(0) * 20 = 340
@@ -270,7 +270,7 @@ describe("Volumetric Alchemical Nebulae & Armillary Grid", () => {
       hexCenters: [],
     }
 
-    renderFog(layerCtx)
+    renderFog(layerCtx, createFogSpriteHolders())
     expect(saveCount).toBe(restoreCount)
     expect(gradientCount).toBeGreaterThanOrEqual(4)
     // The background void fill in light mode must be LIGHT_WASH_STR

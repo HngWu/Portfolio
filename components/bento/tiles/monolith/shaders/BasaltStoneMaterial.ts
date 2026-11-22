@@ -48,13 +48,27 @@ function createBasaltBumpTexture(): THREE.CanvasTexture | null {
 export function createBasaltStoneMaterial(): THREE.MeshStandardMaterial {
   const bumpMap = createBasaltBumpTexture()
 
-  return new THREE.MeshStandardMaterial({
+  const material = new THREE.MeshStandardMaterial({
     color: new THREE.Color("#15181f"), // Deep basalt / volcanic slate charcoal
     roughness: 0.88,                   // High micro-roughness: unpolished stone
     metalness: 0.08,                   // Very low metalness
-    bumpMap: bumpMap,
+    bumpMap: bumpMap ?? undefined,
     bumpScale: 0.045,                  // Subtle surface pitting and grain
     flatShading: false,
     envMapIntensity: 0.4,
   })
+
+  // THREE.MeshStandardMaterial.dispose() does not automatically dispose maps
+  // created programmatically, so we chain bumpMap cleanup here.
+  // Without this, every material remount (HMR, feature toggle) leaks a
+  // 256×256 GPU texture upload in VRAM.
+  if (bumpMap) {
+    const originalDispose = material.dispose.bind(material)
+    material.dispose = () => {
+      bumpMap.dispose()
+      originalDispose()
+    }
+  }
+
+  return material
 }

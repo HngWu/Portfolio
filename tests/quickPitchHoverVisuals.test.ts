@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test"
-import { renderFog } from "@/components/background/layers/fog"
+import { renderFog, createFogSpriteHolders } from "@/components/background/layers/fog"
 import { renderDust, initDustMotes } from "@/components/background/layers/dust"
 import { renderSpellCircle } from "@/components/background/layers/spellCircle"
 import { LayerContext } from "@/components/background/types"
@@ -142,7 +142,7 @@ describe("Quick Pitch Enhanced Visuals & Hover Pipeline Integration", () => {
       const restoreBefore = counts.restore
 
       expect(() => {
-        renderFog(layerCtx)
+        renderFog(layerCtx, createFogSpriteHolders())
         renderDust(layerCtx, motes)
         renderSpellCircle(layerCtx)
       }).not.toThrow()
@@ -179,7 +179,7 @@ describe("Quick Pitch Enhanced Visuals & Hover Pipeline Integration", () => {
       const restoreBefore = counts.restore
 
       expect(() => {
-        renderFog(layerCtx)
+        renderFog(layerCtx, createFogSpriteHolders())
         renderDust(layerCtx, motes)
         renderSpellCircle(layerCtx)
       }).not.toThrow()
@@ -200,7 +200,7 @@ describe("Quick Pitch Enhanced Visuals & Hover Pipeline Integration", () => {
     const restoreBefore = counts.restore
 
     expect(() => {
-      renderFog(layerCtx)
+      renderFog(layerCtx, createFogSpriteHolders())
       renderDust(layerCtx, motes)
       renderSpellCircle(layerCtx)
     }).not.toThrow()
@@ -232,7 +232,7 @@ describe("Quick Pitch Enhanced Visuals & Hover Pipeline Integration", () => {
     const restoreBefore = counts.restore
 
     expect(() => {
-      renderFog(layerCtx)
+      renderFog(layerCtx, createFogSpriteHolders())
       renderDust(layerCtx, motes)
       renderSpellCircle(layerCtx)
     }).not.toThrow()
@@ -254,7 +254,7 @@ describe("Quick Pitch Enhanced Visuals & Hover Pipeline Integration", () => {
     })
 
     expect(() => {
-      renderFog(zeroDimCtx)
+      renderFog(zeroDimCtx, createFogSpriteHolders())
       renderDust(zeroDimCtx, motes)
       renderSpellCircle(zeroDimCtx)
     }).not.toThrow()

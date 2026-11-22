@@ -14,7 +14,7 @@ import {
   RuntimePalette,
   TileTrackingState,
 } from '@/components/background/types'
-import { renderFog } from '@/components/background/layers/fog'
+import { renderFog, createFogSpriteHolders, releaseFogSpriteHolders, type FogSpriteHolders } from '@/components/background/layers/fog'
 import { renderSigil } from '@/components/background/layers/sigil'
 import { buildHexLattice, renderLattice } from '@/components/background/layers/lattice'
 import { DataPulse, initDataPulses, renderPulses } from '@/components/background/layers/pulses'
@@ -210,6 +210,7 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
   const hexCentersRef = useRef<HexCenter[]>([])
   const hoveredTileElRef = useRef<HTMLElement | null>(null)
   const reducedMotionRef = useRef<boolean>(false)
+  const fogSpritesRef = useRef<FogSpriteHolders | null>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -218,6 +219,11 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
     const ctx = canvas.getContext('2d', { alpha: true })
     if (!ctx) return
 
+    // Create lifecycle-scoped sprite holders for fog nebulae.
+    // These replace the former module-level singletons in fog.ts so that
+    // HMR cycles don't strand 512×512 GPU-backed canvases in memory.
+    fogSpritesRef.current = createFogSpriteHolders()
+
     let animationFrameId: number | null = null
     let resizeTimer: ReturnType<typeof setTimeout> | null = null
     let isPaused = typeof document !== 'undefined' && document.hidden
@@ -225,6 +231,10 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
     let width = window.innerWidth
     let height = window.innerHeight
     let dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+    // Tracks the last time there was pointer or mode activity.
+    // Used by the idle-throttle logic in the render loop.
+    let lastActivityTime = performance.now()
+    const bumpActivity = () => { lastActivityTime = performance.now() }
 
     const paintStaticBackdrop = () => {
       if (!ctx || !canvasRef.current) return
@@ -280,6 +290,8 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
         updatePaletteAndMode(true)
         paintStaticBackdrop()
       } else {
+        // Mode change counts as activity — resume full 60fps for the transition.
+        bumpActivity()
         updatePaletteAndMode(false)
       }
     })
@@ -377,10 +389,12 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
     // Cache the hovered tile rect on pointer move so the render loop never calls
     // getBoundingClientRect — avoiding forced synchronous layout reads at 60 fps.
     const cachedTileRectRef = { current: null as DOMRect | null }
+
     const onPointerMove = (e: PointerEvent) => {
       pointerRef.current.targetX = e.clientX
       pointerRef.current.targetY = e.clientY
       pointerRef.current.active = true
+      bumpActivity()
 
       const target = e.target as Element | null
       const tileEl = target?.closest?.('[data-bento-tile]') as HTMLElement | null
@@ -416,6 +430,11 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
     }
     document.addEventListener('visibilitychange', onVisibilityChange)
 
+    // Minimum interval between frames during idle (100ms ≈ 10fps).
+    const IDLE_FRAME_INTERVAL = 100
+    // After this many ms without pointer activity the loop throttles to 10fps.
+    const IDLE_GRACE_MS = 3000
+
     // 7. Render loop
     const render = (now: number) => {
       animationFrameId = null
@@ -424,6 +443,21 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
       const enableFx = usePerformanceStore.getState().enableBackgroundFx
       if (!enableFx) {
         paintStaticBackdrop()
+        return
+      }
+
+      // Idle throttle: if the pointer has been inactive for IDLE_GRACE_MS and
+      // there is no active tile hover, skip frames so the loop runs at ~10fps
+      // rather than 60fps. This cuts idle GPU/CPU usage by ~6×.
+      const sinceActivity = now - lastActivityTime
+      const isIdleThrottled =
+        sinceActivity > IDLE_GRACE_MS &&
+        !pointerRef.current.active &&
+        tileRef.current.intensity <= 0.005 &&
+        trailRef.current.length === 0
+
+      if (isIdleThrottled && now - lastTime < IDLE_FRAME_INTERVAL) {
+        animationFrameId = requestAnimationFrame(render)
         return
       }
 
@@ -542,7 +576,7 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
       ctx.save()
       ctx.scale(dpr, dpr)
 
-      renderFog(layerCtx)
+      renderFog(layerCtx, fogSpritesRef.current!)
       renderSigil(layerCtx)
       renderLattice(layerCtx)
       renderPulses(layerCtx, pulsesRef.current)
@@ -569,6 +603,12 @@ export function useArcaneLoop(canvasRef: React.RefObject<HTMLCanvasElement | nul
 
     // Cleanup
     return () => {
+      // Release the fog sprite canvases before anything else so the GPU
+      // backing store is freed immediately rather than waiting for GC.
+      if (fogSpritesRef.current) {
+        releaseFogSpriteHolders(fogSpritesRef.current)
+        fogSpritesRef.current = null
+      }
       stopLoop()
       if (resizeTimer) {
         clearTimeout(resizeTimer)

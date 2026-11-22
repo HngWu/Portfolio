@@ -26,9 +26,38 @@ interface RadialSpriteHolder {
   colorKey: string
 }
 
-const goldSpriteHolder: RadialSpriteHolder = { canvas: null, ctx: null, colorKey: '' }
-const amethystSpriteHolder: RadialSpriteHolder = { canvas: null, ctx: null, colorKey: '' }
-const veilSpriteHolder: RadialSpriteHolder = { canvas: null, ctx: null, colorKey: '' }
+// --- Lifecycle-managed sprite holder API ---
+// Holders are created by useArcaneLoop (via createFogSpriteHolders) and stored in a
+// React ref, so they are tied to the component's lifetime rather than the module's.
+// This prevents 512×512 GPU-backed canvases from being stranded across HMR cycles.
+
+export interface FogSpriteHolders {
+  gold: RadialSpriteHolder
+  amethyst: RadialSpriteHolder
+  veil: RadialSpriteHolder
+}
+
+export function createFogSpriteHolders(): FogSpriteHolders {
+  return {
+    gold:     { canvas: null, ctx: null, colorKey: '' },
+    amethyst: { canvas: null, ctx: null, colorKey: '' },
+    veil:     { canvas: null, ctx: null, colorKey: '' },
+  }
+}
+
+export function releaseFogSpriteHolders(holders: FogSpriteHolders): void {
+  for (const holder of Object.values(holders) as RadialSpriteHolder[]) {
+    if (holder.canvas) {
+      // Setting dimensions to 0 signals the browser to eagerly free the
+      // GPU-backed bitmap store rather than waiting for GC.
+      holder.canvas.width = 0
+      holder.canvas.height = 0
+    }
+    holder.canvas = null
+    holder.ctx = null
+    holder.colorKey = ''
+  }
+}
 
 function getRadialSprite(holder: RadialSpriteHolder, color: RGBA): HTMLCanvasElement | null {
   if (typeof document === 'undefined') return null
@@ -144,7 +173,7 @@ function getCachedEdgeGradient(
  * armillary coordinate arcs (3 concentric latitude ellipses and 3 rotating meridian arcs).
  * Deep Dive: Renders a faint arcane-violet edge vignette against the deep indigo void.
  */
-export function renderFog(ctx: LayerContext): void {
+export function renderFog(ctx: LayerContext, holders: FogSpriteHolders): void {
   const { ctx: c, width, height, time, mix, palette, pointer, reducedMotion } = ctx
 
   if (width <= 0 || height <= 0 || !Number.isFinite(width) || !Number.isFinite(height)) {
@@ -198,7 +227,7 @@ export function renderFog(ctx: LayerContext): void {
       const yGold = height * 0.32 + Math.cos(t * 0.15) * 20
       const rGold = Math.max(20, Math.min(width, height) * 0.52)
       const accentSoft = palette.accentSoft ?? palette.accent
-      const sprite = getRadialSprite(goldSpriteHolder, accentSoft)
+      const sprite = getRadialSprite(holders.gold, accentSoft)
       if (sprite) {
         c.save()
         c.globalAlpha = goldAlpha
@@ -223,7 +252,7 @@ export function renderFog(ctx: LayerContext): void {
       const yAmethyst = height * 0.68 - Math.sin(t * 0.11) * 20
       const rAmethyst = Math.max(20, Math.min(width, height) * 0.48)
       const amethystColor = palette.secondaryAmethyst ?? palette.secondary ?? palette.accent
-      const sprite = getRadialSprite(amethystSpriteHolder, amethystColor)
+      const sprite = getRadialSprite(holders.amethyst, amethystColor)
       if (sprite) {
         c.save()
         c.globalAlpha = amethystAlpha
@@ -248,7 +277,7 @@ export function renderFog(ctx: LayerContext): void {
       const py = pointer && pointer.active && Number.isFinite(pointer.y) ? pointer.y : height * 0.5
       const rVeil = 320
       const accentBright = palette.accentBright ?? palette.accent
-      const sprite = getRadialSprite(veilSpriteHolder, accentBright)
+      const sprite = getRadialSprite(holders.veil, accentBright)
       if (sprite) {
         c.save()
         c.globalAlpha = veilAlpha

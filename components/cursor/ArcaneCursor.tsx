@@ -289,8 +289,16 @@ export function ArcaneCursor() {
     if (!isActive) return
     let animationFrameId: number | null = null
     let isLoopRunning = false
+    let lastFrameTime: number | null = null
 
     const renderLoop = (time: number) => {
+      // Compute actual delta (seconds) so particle ages are frame-rate independent.
+      // Cap at 100ms to avoid huge jumps after tab focus or long pauses.
+      const dt = lastFrameTime !== null
+        ? Math.min((time - lastFrameTime) / 1000, 0.1)
+        : 0.016
+      lastFrameTime = time
+
       // 1. Evaluate hover state & magnetic snap
       const target = lastTargetRef.current
       let isInteractive = false
@@ -380,7 +388,7 @@ export function ArcaneCursor() {
 
         // Update and draw active particles
         particlesRef.current.forEach((p) => {
-          p.age += 0.016
+          p.age += dt
           p.opacity = Math.max(0, 1.0 - p.age / p.maxAge)
 
           // Drag / deceleration friction
@@ -391,7 +399,7 @@ export function ArcaneCursor() {
             // Magic: undulating sine-wave drifts (runic floating feel)
             p.x += p.vx + Math.sin(time * 0.008 + p.id) * 0.4
             p.y += p.vy + Math.cos(time * 0.008 + p.id) * 0.4
-            p.rotation += p.rotationSpeed * 0.016
+            p.rotation += p.rotationSpeed * dt
           } else {
             // Tech: linear velocity decay
             p.x += p.vx
@@ -417,7 +425,7 @@ export function ArcaneCursor() {
 
         // Update and draw active click effects
         clickEffectsRef.current.forEach((effect) => {
-          effect.age += 0.016
+          effect.age += dt
           const p = Math.min(1.0, effect.age / effect.maxAge)
           const opacity = 1.0 - p
 
@@ -816,6 +824,12 @@ export function ArcaneCursor() {
       if (gl && program) {
         gl.deleteProgram(program)
         gl.deleteBuffer(positionBuffer)
+        // Release the WebGL context slot back to the GPU driver.
+        // deleteProgram/deleteBuffer only free JS-side objects; without loseContext()
+        // the browser keeps the slot occupied until process exit. Chrome allows 16
+        // contexts per process, Safari 8 — HMR + Strict Mode can exhaust this quickly.
+        const loseExt = gl.getExtension('WEBGL_lose_context')
+        loseExt?.loseContext()
       }
     }
   }, [isActive, hasWebGLFailed])
