@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+﻿import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { sharedSpellState } from '../PolyhedronCanvas';
@@ -172,7 +172,9 @@ export const RunicDustStreams = ({ mode, count = 1500 }: { mode: 'quick-pitch' |
         0.05
       );
 
-      let speedFactor = 0.3 * (sharedSpellState.pulseScale || 1.0);
+      const hoverProgress = sharedSpellState.hoverProgress ?? 0;
+      // Hover energizes ambient dust: +50% speed, +15% size swell
+      let speedFactor = (0.3 + hoverProgress * 0.15) * (sharedSpellState.pulseScale || 1.0);
       if (sharedSpellState.lockdown) speedFactor = 0.0;
       else if (sharedSpellState.ignite) speedFactor = 1.4;
       materialRef.current.uniforms.uSpeed.value = THREE.MathUtils.lerp(
@@ -181,7 +183,7 @@ export const RunicDustStreams = ({ mode, count = 1500 }: { mode: 'quick-pitch' |
         delta * 6.0
       );
 
-      const targetSize = 15.0 * (sharedSpellState.pulseScale || 1.0);
+      const targetSize = (15.0 + hoverProgress * 2.2) * (sharedSpellState.pulseScale || 1.0);
       materialRef.current.uniforms.uSize.value = THREE.MathUtils.lerp(
         materialRef.current.uniforms.uSize.value,
         targetSize,

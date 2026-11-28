@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useRef, useMemo, useEffect, useCallback } from "react"
 import { useFrame } from "@react-three/fiber"
@@ -259,7 +259,9 @@ export const HexcoreMonolithCore: React.FC<HexcoreMonolithCoreProps> = ({
     // Quick Pitch mode -> idle zero-G drifting (even when hovered)
     // Deep Dive mode -> active tension-locked state (even when hovered)
     const isActive = isDeepDive || modeProg > 0.5
-    const targetTension = isActive ? 1.0 : 0.0
+    const hoverProgress = sharedSpellState.hoverProgress ?? 0
+    // Three-tier tension: idle (0), hover alert (0.35), Deep Dive lock (1.0)
+    const targetTension = isActive ? 1.0 : hoverProgress * 0.35
     const zeta = 0.58    // Underdamped damping ratio
     const omega = 16.0   // Natural angular frequency
     const dt = Math.min(delta, 0.05)
@@ -340,7 +342,7 @@ export const HexcoreMonolithCore: React.FC<HexcoreMonolithCoreProps> = ({
     // 5. Master Core Orientation & Float
     if (masterGroupRef.current) {
       // Slow ambient spin
-      const rotSpeed = isLockdown ? 0.02 : (isIgnited ? 0.45 : 0.18)
+      const rotSpeed = isLockdown ? 0.02 : (isIgnited ? 0.45 : 0.18 + (sharedSpellState.hoverProgress ?? 0) * 0.14)
       masterGroupRef.current.rotation.y += delta * rotSpeed
 
       // Zero-G Antigravity Float Drift
@@ -372,7 +374,7 @@ export const HexcoreMonolithCore: React.FC<HexcoreMonolithCoreProps> = ({
       coreLightRef.current.color.lerp(_scratchLightCol, delta * 6.0)
 
       // Light intensifies when tension locked to cast vivid electric illumination through the cleavage seams
-      const baseIntensity = isActive ? 5.8 : 4.0
+      const baseIntensity = isActive ? 5.8 : 4.0 + (sharedSpellState.hoverProgress ?? 0) * 1.8
       const targetIntensity = isLockdown ? 0.4 : (isIgnited ? 7.0 : baseIntensity)
       coreLightRef.current.intensity = THREE.MathUtils.lerp(
         coreLightRef.current.intensity,

@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState } from 'react';
+﻿import React, { useRef, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { sharedSpellState } from '../PolyhedronCanvas';
@@ -124,11 +124,13 @@ export const RingLightningArcs: React.FC<LightningArcsProps> = ({ mode, ringARef
 
     triggerTimer.current += delta;
     const activeSpell = sharedSpellState.lightning || sharedSpellState.ignite;
-    const interval = activeSpell ? 0.15 : 0.85;
+    const hoverBoost = sharedSpellState.hoverProgress ?? 0;
+    // Hover shortens arc interval and increases trigger probability
+    const interval = activeSpell ? 0.15 : THREE.MathUtils.lerp(0.85, 0.45, hoverBoost);
     const maxDuration = activeSpell ? 0.22 : 0.40;
 
     if (!active && triggerTimer.current > interval) {
-      const probability = activeSpell ? 0.95 : 0.70;
+      const probability = activeSpell ? 0.95 : THREE.MathUtils.lerp(0.70, 0.88, hoverBoost);
       if (Math.random() < probability && ringARef.current && ringBRef.current) {
         setActive(true);
         arcDuration.current = 0;

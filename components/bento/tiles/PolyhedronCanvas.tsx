@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Canvas, useFrame, ThreeEvent, useThree } from "@react-three/fiber"
 import React, { Suspense, useRef, useMemo, useState, useEffect, useContext } from "react"
@@ -43,7 +43,8 @@ export const sharedSpellState = {
   modeProgress: 0.0, // 0 for quick pitch (gold), 1 for deep dive (default indigo)
   scrollProgress: 0.0,
   assemblyProgress: 1.0,
-  isVisible: true
+  isVisible: true,
+  hoverProgress: 0.0, // Smooth 0 to 1 hover transition, written each frame by PolyhedronScene
 }
 
 if (typeof window !== 'undefined') {
@@ -1507,6 +1508,8 @@ function PolyhedronScene({
       delta * 5.0
     )
     const hoverProgress = currentHoverProgress.current
+    // Write canonical hover progress to sharedSpellState so sub-components can read it
+    sharedSpellState.hoverProgress = hoverProgress
 
     const refs = [ring1Ref, ring2Ref]
     const spinRefs = [ring1Spin, ring2Spin]
@@ -1527,6 +1530,17 @@ function PolyhedronScene({
       
       // 4. Maintain pristine orbital gimbal orientation without unnatural 90-degree flips
       ref.current.quaternion.copy(baseAlignedQuat)
+
+      // 5. Hover parallax tilt: rings follow cursor at different lag rates, creating depth separation
+      // Ring 1 (inner) tracks at 60% strength; Ring 2 (outer) tracks at 85% — further ring feels more inertial
+      if (hoverProgress > 0.001) {
+        const ringParallaxStrength = idx === 0 ? 0.60 : 0.85
+        const tiltX = -pointer.y * 0.10 * hoverProgress * ringParallaxStrength
+        const tiltY = pointer.x * 0.14 * hoverProgress * ringParallaxStrength
+        ref.current.quaternion.multiply(
+          _scratchQuat3.setFromEuler(_scratchEuler.set(tiltX, tiltY, 0))
+        )
+      }
       
       // Smoothly coupling speed to strict integer gear ratios as scroll progress increases
       const idleSpeed = idx === 1 ? -0.5 : 0.6
@@ -1910,7 +1924,9 @@ function PyramidFragment({
     
     // Pyramids maintain razor-sharp Rubik alignment without irregular facet pops
     const baseExpansion = isDeepDive ? 0.26 : 0.20
-    let targetExp = baseExpansion
+    // Hover breathing: shell swells ~20% outward on cursor enter, retracts on leave
+    const hoverExpansion = sharedSpellState.hoverProgress * 0.055
+    let targetExp = baseExpansion + hoverExpansion
 
     // Recoil Snap-back interpolation logic for clicks
     stateRef.current.shatterVal = THREE.MathUtils.lerp(
@@ -2203,6 +2219,10 @@ export default function PolyhedronCanvas({
   const [ready, setReady] = useState(true)
   const isLoaded = useSiteLoaderStore((s) => s.isLoaded)
   const forceMobile = useContext(ForceMobileContext)
+  // Bloom intensity: smoothly lerps between 0.45 (rest) and 0.78 (hover) via RAF
+  const [bloomIntensity, setBloomIntensity] = useState(0.45)
+  const bloomIntensityRef = useRef(0.45)
+  const bloomRafRef = useRef<number | null>(null)
   
   // Tooltip HUD Overlay state
   const [hud, setHud] = useState<{
@@ -2213,6 +2233,27 @@ export default function PolyhedronCanvas({
 
   const [isMobile, setIsMobile] = useState(false)
   const isEffectiveMobile = isMobile || forceMobile
+
+  // Bloom intensity smooth animation driven by hover state
+  useEffect(() => {
+    const target = isHovered ? 0.78 : 0.45
+    const animate = () => {
+      const current = bloomIntensityRef.current
+      const next = current + (target - current) * 0.08
+      if (Math.abs(next - current) > 0.001) {
+        bloomIntensityRef.current = next
+        setBloomIntensity(next)
+        bloomRafRef.current = requestAnimationFrame(animate)
+      } else {
+        bloomIntensityRef.current = target
+        setBloomIntensity(target)
+      }
+    }
+    bloomRafRef.current = requestAnimationFrame(animate)
+    return () => {
+      if (bloomRafRef.current !== null) cancelAnimationFrame(bloomRafRef.current)
+    }
+  }, [isHovered])
 
   useEffect(() => {
     let isIntersecting = true
@@ -2459,12 +2500,13 @@ export default function PolyhedronCanvas({
         </Suspense>
 
         {/* Volumetric Bloom Postprocessing - Calibrated for sleek cinematic balance */}
+        {/* bloomIntensity lerps 0.45->0.78 on hover via RAF animation */}
         <EffectComposer multisampling={0}>
           <Bloom 
             luminanceThreshold={0.22} 
             luminanceSmoothing={0.65} 
             mipmapBlur 
-            intensity={0.45}
+            intensity={bloomIntensity}
           />
         </EffectComposer>
       </Canvas>
