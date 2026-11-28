@@ -134,6 +134,7 @@ function SceneLighting({ isVisibleRef }: { isVisibleRef: React.RefObject<boolean
   const mode = useViewModeStore((s) => s.mode)
   const deityMode = useDeityControls((s) => s.mode)
   const kineticPulse = useDeityControls((s) => s.kineticPulse)
+  const isHovered = useDeityControls((s) => s.isHovered)
   const isDeepDive = mode === "deep"
   const isOverdrive = deityMode === "OVERDRIVE"
 
@@ -142,11 +143,21 @@ function SceneLighting({ isVisibleRef }: { isVisibleRef: React.RefObject<boolean
   const cursorLightColor = isDeepDive ? "#6AFFFF" : "#FFE58F"
 
   const cursorLightRef = useRef<THREE.PointLight>(null)
+  // Smooth hover progress ref for cursor light intensity ramp
+  const hoverProgressRef = useRef(0)
 
   useFrame((state, delta) => {
     if (!isVisibleRef.current) return
 
     const pointer = state.pointer
+
+    // Smooth hover progress: lerps 0→1 on enter, 1→0 on leave
+    hoverProgressRef.current = THREE.MathUtils.lerp(
+      hoverProgressRef.current,
+      isHovered ? 1.0 : 0.0,
+      delta * 4.0
+    )
+
     if (cursorLightRef.current) {
       // Dynamic 3D Cursor Specular Point Light following mouse in space
       cursorLightRef.current.position.x = THREE.MathUtils.lerp(
@@ -160,6 +171,12 @@ function SceneLighting({ isVisibleRef }: { isVisibleRef: React.RefObject<boolean
         delta * 6
       )
       cursorLightRef.current.position.z = 3.8
+      // Hover brightens the cursor light — deity awakens to the viewer's presence
+      cursorLightRef.current.intensity = THREE.MathUtils.lerp(
+        cursorLightRef.current.intensity,
+        (isOverdrive ? 2.0 : 0.6) + hoverProgressRef.current * 1.8,
+        delta * 5
+      )
     }
   })
 
@@ -186,7 +203,7 @@ function SceneLighting({ isVisibleRef }: { isVisibleRef: React.RefObject<boolean
       <pointLight
         ref={cursorLightRef}
         position={[0, 0, 3.8]}
-        intensity={isOverdrive ? 2.0 : 1.2}
+        intensity={0.6}
         color={cursorLightColor}
         distance={8}
       />

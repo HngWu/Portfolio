@@ -70,6 +70,9 @@ export function SeraphicWings() {
   const lowerLeftWingRef = useRef<THREE.Group>(null)
   const lowerRightWingRef = useRef<THREE.Group>(null)
 
+  // Smooth hover progress (0 → 1) for gradual wing spread / retract transitions
+  const hoverProgressRef = useRef(0)
+
   // Electric Arc Line Segments Ref
   const electricArcsRef = useRef<THREE.LineSegments>(null)
 
@@ -141,9 +144,17 @@ export function SeraphicWings() {
     // Genesis Assembly Unfurl interpolation: [0.65, 0.95]
     const pUnfurl = THREE.MathUtils.clamp((assemblyProgress - 0.65) / 0.3, 0, 1)
 
-    // Flare factor: idle (0), hover (0.85), overdrive (1.45), click kinetic pulse (+1.2)
-    const flare =
-      (isOverdrive ? 1.45 : isHovered ? 0.85 : 0.0 + kineticPulse * 1.35) * pUnfurl
+    // Smooth hover progress: lerps 0→1 on enter, 1→0 on leave (~0.3s transition)
+    hoverProgressRef.current = THREE.MathUtils.lerp(
+      hoverProgressRef.current,
+      isHovered ? 1.0 : 0.0,
+      delta * 3.5
+    )
+
+    // Flare factor: idle (0), hover (smooth 0→0.85), overdrive (1.45), click kinetic pulse (always additive)
+    // Fix: kineticPulse is separated as an additive term so it fires regardless of hover/overdrive state
+    const baseFlareMagnitude = isOverdrive ? 1.45 : hoverProgressRef.current * 0.85
+    const flare = (baseFlareMagnitude + kineticPulse * 1.35) * pUnfurl
 
     // Fluidic aerodynamic inertia: wingtips flex against levitation vertical velocity
     const fluidInertiaZ = Math.cos(t * 1.5) * 0.045 * pUnfurl

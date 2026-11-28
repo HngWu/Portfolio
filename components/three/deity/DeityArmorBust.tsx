@@ -50,6 +50,9 @@ export function DeityArmorBust() {
   const armLGroupRef = useRef<THREE.Group>(null)
   const armRGroupRef = useRef<THREE.Group>(null)
 
+  // Smooth hover progress ref for gradual head lean transition (0 → 1)
+  const hoverProgressRef = useRef(0)
+
   // Target positions for Genesis Assembly interpolation
   const targetHeadPos = useMemo(() => new THREE.Vector3(), [])
   const targetNeckPos = useMemo(() => new THREE.Vector3(), [])
@@ -144,6 +147,13 @@ export function DeityArmorBust() {
   useFrame((_, delta) => {
     const speed = delta * 4.5
 
+    // Smooth hover progress: lerps 0→1 on enter, 1→0 on leave
+    hoverProgressRef.current = THREE.MathUtils.lerp(
+      hoverProgressRef.current,
+      isHovered ? 1.0 : 0.0,
+      delta * 3.5
+    )
+
     // Color transitions
     energyChassisMaterial.emissive.lerp(targetEmissive, speed)
     crownGoldMaterial.emissive.lerp(targetEmissive, speed)
@@ -175,8 +185,8 @@ export function DeityArmorBust() {
     _scratchVecAssembly2.set(0, 0.54, 0.08)
     targetNeckPos.lerpVectors(scatterNeck, _scratchVecAssembly2, pNeck)
 
-    // Head Target: [0, 0.98 + 0.15 * explodedFactor, 0.12]
-    _scratchVecAssembly3.set(0, 0.98 + 0.15 * explodedFactor, 0.12)
+    // Head Target: [0, 0.98 + 0.15 * explodedFactor, 0.12 + 0.06 * hoverProgress] (hover lean toward viewer)
+    _scratchVecAssembly3.set(0, 0.98 + 0.15 * explodedFactor, 0.12 + 0.06 * hoverProgressRef.current)
     targetHeadPos.lerpVectors(scatterHead, _scratchVecAssembly3, pHead)
 
     // Pelvis Target: [0, -0.02, 0.02]

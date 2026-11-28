@@ -37,6 +37,10 @@ export function MechHead({
   const opticalGazeRef = useRef<THREE.Mesh>(null)
 
   const kineticPulse = useDeityControls((s) => s.kineticPulse)
+  const isHovered = useDeityControls((s) => s.isHovered)
+
+  // Smooth hover progress ref for gaze slit thickness transition
+  const hoverProgressRef = useRef(0)
 
   // 13 Radiant Sunburst Aureole Spikes (Cathedral Halo)
   const aureoleRays = useMemo(() => {
@@ -56,6 +60,13 @@ export function MechHead({
     const t = state.clock.getElapsedTime()
     const pointer = state.pointer
     const speed = delta * 4.5
+
+    // Smooth hover progress: lerps 0→1 on enter, 1→0 on leave
+    hoverProgressRef.current = THREE.MathUtils.lerp(
+      hoverProgressRef.current,
+      isHovered ? 1.0 : 0.0,
+      delta * 3.5
+    )
 
     // ──────────────────────────────────────────────────────────
     // 1. Autonomous Hierarchical 3D Cursor Gaze Tracking
@@ -119,8 +130,9 @@ export function MechHead({
       const gazePulse =
         pHead < 0.7
           ? 0
-          : (0.85 + Math.sin(t * 5.0) * 0.15) * (1.0 + kineticPulse * 0.6)
-      opticalGazeRef.current.scale.set(1, gazePulse, 1)
+          : (0.85 + Math.sin(t * 5.0) * 0.15) * (1.0 + kineticPulse * 0.6) + hoverProgressRef.current * 0.3
+      // Slit thickens slightly wider (X) and taller (Y) when hovered — deity sizing up the viewer
+      opticalGazeRef.current.scale.set(1 + hoverProgressRef.current * 0.15, gazePulse, 1)
     }
   })
 
